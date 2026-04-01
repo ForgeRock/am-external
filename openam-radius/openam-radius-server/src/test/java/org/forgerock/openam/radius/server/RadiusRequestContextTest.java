@@ -25,14 +25,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.util.Optional;
 
-import org.forgerock.openam.radius.common.AttributeSet;
+import org.forgerock.openam.radius.common.MessageAuthenticatorCalculator;
 import org.forgerock.openam.radius.common.Packet;
 import org.forgerock.openam.radius.common.PacketType;
-import org.forgerock.openam.radius.common.packet.MessageAuthenticatorAttribute;
 import org.forgerock.openam.radius.server.config.ClientConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,9 +45,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 public class RadiusRequestContextTest {
-
-    private static final byte[] MESSAGE_AUTHENTICATOR = new byte[]{-5, 106, -72, 51, 84, 15, -5, 57, 112, -41, 10, -41,
-            4, -30, -13, 56};
 
     private static final byte[] RESPONSE_OCTETS = new byte[]{0, -36, 0, 38, 69, 127, 64, 36, 34, -44, 52, 32, 101, 93,
             -120, -105, 114, 125, 43, 6, 80, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -80,21 +74,14 @@ public class RadiusRequestContextTest {
     @CsvSource({"ACCESS_ACCEPT", "ACCESS_REJECT", "ACCESS_CHALLENGE"})
     void shouldSendResponseWithMessageAuthenticatorGiven(String packetType) throws RadiusProcessingException {
         // Given
-        AttributeSet attributeSet = mock(AttributeSet.class);
-
         given(clientConfig.isMessageAuthenticatorRequired()).willReturn(true);
         given(packet.getType()).willReturn(PacketType.valueOf(packetType));
-        given(messageAuthenticatorCalculator.computeFromPayloadIfPresent(ByteBuffer.wrap(RESPONSE_OCTETS), "secret"))
-                .willReturn(Optional.of(ByteBuffer.wrap(MESSAGE_AUTHENTICATOR)));
-        given(packet.getAttributeSet()).willReturn(attributeSet);
 
         // When
         radiusRequestContext.send(packet);
 
         // Then
-        verify(attributeSet).addAttribute(any(MessageAuthenticatorAttribute.class), eq(true));
-        verify(attributeSet).replaceAttribute(any(MessageAuthenticatorAttribute.class),
-                any(MessageAuthenticatorAttribute.class), eq(true));
+        verify(messageAuthenticatorCalculator).addMessageAuthenticator(eq(packet), eq("secret"));
     }
 
     @Test
@@ -108,7 +95,7 @@ public class RadiusRequestContextTest {
 
         // Then
         verify(messageAuthenticatorCalculator, times(0))
-                .computeFromPayloadIfPresent(any(ByteBuffer.class), any(String.class));
+                .addMessageAuthenticator(any(Packet.class), any(String.class));
     }
 
     @Test
@@ -122,26 +109,6 @@ public class RadiusRequestContextTest {
 
         // Then
         verify(messageAuthenticatorCalculator, times(0))
-                .computeFromPayloadIfPresent(any(ByteBuffer.class), any(String.class));
-    }
-
-    @Test
-    void shouldSendResponseWithNoMessageAuthenticatorGivenEmptyMessageAuthenticator() throws RadiusProcessingException {
-        // Given
-        AttributeSet attributeSet = mock(AttributeSet.class);
-
-        given(clientConfig.isMessageAuthenticatorRequired()).willReturn(true);
-        given(packet.getType()).willReturn(ACCESS_ACCEPT);
-        given(messageAuthenticatorCalculator.computeFromPayloadIfPresent(ByteBuffer.wrap(RESPONSE_OCTETS), "secret"))
-                .willReturn(Optional.empty());
-        given(packet.getAttributeSet()).willReturn(attributeSet);
-
-        // When
-        radiusRequestContext.send(packet);
-
-        // Then
-        verify(attributeSet).addAttribute(any(MessageAuthenticatorAttribute.class), eq(true));
-        verify(attributeSet, times(0)).replaceAttribute(any(MessageAuthenticatorAttribute.class),
-                any(MessageAuthenticatorAttribute.class), eq(true));
+                .addMessageAuthenticator(any(Packet.class), any(String.class));
     }
 }

@@ -15,55 +15,69 @@
  */
 package org.forgerock.openam.auth.nodes.validators;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.cuppa.Cuppa.beforeEach;
-import static org.forgerock.cuppa.Cuppa.describe;
-import static org.forgerock.cuppa.Cuppa.it;
-import static org.forgerock.cuppa.Cuppa.when;
+import com.google.common.collect.ImmutableSet;
+import org.forgerock.openam.auth.nodes.DeviceGeoFencingNode.GeoFencingValidator;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-import org.forgerock.cuppa.Test;
-import org.forgerock.openam.auth.nodes.DeviceGeoFencingNode;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.ImmutableSet;
+/**
+ * Tests for {@link GeoFencingValidator}.
+ */
+class GeoFencingValidatorTest {
 
-@Test
-public class GeoFencingValidatorTest {
-    private DeviceGeoFencingNode.GeoFencingValidator validator;
+    private GeoFencingValidator validator;
 
-    {
-        describe("GeoFencingValidator", () -> {
-            describe("validate", () -> {
-                beforeEach(() -> {
-                    validator = new DeviceGeoFencingNode.GeoFencingValidator();
-                });
-                when("The input is valid", () -> {
-                    it("returns true", () -> {
-                        assertThat(validator.validate(ImmutableSet.of("123.1,121.1"))).isTrue();
-                    });
-                });
-                when("there are no values", () -> {
-                    it("returns false", () -> {
-                        assertThat(validator.validate(Collections.emptySet())).isFalse();
-                    });
-                });
-                when("the values aren't parsed", () -> {
-                    it("returns false", () -> {
-                        assertThat(validator.validate(ImmutableSet.of("invalid format"))).isFalse();
-                    });
-                });
-                when("one of the value is not a double", () -> {
-                    it("returns false", () -> {
-                        assertThat(validator.validate(ImmutableSet.of("131.1,test"))).isFalse();
-                    });
-                });
-                when("Invalid format", () -> {
-                    it("returns false", () -> {
-                        assertThat(validator.validate(ImmutableSet.of("123.1,232,23"))).isFalse();
-                    });
-                });
-            });
-        });
+    @BeforeEach
+    void setUp() {
+        validator = new GeoFencingValidator();
+    }
+
+    @Test
+    void shouldReturnTrueGivenValidInput() {
+        // When
+        boolean result = validator.validate(ImmutableSet.of("123.1,121.1"));
+
+        // Then
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void shouldReturnFalseGivenNoValues() {
+        // When
+        boolean result = validator.validate(Collections.emptySet());
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseGivenUnparsableFormat() {
+        // When
+        boolean result = validator.validate(ImmutableSet.of("invalid format"));
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseGivenNonNumericValue() {
+        // When
+        boolean result = validator.validate(ImmutableSet.of("131.1,test"));
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseGivenTooManyComponents() {
+        // When
+        boolean result = validator.validate(ImmutableSet.of("123.1,232,23"));
+
+        // Then
+        assertThat(result).isFalse();
     }
 }

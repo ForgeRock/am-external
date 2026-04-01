@@ -13,22 +13,19 @@
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
  *
- * Portions Copyright 2015-2025 Ping Identity Corporation.
+ * Portions Copyright 2015-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server.spi.handlers.amhandler;
 
-import static org.forgerock.openam.utils.Time.currentTimeMillis;
-
 import javax.security.auth.callback.Callback;
 
+import org.forgerock.am.trees.model.TreeResult;
+import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.AuthContext;
 import com.sun.identity.authentication.spi.PagePropertiesCallback;
-import com.sun.identity.shared.Constants;
-import com.sun.identity.shared.locale.L10NMessageImpl;
 
 /**
  * Holds server side info for an authentication conversation in progress for a user via a radius client.
@@ -109,26 +106,6 @@ public class ContextHolder {
     private AuthContext authContext;
 
     /**
-     * The millis value of the timeout value for the current callback set. We persist this here so that we still have
-     * access to it while processing each callback requiring input from the user. Then for each callback input value
-     * received we reset the count since we then know that the user is still with us. So ultimately, when using RADIUS
-     * the total time that a user may have entering input values for all callbacks in a set is the number of callbacks
-     * times the timeout value for that set. At creation time we instantiate to one minute so that the holder won't get
-     * purged from cache between getting created and loading of the first callback set.
-     */
-    private Long millisExpiryForCurrentCallbacks = 60000L;
-
-    /**
-     * The time in the future when this context should be purged from cache ostensibly because the authentication
-     * attempt was aborted by that user or they took too long to complete a given step. When System.currentTimeMillis is
-     * greater than this value the expiration point has passed and the item should be purged. This value may change
-     * multiple times during a given authentication process depending on how many pages of callbacks are incurred. Each
-     * set of callbacks has its own declared number of seconds allows for response and that value will be set here when
-     * that callback set is incurred.
-     */
-    private Long millisExpiryPoint = currentTimeMillis() + millisExpiryForCurrentCallbacks;
-
-    /**
      * The key for this object in the server-side cache.
      */
     private final String cacheKey;
@@ -137,6 +114,10 @@ public class ContextHolder {
      * Indicates in which phase of authentication we are at any point in time.
      */
     private AuthPhase authPhase = AuthPhase.STARTING;
+
+    private TreeResult treeResult;
+
+    private ExternalRequestContext requestContext;
 
     /**
      * Constructs a ContextHolder with its unique key.
@@ -288,45 +269,6 @@ public class ContextHolder {
     }
 
     /**
-     * get the number of milliseconds before the current callback expires.
-     *
-     * @return a <code>Long</code> representing the number of milliseconds until the current callback expires.
-     */
-    public Long getMillisExpiryForCurrentCallbacks() {
-        return this.millisExpiryForCurrentCallbacks;
-    }
-
-    /**
-     * Sets the period in milliseconds until the current callback expire.
-     *
-     * @param millisExpiryForCurrentCallbacks a <code>Long</code> representing the number of milliseconds until the
-     *                                        current callback expires.
-     */
-    public void setMillisExpiryForCurrentCallbacks(Long millisExpiryForCurrentCallbacks) {
-        this.millisExpiryForCurrentCallbacks = millisExpiryForCurrentCallbacks;
-    }
-
-    /**
-     * gets the point at which the current context holder expires.
-     *
-     * @return the difference, measured in milliseconds, between the context holder's expiry time and midnight, January
-     * 1, 1970
-     */
-    public Long getMillisExpiryPoint() {
-        return this.millisExpiryPoint;
-    }
-
-    /**
-     * Sets the point at which the current context holder expires.
-     *
-     * @param millisExpiryPoint the difference, measured in milliseconds, between the context holder's expiry time and
-     *                          midnight, January 1, 1970
-     */
-    public void setMillisExpiryPoint(Long millisExpiryPoint) {
-        this.millisExpiryPoint = millisExpiryPoint;
-    }
-
-    /**
      * get the cache key of this context holder.
      *
      * @return a <code>String</code> object containing the key for the context holder.
@@ -354,25 +296,38 @@ public class ContextHolder {
     }
 
     /**
-     * Obtain the universal ID from the SSO token held by the auth context. If there is no SSO token available or there
-     * is no universal id available then null will be returned.
+     * Get the current {@link TreeResult}.
      *
-     * @return the universalId, or null if none is available.
+     * @return the current {@link TreeResult}
      */
-    public String getUniversalId() {
-        LOG.debug("Entering ContextHolder.getUniversalId()");
-        String universalId = null;
-        try {
-            SSOToken token = this.authContext.getSSOToken();
-            if (token != null) {
-                universalId = token.getProperty(Constants.UNIVERSAL_IDENTIFIER);
-            } else {
-                LOG.debug("No SSO token available from the auth context.");
-            }
-        } catch (L10NMessageImpl e) {
-            LOG.warn("Could not get universal ID from the SSOToken.", e);
-        }
-        LOG.debug("Leaving ContextHolder.getUniversalId()");
-        return universalId;
+    public TreeResult getTreeResult() {
+        return treeResult;
+    }
+
+    /**
+     * Set the current {@link TreeResult}.
+     *
+     * @param treeResult the {@link TreeResult} to set
+     */
+    public void setTreeResult(TreeResult treeResult) {
+        this.treeResult = treeResult;
+    }
+
+    /**
+     * Get the current {@link ExternalRequestContext}.
+     *
+     * @return the current {@link ExternalRequestContext}
+     */
+    public ExternalRequestContext getRequestContext() {
+        return requestContext;
+    }
+
+    /**
+     * Set the current {@link ExternalRequestContext}.
+     *
+     * @param requestContext the {@link ExternalRequestContext} to set
+     */
+    public void setRequestContext(ExternalRequestContext requestContext) {
+        this.requestContext = requestContext;
     }
 }

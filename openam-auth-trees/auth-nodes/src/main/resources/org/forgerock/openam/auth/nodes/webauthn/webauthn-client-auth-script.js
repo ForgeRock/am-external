@@ -11,24 +11,43 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
-if (!window.PublicKeyCredential) {
+if (!window.PublicKeyCredential || !navigator.credentials) {
     document.getElementById('webAuthnOutcome').value = "unsupported";
     document.getElementById("loginButton_0").click();
 }
 
+var scriptContext = {scriptContext};
+
 var options = {
-    {relyingPartyId}
-    challenge: new Int8Array({challenge}).buffer,
-    timeout: {timeout},
-    userVerification: "{userVerification}",
-    extensions: {extensions},
-    {allowCredentials}
+    "publicKey" : {
+        challenge: Uint8Array.from(atob(scriptContext.challenge), c => c.charCodeAt(0)),
+        timeout: Number(scriptContext.timeout),
+        userVerification: scriptContext.userVerification,
+        extensions: scriptContext.extensions
+    }
 };
 
-navigator.credentials.get({ "publicKey" : options })
+var relyingPartyId = scriptContext._relyingPartyId;
+if (relyingPartyId) {
+    options.publicKey.rpId = relyingPartyId;
+}
+
+var allowCredentials = scriptContext._allowCredentials;
+if (allowCredentials.length > 0) {
+    options.publicKey.allowCredentials = allowCredentials.map(cred => ({
+        ...cred,
+        id: new Int8Array(cred.id).buffer
+    }));
+}
+
+if (scriptContext.mediation) {
+    options.mediation = scriptContext.mediation;
+}
+
+navigator.credentials.get(options)
     .then(function (assertion) {
         var clientData = String.fromCharCode.apply(null, new Uint8Array(assertion.response.clientDataJSON));
         var authenticatorData = new Int8Array(assertion.response.authenticatorData).toString();
@@ -44,9 +63,9 @@ navigator.credentials.get({ "publicKey" : options })
     }).catch(function (err) {
         var outcome = {
             error: String(err)
-        }
+        };
         document.getElementById('webAuthnOutcome').value = JSON.stringify(outcome);
-        var allowRecoveryCode = 'true' === "{allowRecoveryCode}";
+        var allowRecoveryCode = 'true' === scriptContext.allowRecoveryCode;
         if (allowRecoveryCode) {
             var loginButton = document.getElementById("loginButton_0");
             if (loginButton) {

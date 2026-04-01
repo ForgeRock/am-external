@@ -30,7 +30,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 import javax.security.auth.callback.Callback;
@@ -91,7 +90,10 @@ public class PasswordCollectorNodeTest {
 
     private TreeContext getContext(JsonValue sharedState, PreferredLocales preferredLocales,
             List<? extends Callback> callbacks) {
-        return new TreeContext(sharedState,
-                new Builder().locales(preferredLocales).build(), callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .requestContext(new Builder().locales(preferredLocales).build())
+                .callbacks(callbacks)
+                .build();
     }
 }

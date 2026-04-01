@@ -18,7 +18,7 @@ package org.forgerock.openam.auth.nodes.webauthn;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.secrets.SecretIdProvider;

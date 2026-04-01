@@ -24,7 +24,7 @@
  *
  * $Id: IDPSSOUtil.java,v 1.56 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2010-2026 Ping Identity Corporation.
  * Portions Copyrighted 2013 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.profile;
@@ -41,6 +41,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ATTRIBUT
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_NAMEID_MAPPER;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
 import static com.sun.identity.saml2.common.SAML2Utils.getBooleanAttributeValueFromSSOConfig;
+import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.saml2.Saml2EntityRole.IDP;
 import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
@@ -53,6 +54,7 @@ import static org.forgerock.openam.utils.StringUtils.isBlank;
 import static org.forgerock.openam.utils.StringUtils.isEmptyOrEmptySelection;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
+import static org.forgerock.openam.utils.StringUtils.isNotEmptyOrEmptySelection;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
 import static org.forgerock.openam.utils.Time.newDate;
 
@@ -77,8 +79,6 @@ import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.logging.Level;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPMessage;
 
 import org.forgerock.guice.core.InjectorHolder;
@@ -93,13 +93,12 @@ import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
 import org.forgerock.openam.saml2.plugins.IDPAdapter;
 import org.forgerock.openam.saml2.plugins.PluginRegistry;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
-import org.forgerock.openam.scripting.domain.DecisionNodeApplicationConstants;
-import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 import org.forgerock.openam.shared.concurrency.LockFactory;
 import org.forgerock.openam.transactions.core.TransactionConstants;
 import org.forgerock.openam.utils.ClientUtils;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.openam.utils.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,6 +170,9 @@ import com.sun.identity.saml2.protocol.Status;
 import com.sun.identity.saml2.protocol.StatusCode;
 import com.sun.identity.shared.DateUtils;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 /**
  * The utility class is used by the identity provider to process
  * the authentication request from a service provider and send back
@@ -193,6 +195,8 @@ public class IDPSSOUtil {
     private static final String REDIRECTED_TRUE = "redirected=true";
     private static final String IDPSESSION_KEYPREFIX = "sx";
     private static final LockFactory<String> LOCK_FACTORY = new LockFactory<>();
+    public static final String APP_CONTEXT_DEFAULT = "DEFAULT";
+    public static final String APP_CONTEXT_ENABLED = "ENABLED";
     public static SAML2MetaManager metaManager = null;
     public static CircleOfTrustManager cotManager = null;
     static IDPSessionListener sessionListener = new IDPSessionListener();
@@ -360,9 +364,13 @@ public class IDPSSOUtil {
         Boolean redirected = Boolean.parseBoolean(request.getParameter(REDIRECTED));
         boolean redirectToAuth = false;
         if (isNotEmpty(authLevel) && idpDefaultAuthLevel > authLevelToInt(authLevel)) {
-            logger.debug("{} Session authLevel is less than the Default Authentication " +
-                    "Context authLevel. Session upgrade is required.", classMethod);
-            redirectToAuth = true;
+            if (!redirected) {
+                logger.debug("{} Session authLevel is less than the Default Authentication Context authLevel. " +
+                        "Session upgrade is required.", classMethod);
+                redirectToAuth = true;
+            } else {
+                throw new SAML2Exception(SAML2Utils.bundle.getString("invalidAuthContext"));
+            }
         } else if (!redirected && contextInfo.requiresRedirectionToAuth()) {
             logger.debug("{} Configured AuthnContext requires redirect for SP, {}. " +
                     "Redirect to authentication is required.", classMethod, spEntityID);
@@ -427,6 +435,7 @@ public class IDPSSOUtil {
         }
 
         SAML2Utils.addConfiguredServiceToAuditMessage(auditor, realm, spEntityID, idpEntityID);
+        auditor.setFlowInitiator(FlowInitiator.IDP);
 
         // Invoke the IDP Adapter
         try {
@@ -448,7 +457,7 @@ public class IDPSSOUtil {
         // End of invocation
 
         sendResponseToACS(request, response, out, session, authnReq, spEntityID,
-                idpEntityID, idpMetaAlias, realm, nameIDFormat, relayState, null);
+                idpEntityID, idpMetaAlias, realm, nameIDFormat, relayState, null, auditor);
     }
 
     /**
@@ -468,12 +477,13 @@ public class IDPSSOUtil {
      * @param relayState           the relay state
      * @param matchingAuthnContext the <code>AuthnContext</code> used to find
      *                             authentication type and scheme.
+     * @param auditor              the auditor for logging SAML2 Events
      */
     public static void sendResponseToACS(HttpServletRequest request, HttpServletResponse response, PrintWriter out,
                                          Object session, AuthnRequest authnReq,
                                          String spEntityID, String idpEntityID, String idpMetaAlias,
                                          String realm, String nameIDFormat, String relayState,
-                                         AuthnContext matchingAuthnContext)
+                                         AuthnContext matchingAuthnContext, SAML2EventLogger auditor)
             throws SAML2Exception {
 
         StringBuffer returnedBinding = new StringBuffer();
@@ -505,7 +515,7 @@ public class IDPSSOUtil {
 
         // generate a response for the authn request
         Response res = getResponse(request, session, authnReq, spEntityID, idpEntityID, idpMetaAlias, realm,
-                nameIDFormat, acsURL, affiliationID, matchingAuthnContext, spEntityID);
+                nameIDFormat, acsURL, affiliationID, matchingAuthnContext);
 
         if (res == null) {
             logger.error("IDPSSOUtil.sendResponseToACS:" +
@@ -520,6 +530,10 @@ public class IDPSSOUtil {
                     SAML2Constants.RESPONDER, null, errorMsg, idpEntityID);
         } else {
             try {
+                if (!res.getAssertion().isEmpty()) {
+                    SAML2Utils.addUserDetailsToAuditMessage(
+                            auditor, res.getAssertion().get(0).getSubject(), sessionProvider.getPrincipalName(session));
+                }
                 String[] values = {idpMetaAlias};
                 sessionProvider.setProperty(
                         session, SAML2Constants.IDP_META_ALIAS, values);
@@ -833,8 +847,7 @@ public class IDPSSOUtil {
             String nameIDFormat,
             String acsURL,
             String affiliationID,
-            AuthnContext matchingAuthnContext,
-            String spEntityId)
+            AuthnContext matchingAuthnContext)
             throws SAML2Exception {
 
         String classMethod = "IDPSSOUtil.getResponse: ";
@@ -853,7 +866,7 @@ public class IDPSSOUtil {
             List assertionList = new ArrayList();
 
             Assertion assertion = getAssertion(request, session, authnReq, recipientEntityID, idpEntityID,
-                    idpMetaAlias, realm, nameIDFormat, acsURL, affiliationID, matchingAuthnContext, spEntityId);
+                    idpMetaAlias, realm, nameIDFormat, acsURL, affiliationID, matchingAuthnContext);
 
             if (assertion == null) {
                 logger.error(
@@ -921,8 +934,7 @@ public class IDPSSOUtil {
             String nameIDFormat,
             String acsURL,
             String affiliationID,
-            AuthnContext matchingAuthnContext,
-            String spEntityId)
+            AuthnContext matchingAuthnContext)
             throws SAML2Exception {
 
         String classMethod = "IDPSSOUtil.getAssertion: ";
@@ -947,7 +959,7 @@ public class IDPSSOUtil {
         try {
             lock.lock();
             authnStatement = getAuthnStatement(request, session, isNewSessionIndex, authnReq, idpEntityID, realm,
-                matchingAuthnContext, idpMetaAlias, spEntityId);
+                matchingAuthnContext, idpMetaAlias, recipientEntityID);
             if (authnStatement == null) {
                 return null;
             }
@@ -1097,7 +1109,8 @@ public class IDPSSOUtil {
             try {
                 SAML2FailoverUtils.saveSAML2Token(assertionID, cacheKey,
                         assertion.toXMLString(true, true),
-                        conditions.getNotOnOrAfter().getTime() / 1000);
+                        // Milliseconds since epoch
+                        conditions.getNotOnOrAfter().getTime());
                 if (logger.isDebugEnabled()) {
                     logger.debug(classMethod +
                             "Saving Assertion to SAML2 Token Repository. ID = " + assertionID);
@@ -1123,6 +1136,7 @@ public class IDPSSOUtil {
      * @param realm The realm name.
      * @param matchingAuthnContext The <code>AuthnContext</code> used to find authentication type and scheme.
      * @param metaAlias The meta alias.
+     * @param spEntityId The entity ID of the service provider.
      * @return The <code>SAML AuthnStatement</code> object.
      * @throws SAML2Exception If the operation is not successful.
      */
@@ -1312,7 +1326,7 @@ public class IDPSSOUtil {
      * @return the <code>IDPAttributeMapper</code>
      * @throws SAML2Exception if the operation is not successful
      */
-    static IDPAttributeMapper getIDPAttributeMapper(String realm, String idpEntityID) throws SAML2Exception {
+    public static IDPAttributeMapper getIDPAttributeMapper(String realm, String idpEntityID) throws SAML2Exception {
         String idpAttributeMapperName = getAttributeValueFromIDPSSOConfig(realm, idpEntityID, IDP_ATTRIBUTE_MAPPER);
         if (idpAttributeMapperName == null) {
             idpAttributeMapperName = DEFAULT_IDP_ATTRIBUTE_MAPPER_CLASS;
@@ -2020,9 +2034,9 @@ public class IDPSSOUtil {
         try {
             IDPCache.responsesByArtifacts.put(artStr, res);
             try {
-                long expireTime = getValidTimeofResponse(realm, idpEntityID, res) / 1000;
+                long expireTimeMillis = getValidTimeofResponse(realm, idpEntityID, res);
                 SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(artStr,
-                        res, expireTime);
+                        res, expireTimeMillis);
                 if (logger.isDebugEnabled()) {
                     logger.debug(classMethod + "Saved Response to SAML2 Token Repository using key "
                             + artStr);
@@ -2332,11 +2346,12 @@ public class IDPSSOUtil {
             samlAuthenticatorLoginUrl.addForceAuth(isForceAuthn).addParams(authnParams);
         }
 
-        Optional<String> ctsKey = addDecisionNodeObjectToCTS(realm, idpEntityID, spEntityID, authnReq,
-                FlowInitiator.IDP, samlAuthenticatorLoginUrl);
-        if (ctsKey.isPresent()) {
-            gotoURL += "&" + SAML_OBJECT_KEY_PARAM + "=" + ctsKey.get();
+        if (isScriptedBindingObjectRequired(realm, spEntityID, idpEntityID)) {
+            var ctsKey = addScriptedBindingObjectToCts(realm, idpEntityID, spEntityID, authnReq, FlowInitiator.IDP);
+            samlAuthenticatorLoginUrl.addParam(SAML_OBJECT_KEY_PARAM, ctsKey);
+            gotoURL += "&" + SAML_OBJECT_KEY_PARAM + "=" + ctsKey;
         }
+        
         samlAuthenticatorLoginUrl.addGoto(gotoURL);
         var newUrl = samlAuthenticatorLoginUrl.getUrl();
 
@@ -3002,14 +3017,14 @@ public class IDPSSOUtil {
     public static void saveIdPSessionToTokenRepository(String sessionIndex, SessionProvider sessionProvider,
             IDPSession idpSession, Object session) {
         try {
-            long sessionExpireTime;
+            long sessionExpireTimeMillis;
             try {
-                sessionExpireTime = currentTimeMillis() / 1000 + (sessionProvider.getTimeLeft(session));
+                sessionExpireTimeMillis = Time.instant().plus(sessionProvider.getTimeLeft(session), SECONDS).toEpochMilli();
             } catch (SessionException e) {
                 logger.warn("Unable to get session timeout", e);
-                sessionExpireTime = 0;
+                sessionExpireTimeMillis = 0;
             }
-            saveIdPSessionToTokenRepository(sessionIndex, new IDPSessionCopy(idpSession), sessionExpireTime);
+            saveIdPSessionToTokenRepository(sessionIndex, new IDPSessionCopy(idpSession), sessionExpireTimeMillis);
             logger.debug("IDPSession saved to SAML2 token repository, sessionIndex: {}", sessionIndex);
         } catch (SAML2TokenRepositoryException se) {
             logger.error("Unable to save IDPSession to the SAML2 Token Repository", se);
@@ -3068,9 +3083,28 @@ public class IDPSSOUtil {
 
 
     /**
+     * Returns true if the scripted binding object should be included.  This is true if it's enabled in 
+     * configuration, or the SP has an application service (aka tree or journey) configured.
+     * @param realm       Realm the SAML application is in.
+     * @param idpEntityId ID for the hosted IDP
+     * @param spEntityID  ID for the remote SP
+     * @return Whether the scripted binding object should be included.
+     */
+    public static boolean isScriptedBindingObjectRequired(String realm, String spEntityID, String idpEntityId) {
+        var spConfiguredService = SAML2Utils.getConfiguredServiceForSP(realm, spEntityID);
+        var spApplicationContextEnabled = Optional.ofNullable(SAML2Utils.getAttributeValueFromSSOConfig(
+                realm, spEntityID, SP_ROLE, SAML2Constants.APPLICATION_CONTEXT_ENABLED)).orElse(APP_CONTEXT_DEFAULT);
+        var idpApplicationContextEnabled = Boolean.parseBoolean(SAML2Utils.getAttributeValueFromSSOConfig(
+                realm, idpEntityId, IDP_ROLE, SAML2Constants.APPLICATION_CONTEXT_ENABLED));
+        return
+                (APP_CONTEXT_DEFAULT.equals(spApplicationContextEnabled) && idpApplicationContextEnabled)
+                        || APP_CONTEXT_ENABLED.equals(spApplicationContextEnabled)
+                        || isNotEmptyOrEmptySelection(spConfiguredService);
+    }
+
+    /**
      * Uses the supplied details to obtain IDP and SP config attributes from the config store, then creates a
-     * {@link SAMLScriptedBindingObjectImpl}, and adds it to  the CTS store.  Then appends URL parameters with the key
-     * details to the supplied loginUrl.
+     * {@link SAMLScriptedBindingObjectImpl}, and adds it to  the CTS store. 
      * <p>
      * The object stored in CTS is then retrieved and bound by a Scripted Decision node so the details are available to
      * decision node scripts.
@@ -3080,33 +3114,27 @@ public class IDPSSOUtil {
      * @param spEntityID                ID for the remote SP
      * @param authnRequest              AuthnRequest from the remote SP, or null if IDP initiated flow.
      * @param flowInitiator             How the flow was initiated (IDP or SP)
-     * @param samlAuthenticatorLoginUrl StringBuilder object that we append the key of the object stored in CTS
-     * @return Optional containing the key of the object stored in CTS, or empty if the object could not be stored.
+     * @return The key of the object stored in CTS.
      * @throws SAML2Exception If there is an error storing the object in CTS.
      */
-    public static Optional<String> addDecisionNodeObjectToCTS(String realm, String idpEntityID, String spEntityID,
-            AuthnRequest authnRequest, FlowInitiator flowInitiator,
-            SamlAuthenticatorLoginUrl samlAuthenticatorLoginUrl) throws SAML2Exception {
+    public static String addScriptedBindingObjectToCts(
+            String realm, String idpEntityID, String spEntityID, AuthnRequest authnRequest, FlowInitiator flowInitiator
+    ) throws SAML2Exception {
         try {
-            String treeName = SAML2Utils.getConfiguredServiceForSP(realm, spEntityID);
-            if (StringUtils.isEmptyOrEmptySelection(treeName)) {
-                return Optional.empty();
-            }
-            Map<String, List<String>> spAttributes = SAML2Utils.getAllAttributesFromSSOConfig(realm, spEntityID, SP_ROLE);
-
-            Map<String, List<String>>  idpAttributes = SAML2Utils.getAllAttributesFromSSOConfig(realm, idpEntityID, IDP_ROLE);
-            SAMLScriptedBindingObject scriptedBindingObject = new SAMLScriptedBindingObjectImpl(spEntityID,
-                    flowInitiator, authnRequest, idpAttributes, spAttributes);
+            var spAttributes = SAML2Utils.getAllAttributesFromSSOConfig(realm, spEntityID, SP_ROLE);
+            var idpAttributes = SAML2Utils.getAllAttributesFromSSOConfig(realm, idpEntityID, IDP_ROLE);
+            var scriptedBindingObject = new SAMLScriptedBindingObjectImpl(
+                    spEntityID, flowInitiator, authnRequest, idpAttributes, spAttributes
+            );
             int maxDuration = getSAML2AuthUtils().getAuthSessionMaxDurationForRealm(realm);
             if (maxDuration == 0) {
                 maxDuration = DEFAULT_SCRIPT_BINDING_OBJECT_DURATION_MINUTES;
             }
             int tokenDurationInSeconds = maxDuration * 60;
-            final long tokenExpiryTime = (currentTimeMillis() / 1000) + tokenDurationInSeconds;
+            long tokenExpiryTimeMillis = Time.instant().plus(tokenDurationInSeconds, SECONDS).toEpochMilli();
             String ctsKey = UUID.randomUUID().toString();
-            SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(ctsKey, scriptedBindingObject, tokenExpiryTime);
-            samlAuthenticatorLoginUrl.addParam(DecisionNodeApplicationConstants.SAML_OBJECT_KEY_PARAM, ctsKey);
-            return Optional.of(ctsKey);
+            SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(ctsKey, scriptedBindingObject, tokenExpiryTimeMillis);
+            return ctsKey;
         } catch (SAML2TokenRepositoryException e) {
             logger.error("Unable to save SAML2 token", e);
             throw new SAML2Exception(e);

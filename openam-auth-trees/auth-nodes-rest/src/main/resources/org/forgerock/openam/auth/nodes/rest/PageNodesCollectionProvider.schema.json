@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "pageHeader": {
+      "propertyOrder": 100,
+      "type": "object",
+      "title": "i18n:api-descriptor/PageNodesCollectionProvider#pageHeader.title",
+      "description": "i18n:api-descriptor/PageNodesCollectionProvider#pageHeader.description",
+      "exampleValue": "",
+      "patternProperties": {
+        ".*": {
+          "type": "string"
+        }
+      }
+    },
+    "pageDescription": {
+      "propertyOrder": 200,
+      "type": "object",
+      "title": "i18n:api-descriptor/PageNodesCollectionProvider#pageDescription.title",
+      "description": "i18n:api-descriptor/PageNodesCollectionProvider#pageDescription.description",
+      "exampleValue": "",
+      "patternProperties": {
+        ".*": {
+          "type": "string"
+        }
+      }
+    },
+    "stage": {
+      "propertyOrder": 300,
+      "type": "string",
+      "title": "i18n:api-descriptor/PageNodesCollectionProvider#stage.title",
+      "description": "i18n:api-descriptor/PageNodesCollectionProvider#stage.description"
+    },
+    "nodes": {
+      "propertyOrder": 400,
+      "type": "array",
+      "title": "i18n:api-descriptor/PageNodesCollectionProvider#nodes.title",
+      "description": "i18n:api-descriptor/PageNodesCollectionProvider#nodes.description",
+      "items": {
+        "type": "object",
+        "title": "i18n:api-descriptor/PageNodesCollectionProvider#node.title",
+        "description": "i18n:api-descriptor/PageNodesCollectionProvider#node.description",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "title": "i18n:api-descriptor/PageNodesCollectionProvider#node.id.title",
+            "description": "i18n:api-descriptor/PageNodesCollectionProvider#node.id.description"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "i18n:api-descriptor/PageNodesCollectionProvider#node.displayName.title",
+            "description": "i18n:api-descriptor/PageNodesCollectionProvider#node.displayName.description"
+          },
+          "nodeType": {
+            "type": "string",
+            "title": "i18n:api-descriptor/PageNodesCollectionProvider#node.type.title",
+            "description": "i18n:api-descriptor/PageNodesCollectionProvider#node.type.description"
+          }
+        }
+      }
+
+    }
+  },
+  "required": ["nodes"]
+}

@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonMap;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
@@ -30,6 +31,7 @@ import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getLo
 
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +43,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.commons.lang3.StringUtils;
 import org.forgerock.json.JsonValue;
@@ -59,6 +61,7 @@ import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.authentication.callbacks.DeviceSigningVerifierCallback;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingManager;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingSettings;
+import org.forgerock.openam.sm.annotations.adapters.TimeUnit;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.util.i18n.PreferredLocales;
@@ -101,7 +104,9 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
             List.of("Unsupported", "Abort", "Timeout", "ClientNotRegistered");
 
     //audit attribute
+    static final String AUDIT_FAILURE_REASON = "failureReason";
     private String jwt;
+    private String auditFailure;
 
     /**
      * Configuration for the node.
@@ -197,6 +202,17 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
         default List<String> clientErrorOutcomes() {
             return DEFAULT_CLIENT_ERROR_OUTCOMES;
         }
+
+        /**
+         * Skew Allowance.
+         *
+         * @return The skew allowance in seconds
+         */
+        @Attribute(order = 800, requiredValue = true)
+        @TimeUnit(SECONDS)
+        default Duration skewAllowance() {
+            return SKEW_ALLOWANCE;
+        }
     }
 
     /**
@@ -232,6 +248,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
             try {
                 jwt = deviceSigningVerifierCallback.get().getJws();
                 SignedJwt signedJwt = new JwtReconstruction().reconstructJwt(jwt, SignedJwt.class);
+                nodeState.putTransient(DEVICE_JWT_CONTEXT_NAME, jwt);
 
                 String username = getUsername(context, nodeState, signedJwt);
 
@@ -279,6 +296,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
                         .withUniversalId(userIdentity.get().getUniversalId())
                         .build();
             } catch (NodeProcessException e) {
+                populateAuditFailure(nodeState, e.getMessage());
                 if (config.captureFailure()) {
                     logger.debug("Device Signing failed", e);
                     return Action.goTo(FAILURE_OUTCOME_ID).build();
@@ -286,6 +304,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
                 throw e;
             } catch (Exception e) {
                 logger.warn("Device Signing failed", e);
+                populateAuditFailure(nodeState, e.getMessage());
                 return Action.goTo(FAILURE_OUTCOME_ID).build();
             }
 
@@ -293,6 +312,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
                 && StringUtils.isNotEmpty(deviceSigningVerifierCallback.get().getClientError())) {
             //Client Error, go to client defined error
             logger.trace("Device Signing clientError: {}", deviceSigningVerifierCallback.get().getClientError());
+            populateAuditFailure(null, deviceSigningVerifierCallback.get().getClientError());
             return Action.goTo(deviceSigningVerifierCallback.get().getClientError()).build();
         } else {
             Optional<AMIdentity> userIdentity = identityProvider.getAMIdentity(context.universalId,
@@ -317,6 +337,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
                     return getCallback(context, nodeState, userIdentity.get());
                 }
             } catch (Exception e) {
+                populateAuditFailure(nodeState, e.getMessage());
                 if (config.captureFailure()) {
                     logger.debug("Device Signing failed", e);
                     return Action.goTo(FAILURE_OUTCOME_ID).build();
@@ -349,7 +370,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
         }
         //Validate Claim
         try {
-            validateClaim(signedJwt, challenge, config.applicationIds());
+            validateClaim(signedJwt, challenge, config.applicationIds(), config.skewAllowance());
         } catch (Exception e) {
             logger.debug("validateClaim failed [config.challenge: {}]", config.challenge());
             nodeState.putShared(FAILURE_REASON, INVALID_CLAIM.name());
@@ -481,7 +502,11 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
 
     @Override
     public JsonValue getAuditEntryDetail() {
-        return JsonValue.json(JsonValue.object(JsonValue.field(DEVICE_JWT_CONTEXT_NAME, jwt)));
+        Map<String, Object> jsonObject = JsonValue.object(JsonValue.field(DEVICE_JWT_CONTEXT_NAME, jwt));
+        if (StringUtils.isNotEmpty(auditFailure)) {
+            jsonObject.put(AUDIT_FAILURE_REASON, auditFailure);
+        }
+        return JsonValue.json(jsonObject);
     }
 
     @Override
@@ -492,5 +517,12 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
         };
     }
 
+    private void populateAuditFailure(NodeState nodeState, String defaultMsg) {
+        if (nodeState != null && nodeState.isDefined(FAILURE_REASON)) {
+            auditFailure = nodeState.get(FAILURE_REASON).asString();
+        } else {
+            auditFailure = defaultMsg;
+        }
+    }
 }
 

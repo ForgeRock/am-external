@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
@@ -26,10 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.apache.commons.lang3.StringUtils;
 import org.forgerock.openam.annotations.EvolvingAll;
+import org.forgerock.openam.annotations.Supported;
 import org.forgerock.openam.saml2.plugins.InitializablePlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +38,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Provides helper functions for SP Adapter Script Implementations.
  */
-@EvolvingAll
 @Singleton
+@EvolvingAll
 public class SpAdapterScriptHelper {
 
+    /** Logger instance */
     private static final Logger LOGGER = LoggerFactory.getLogger(SpAdapterScriptHelper.class);
 
     /**
@@ -50,6 +52,7 @@ public class SpAdapterScriptHelper {
      * @param spEntityId name of hosted SP entity
      * @return a map of the SP Adapter Environment
      */
+    @Supported(scriptingApi = true, javaApi = false)
     public Map<String, String> getSpAdapterEnv(String realm, String spEntityId) {
         List<String> adapterEnv = getAllAttributeValueFromSSOConfig(realm, spEntityId, SP_ROLE, SP_ADAPTER_ENV);
         Map<String, String> adapterEnvMap = parseEnvList(adapterEnv);
@@ -72,3 +75,4 @@ public class SpAdapterScriptHelper {
                 .collect(Collectors.toMap(parts -> parts[0], parts -> parts[1]));
     }
 }
+

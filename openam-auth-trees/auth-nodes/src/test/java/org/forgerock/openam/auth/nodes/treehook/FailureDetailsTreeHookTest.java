@@ -11,10 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.treehook;
 
+import static com.sun.identity.shared.Constants.AM_COOKIE_DEFAULT_VALUE;
+import static com.sun.identity.shared.Constants.AM_LB_COOKIE_DEFAULT_VALUE;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -28,10 +30,14 @@ import java.util.Map;
 
 import org.forgerock.openam.auth.node.api.TreeFailureResponse;
 import org.forgerock.openam.auth.nodes.SetFailureDetailsNode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.iplanet.am.util.SystemPropertiesWrapper;
+import com.sun.identity.shared.Constants;
 
 @ExtendWith(MockitoExtension.class)
 class FailureDetailsTreeHookTest {
@@ -40,14 +46,24 @@ class FailureDetailsTreeHookTest {
     TreeFailureResponse response;
     @Mock
     SetFailureDetailsNode.Config config;
+    @Mock
+    SystemPropertiesWrapper systemProperties;
 
     FailureDetailsTreeHook failureDetailsTreeHook;
+
+    @BeforeEach
+    void setUp() {
+        given(systemProperties.get(Constants.AM_COOKIE_NAME, AM_COOKIE_DEFAULT_VALUE))
+                .willReturn(AM_COOKIE_DEFAULT_VALUE);
+        given(systemProperties.get(Constants.AM_LB_COOKIE_NAME, AM_LB_COOKIE_DEFAULT_VALUE))
+                .willReturn(AM_LB_COOKIE_DEFAULT_VALUE);
+    }
 
     @Test
     void testAcceptDoesNothing() {
         // given
         var data = json(object());
-        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data);
+        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data, systemProperties);
 
         // when
         failureDetailsTreeHook.accept();
@@ -64,7 +80,7 @@ class FailureDetailsTreeHookTest {
         given(config.failureDetails()).willReturn(Map.of("key", "value", "key2", "value2"));
 
         // when
-        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data);
+        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data, systemProperties);
         failureDetailsTreeHook.acceptFailure();
 
         // then
@@ -79,7 +95,7 @@ class FailureDetailsTreeHookTest {
         var data = json(object(field("message", "custom message")));
 
         // when
-        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data);
+        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data, systemProperties);
         failureDetailsTreeHook.acceptFailure();
 
         // then
@@ -94,11 +110,84 @@ class FailureDetailsTreeHookTest {
         given(config.failureDetails()).willReturn(Map.of("key", "{ \"key\": \"value\" }"));
 
         // when
-        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data);
+        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data, systemProperties);
         failureDetailsTreeHook.acceptFailure();
 
         // then
         verify(response).addFailureDetail("key", Map.of("key", "value"));
     }
 
+    @Test
+    void testAcceptFailureAddsHeaders() {
+        // given
+        var data = json(object());
+        given(config.headerControl()).willReturn(Map.of("X-Test-Header", "HeaderValue"));
+
+        // when
+        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data, systemProperties);
+        failureDetailsTreeHook.acceptFailure();
+
+        // then
+        verify(response).addHeader("X-Test-Header", "HeaderValue");
+    }
+
+    @Test
+    void shouldRejectReservedHeaders() {
+        // given
+        var data = json(object());
+        given(config.headerControl()).willReturn(Map.of("Content-Type", " text/html; charset=utf-8",
+                "X-Frame-Options", "DENY",
+                "X-Custom-Header", "CustomValue"));
+
+        // when
+        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data, systemProperties);
+        failureDetailsTreeHook.acceptFailure();
+
+        // then
+        verify(response, never()).addHeader("Content-Type", "text/html; charset=utf-8");
+        verify(response, never()).addHeader("X-Frame-Options", "DENY");
+        verify(response).addHeader("X-Custom-Header", "CustomValue");
+    }
+
+    @Test
+    void shouldRejectSetCookieWhenSsoCookieCookies() {
+        // given
+        var data = json(object());
+        given(config.headerControl()).willReturn(Map.of("Set-Cookie", "iPlanetDirectoryPro=abc; Path=/; HttpOnly"));
+
+        // when
+        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data, systemProperties);
+        failureDetailsTreeHook.acceptFailure();
+
+        // then
+        verify(response, never()).addHeader(any(), any());
+    }
+
+    @Test
+    void shouldRejectSetCookieWhenLbCookieCookies() {
+        // given
+        var data = json(object());
+        given(config.headerControl()).willReturn(Map.of("Set-Cookie", "amlbcookie=abc; Path=/; HttpOnly"));
+
+        // when
+        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data, systemProperties);
+        failureDetailsTreeHook.acceptFailure();
+
+        // then
+        verify(response, never()).addHeader(any(), any());
+    }
+
+    @Test
+    void shouldAllowCustomCookies() {
+        // given
+        var data = json(object());
+        given(config.headerControl()).willReturn(Map.of("Set-Cookie", "CustomCookie=abc; Path=/; HttpOnly"));
+
+        // when
+        failureDetailsTreeHook = new FailureDetailsTreeHook(config, response, data, systemProperties);
+        failureDetailsTreeHook.acceptFailure();
+
+        // then
+        verify(response).addHeader("Set-Cookie", "CustomCookie=abc; Path=/; HttpOnly");
+    }
 }

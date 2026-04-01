@@ -16,7 +16,6 @@
 
 package org.forgerock.openam.auth.nodes.push;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
@@ -29,12 +28,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import java.util.Optional;
-
 import org.assertj.core.api.Assertions;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
@@ -91,7 +87,7 @@ public class PushResultVerifierNodeTest {
 
             @BeforeEach
             public void beforeEach() {
-                treeContext = new TreeContext(json(object()), new Builder().build(), emptyList(), Optional.empty());
+                treeContext = TreeContext.builder().build();
             }
 
             @Test
@@ -221,7 +217,9 @@ public class PushResultVerifierNodeTest {
         JsonValue sharedState = json(object(
                 field(MESSAGE_ID_KEY, "badger"), field(REALM, "weasel")
         ));
-        return new TreeContext(sharedState, new Builder().build(), emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
     }
 
     private TreeContext getContextWithPushTimeout(int timeout) {
@@ -231,11 +229,9 @@ public class PushResultVerifierNodeTest {
                 field(TIME_TO_LIVE_KEY, 60000),
                 field(PUSH_MESSAGE_EXPIRATION, getEndTime(timeout))
         ));
-        return new TreeContext(
-                sharedState,
-                new Builder().build(),
-                emptyList(),
-                Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
     }
 
     private long getEndTime(int timeout) {

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -171,9 +171,8 @@ public final class ClientScriptUtilities {
         for (WebAuthnDeviceSettings device : devices) {
             result.add(getDeviceAsJson(device));
         }
-        return json(result);
+        return json(array(result.toArray()));
     }
-
 
     String getDevicesAsJavaScript(List<WebAuthnDeviceSettings> devices) {
         StringBuilder sb = new StringBuilder();

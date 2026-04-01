@@ -16,7 +16,6 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonPointer.ptr;
 import static org.forgerock.json.JsonValue.json;
@@ -29,11 +28,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
-import java.util.Optional;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
@@ -76,8 +73,9 @@ public class RequiredAttributesDecisionNodeTest {
         JsonValue sharedState = json(object());
         schema.get("required").stream()
                 .forEach(attr -> sharedState.putPermissive(ptr(OBJECT_ATTRIBUTES).child(attr.asString()), "someValue"));
-        TreeContext context = new TreeContext(sharedState, json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
 
         // when
         Action action = node.process(context);
@@ -91,8 +89,9 @@ public class RequiredAttributesDecisionNodeTest {
         // given
         JsonValue sharedState = json(object());
         sharedState.putPermissive(ptr(OBJECT_ATTRIBUTES).child(schema.get("required").get(0).asString()), "someValue");
-        TreeContext context = new TreeContext(sharedState, json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
 
         // when
         Action action = node.process(context);
@@ -107,8 +106,9 @@ public class RequiredAttributesDecisionNodeTest {
         JsonValue sharedState = json(object());
         schema.get("required").stream()
                 .forEach(attr -> sharedState.putPermissive(ptr(OBJECT_ATTRIBUTES).child(attr.asString()), null));
-        TreeContext context = new TreeContext(sharedState, json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
 
         // when
         Action action = node.process(context);
@@ -121,8 +121,9 @@ public class RequiredAttributesDecisionNodeTest {
     void shouldReturnFalseOutcomeIfObjectAttributesIsMissing() throws Exception {
         // given
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(sharedState, json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
 
         // when
         Action action = node.process(context);

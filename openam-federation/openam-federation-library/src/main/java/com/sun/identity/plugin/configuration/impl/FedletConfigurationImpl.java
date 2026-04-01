@@ -85,7 +85,7 @@ public class FedletConfigurationImpl implements ConfigurationInstance {
         "com.sun.identity.fedlet.home"; 
     private String componentName = null;
     private static final String RESOURCE_BUNDLE = "fmConfigurationService";
-    private static Logger debug = LoggerFactory.getLogger(FedletConfigurationImpl.class);;
+    private static Logger debug = LoggerFactory.getLogger(FedletConfigurationImpl.class);
     // Map to store COT information
     private static Map cotMap = new HashMap();
     // Map to store metadata information

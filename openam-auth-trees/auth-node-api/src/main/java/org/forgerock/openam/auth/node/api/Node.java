@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -24,7 +24,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.Evolving;
 import org.forgerock.openam.annotations.Supported;
+import org.forgerock.openam.annotations.sm.Attribute;
+import org.forgerock.openam.auth.node.api.upgrade.NoUpgrades;
+import org.forgerock.openam.auth.node.api.upgrade.NodeVersionUpgrader;
 
 /**
  * A node is the core abstraction within an authentication tree. Trees are made up of nodes, which may modify the
@@ -87,7 +91,7 @@ public interface Node {
 
         /**
          * An interface describing the configuration of the node. The interface should contain methods annotated with
-         * {@code Attribute}.
+         * {@link Attribute}.
          *
          * @return The config class.
          */
@@ -132,6 +136,43 @@ public interface Node {
          */
         @Supported
         Class<?> extensions() default Void.class;
+
+        /**
+         * The compatibility of the node with the page node. This is used to determine how the node should be
+         * treated by the UI and page node.
+         *
+         * @return The page node compatibility.
+         */
+        PageNodeCompatibility pageNodeCompatibility() default PageNodeCompatibility.UNKNOWN;
+    }
+
+    /**
+     * An annotation that describes the version metadata of the node.
+     */
+    @Evolving
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @interface VersionMetadata {
+
+        /**
+         * The name of the node service.
+         * @return the name.
+         */
+        @Evolving
+        String name();
+        /**
+         * The version of the node service.
+         * @return the version.
+         */
+        @Evolving
+        int version();
+        /**
+         * The upgrader class for the node service.
+         * @return the upgrader.
+         */
+        @Evolving
+        Class<? extends NodeVersionUpgrader> upgrader() default NoUpgrades.class;
+
     }
 
     /**
@@ -147,28 +188,27 @@ public interface Node {
 
     /**
      * Provide a list of shared state data a node consumes.
-     *
+     * <p>
      * An {@link InputState} consists of a property name and an "isRequired" flag.  The IsRequired flag indicates
      * whether the input is required in order for the node to function.  If the flag is false this indicates that
      * the node will consume this data if it is present but it is not required for the node to function.
-     *
+     *<p>
      * Example:
+     * <pre>
      *     public InputState[] getInputs() {
      *         return new InputState[] {
      *             new InputState(IDENTITY),
      *             new InputState("foo", false)
      *         };
      *     }
-     *
+     * </pre>
      * In this example the node declares that it requires state to contain a property named IDENTITY and that it
      * will consume a property named "foo" if it is present.  If "foo" is not present then the node will still
      * function but may be skipping some functionality.
-     *
+     * <p>
      * This list is used to ensure that state data, both shared and transient, from upstream nodes is left intact
      * for this node to access.  If inputs are not declared there is no guarantee that the data needed by the node
      * will still be present in state when the node executes.
-     *
-     * This list is also used for tree validation to report errors in tree construction.
      *
      * @return The list of shared state data.
      */
@@ -179,26 +219,25 @@ public interface Node {
 
     /**
      * Provide a list of shared state data a node provides.
-     *
+     * <p>
      * An {@link OutputState} consists of a property name and a map of node outcomes to a flag indicating whether that
      * outcome is guaranteed to produce that property in state.  Any given output may be provided for all outcomes or
      * any subset of outcomes and perhaps only optionally for some of them.
-     *
+     * <p>
      * Example:
+     * <pre>
      *     public OutputState[] getOutputs() {
      *         return new OutputState[] {
      *             new OutputState(PASSWORD),
      *             new OutputState(config.mode(), singletonMap("*", false)
      *         };
      *     }
-     *
+     * </pre>
      * In this example we declare that the node will produce an output named PASSWORD. The lack of an outcome map
      * indicates that this output is provided for all outcomes.  The node also outputs a property named via
      * config.mode() that is optional for all of the node's outcomes, i.e. it may or may not be present for
      * downstream nodes to consume.  This type of output is best consumed by other nodes by declaring an InputState
      * such as new InputState(config.mode(), false).
-     *
-     * This list is used by tree validation to report errors in tree construction.
      *
      * @return The list of shared state data.
      */

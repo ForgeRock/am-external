@@ -20,7 +20,7 @@ import static com.sun.identity.idm.IdType.USER;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.annotations.sm.Attribute;

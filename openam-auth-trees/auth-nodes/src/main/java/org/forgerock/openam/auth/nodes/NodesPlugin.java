@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -34,9 +34,12 @@ import org.forgerock.openam.auth.nodes.push.PushResultVerifierNode;
 import org.forgerock.openam.auth.nodes.push.PushWaitNode;
 import org.forgerock.openam.auth.nodes.saml2.Saml2Node;
 import org.forgerock.openam.auth.nodes.saml2.WriteFederationInformationNode;
+import org.forgerock.openam.auth.nodes.securid.SecurIdNode;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnAuthenticationNode;
+import org.forgerock.openam.auth.nodes.webauthn.WebAuthnAuthenticationNodeV2;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnDeviceStorageNode;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnRegistrationNode;
+import org.forgerock.openam.auth.nodes.webauthn.WebAuthnRegistrationNodeV2;
 import org.forgerock.openam.auth.nodes.x509.CertificateCollectorNode;
 import org.forgerock.openam.auth.nodes.x509.CertificateUserExtractorNode;
 import org.forgerock.openam.auth.nodes.x509.CertificateValidationNode;
@@ -54,7 +57,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
      * N.B. If upgrading this version you must ensure that the amPluginService version in the latest.groovy
      * FBC upgrade rules file is kept in sync.
      */
-    public static final String NODES_PLUGIN_VERSION = "32.1.0";
+    public static final String NODES_PLUGIN_VERSION = "44.0.0";
 
     @Override
     public String getPluginVersion() {
@@ -68,7 +71,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
         } else if (inRangeLess("3.0.0", fromVersion, "24.0.0")) {
             pluginTools.upgradeAuthNode(WebAuthnAuthenticationNode.class);
         }
-        if (inRangeLess("1.0.0", fromVersion, "32.1.0")) {
+        if (inRangeLess("1.0.0", fromVersion, "34.0.0")) {
             pluginTools.upgradeAuthNode(ScriptedDecisionNode.class);
         }
         if (inRangeLess("2.0.0", fromVersion, "17.0.0")) {
@@ -111,11 +114,8 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
         if (inRange("2.0.0", fromVersion, "16.0.0")) {
             pluginTools.upgradeAuthNode(LdapDecisionNode.class);
         }
-        if (inRange("2.0.0", fromVersion, "19.0.0")) {
+        if (inRange("2.0.0", fromVersion, "37.0.0")) {
             pluginTools.upgradeAuthNode(PersistentCookieDecisionNode.class);
-        }
-        if (inRange("11.1.0", fromVersion, "20.0.0")) {
-            pluginTools.upgradeAuthNode(DeviceSigningVerifierNode.class);
         }
         if (inRange("8.2.0", fromVersion, "21.0.0")) {
             pluginTools.upgradeAuthNode(CaptchaNode.class);
@@ -123,8 +123,24 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
         if (inRange("1.0.0", fromVersion, "29.0.0")) {
             pluginTools.upgradeAuthNode(SetSessionPropertiesNode.class);
         }
-        if (inRange("5.0.0", fromVersion, "32.1.0")) {
+        if (inRange("5.0.0", fromVersion, "34.0.0")) {
             pluginTools.upgradeAuthNode(DeviceMatchNode.class);
+        }
+        if (inRange("11.1.0", fromVersion, "37.0.0")) {
+            pluginTools.upgradeAuthNode(DeviceBindingNode.class);
+            pluginTools.upgradeAuthNode(DeviceSigningVerifierNode.class);
+        }
+        if (inRange("27.0.0", fromVersion, "39.0.0")) {
+            pluginTools.upgradeAuthNode(SetSuccessDetailsNode.class);
+        }
+        if (inRange("25.0.0", fromVersion, "40.0.0")) {
+            pluginTools.upgradeAuthNode(SetFailureDetailsNode.class);
+        }
+        if (inRange("32.0.0", fromVersion, "41.0.0")) {
+            pluginTools.upgradeAuthNode(SetErrorDetailsNode.class);
+        }
+        if (inRange("11.0.0", fromVersion, "42.0.0")) {
+            pluginTools.upgradeAuthNode(OidcNode.class);
         }
         super.upgrade(fromVersion);
     }
@@ -231,6 +247,13 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 .put("30.0.0", List.of(UpdateJourneyTimeoutNode.class))
                 .put("31.0.0", List.of(AmsterJwtDecisionNode.class))
                 .put("32.0.0", List.of(SetErrorDetailsNode.class))
+                .put("33.0.0", List.of(UsernameCollectorNodeV2.class))
+                .put("34.0.0", List.of(ADDecisionNode.class))
+                .put("35.0.0", List.of(SetLogoutDetailsNode.class))
+                .put("38.0.0", List.of(SecurIdNode.class))
+                .put("42.0.0", List.of(PolicyDecisionNode.class))
+                .put("43.0.0", List.of(AppPolicyDecisionNode.class))
+                .put("44.0.0", List.of(WebAuthnAuthenticationNodeV2.class, WebAuthnRegistrationNodeV2.class))
                 .build();
     }
 }

@@ -16,19 +16,15 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.AUTH_LEVEL;
 import static org.mockito.BDDMockito.given;
 
-import java.util.Optional;
-
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.test.assertj.AssertJJsonValueAssert;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.framework.ModifyAuthLevelNode;
 import org.junit.jupiter.api.Test;
@@ -71,6 +67,8 @@ public class ModifyAuthLevelNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState) {
-        return new TreeContext(sharedState, new Builder().build(), emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
     }
 }

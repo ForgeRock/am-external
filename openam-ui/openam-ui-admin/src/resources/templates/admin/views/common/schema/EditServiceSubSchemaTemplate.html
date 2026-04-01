@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2016-2025 Ping Identity Corporation.
+  Copyright 2016-2026 Ping Identity Corporation.
 }}
 {{> headers/_TitleWithSubAndIcon title=subSchemaInstanceId type=type icon="plug" }}
 {{#if hasTabs}}
@@ -20,6 +20,13 @@
     <div class="panel panel-default">
         <div class="panel-body ">
             <form data-json-form></form>
+            {{#equals serviceType "pingOneWorkerService"}}
+            <div class="form-group">
+                <div class="col-sm-offset-4 col-sm-6">
+                    <button data-save-and-test class="btn btn-default" type="button">{{t "pingone.worker.test.saveAndTestConnection"}}</button>
+                </div>
+            </div>
+            {{/equals}}
         </div>
         <div class="panel-footer clearfix">
             {{> form/_JSONSchemaFooter}}

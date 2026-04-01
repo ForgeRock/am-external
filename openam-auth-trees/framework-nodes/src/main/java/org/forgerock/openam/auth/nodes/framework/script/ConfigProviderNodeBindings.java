@@ -23,33 +23,22 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.QUERY_P
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_IDENTIFIER;
 import static org.forgerock.openam.oauth2.OAuth2Constants.ScriptParams.SECRETS_IDENTIFIER;
 
-import java.util.List;
-import java.util.Map;
-
 import org.forgerock.http.client.ChfHttpClient;
-import org.forgerock.openam.auth.node.api.NodeState;
-import org.forgerock.openam.auth.node.api.NodeStateScriptWrapper;
-import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepository;
-import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepositoryScriptWrapper;
+import org.forgerock.openam.auth.nodes.script.BaseScriptedDecisionNodeBindings;
 import org.forgerock.openam.scripting.api.secrets.IScriptedSecrets;
 import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
-import org.forgerock.openam.scripting.domain.NextGenScriptBindings;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 
 /**
  * Script bindings for the ConfigProviderNode script.
  */
-public final class ConfigProviderNodeBindings implements LegacyScriptBindings, NextGenScriptBindings {
+public final class ConfigProviderNodeBindings extends BaseScriptedDecisionNodeBindings
+        implements LegacyScriptBindings {
 
-    private final NodeState nodeState;
     private final ScriptIdentityRepository identityRepository;
     private final IScriptedSecrets secrets;
-    private final Map<String, List<String>> headers;
     private final ChfHttpClient httpClient;
-    private final Map<String, String> existingSession;
-    private final Map<String, List<String>> queryParameters;
-    private final ScriptedIdentityRepository scriptedIdentityRepository;
 
     /**
      * Constructor for ConfigProviderNodeBindings.
@@ -57,14 +46,10 @@ public final class ConfigProviderNodeBindings implements LegacyScriptBindings, N
      * @param builder The builder.
      */
     private ConfigProviderNodeBindings(Builder builder) {
-        nodeState = builder.nodeState;
+        super(builder);
         identityRepository = builder.identityRepository;
         secrets = builder.secrets;
-        headers = builder.headers;
         httpClient = builder.httpClient;
-        queryParameters = builder.queryParameters;
-        existingSession = builder.existingSession;
-        scriptedIdentityRepository = builder.scriptedIdentityRepository;
     }
 
     /**
@@ -91,13 +76,7 @@ public final class ConfigProviderNodeBindings implements LegacyScriptBindings, N
 
     @Override
     public BindingsMap nextGenBindings() {
-        BindingsMap bindings = new BindingsMap();
-        bindings.put(STATE_IDENTIFIER, new NodeStateScriptWrapper(nodeState));
-        bindings.put(ID_REPO_IDENTIFIER, new ScriptedIdentityRepositoryScriptWrapper(scriptedIdentityRepository));
-        bindings.put(HEADERS_IDENTIFIER, headers);
-        bindings.putIfDefined(EXISTING_SESSION, existingSession);
-        bindings.put(QUERY_PARAMETER_IDENTIFIER, queryParameters);
-        return bindings;
+        return commonNextGenBindings();
     }
 
     /**
@@ -105,12 +84,12 @@ public final class ConfigProviderNodeBindings implements LegacyScriptBindings, N
      */
     public interface ConfigProviderNodeBindingsStep1 {
         /**
-         * Sets the {@link NodeState}.
+         * Sets the identity repository.
          *
-         * @param nodeState the {@link NodeState
+         * @param identityRepository the identity repository
          * @return the next step of the {@link Builder}
          */
-        ConfigProviderNodeBindingsStep2 withNodeState(NodeState nodeState);
+        ConfigProviderNodeBindingsStep2 withIdRepo(ScriptIdentityRepository identityRepository);
     }
 
     /**
@@ -118,104 +97,25 @@ public final class ConfigProviderNodeBindings implements LegacyScriptBindings, N
      */
     public interface ConfigProviderNodeBindingsStep2 {
         /**
-         * Sets the identity repository.
-         *
-         * @param identityRepository the identity repository
-         * @return the next step of the {@link Builder}
-         */
-        ConfigProviderNodeBindingsStep3 withIdRepo(ScriptIdentityRepository identityRepository);
-    }
-
-    /**
-     * Step 3 of the builder.
-     */
-    public interface ConfigProviderNodeBindingsStep3 {
-        /**
          * Sets the {@link IScriptedSecrets}.
          *
          * @param secrets the {@link IScriptedSecrets}
          * @return the next step of the {@link Builder}
          */
-        ConfigProviderNodeBindingsStep4 withSecrets(IScriptedSecrets secrets);
-    }
-
-    /**
-     * Step 4 of the builder.
-     */
-    public interface ConfigProviderNodeBindingsStep4 {
-        /**
-         * Sets the headers.
-         *
-         * @param headers the headers
-         * @return the next step of the {@link Builder}
-         */
-        ConfigProviderNodeBindingsStep5 withHeaders(Map<String, List<String>> headers);
+        ConfigProviderNodeBindingsStep3 withSecrets(IScriptedSecrets secrets);
     }
 
     /**
      * Step 5 of the builder.
      */
-    public interface ConfigProviderNodeBindingsStep5 {
+    public interface ConfigProviderNodeBindingsStep3 {
         /**
          * Sets the {@link ChfHttpClient}.
          *
          * @param httpClient the {@link ChfHttpClient}
          * @return the next step of the {@link Builder}
          */
-        ConfigProviderNodeBindingsStep6 withHttpClient(ChfHttpClient httpClient);
-    }
-
-    /**
-     * Step 6 of the builder.
-     */
-    public interface ConfigProviderNodeBindingsStep6 {
-        /**
-         * Sets query parameters.
-         *
-         * @param queryParameters the query parameters
-         * @return the next step of the {@link Builder}
-         */
-        ConfigProviderNodeBindingsStep7 withQueryParameters(Map<String, List<String>> queryParameters);
-    }
-
-    /**
-     * Step 7 of the builder.
-     */
-    public interface ConfigProviderNodeBindingsStep7 {
-        /**
-         * Sets the existing session.
-         *
-         * @param existingSession the existing session
-         * @return the next step of the {@link Builder}
-         */
-        ConfigProviderNodeBindingsStep8 withExistingSession(Map<String, String> existingSession);
-    }
-
-    /**
-     * Step 8 of the builder.
-     */
-    public interface ConfigProviderNodeBindingsStep8 {
-
-        /**
-         * Sets the scripted identity repository.
-         *
-         * @param scriptedIdentityRepository the scripted identity repository
-         * @return the next step of the {@link Builder}
-         */
-        ConfigProviderNodeBindingsFinalStep
-            withScriptedIdentityRepository(ScriptedIdentityRepository scriptedIdentityRepository);
-    }
-
-    /**
-     * Final step of the builder.
-     */
-    public interface ConfigProviderNodeBindingsFinalStep {
-        /**
-         * Build the {@link ConfigProviderNodeBindings}.
-         *
-         * @return The built {@link ConfigProviderNodeBindings}.
-         */
-        ConfigProviderNodeBindings build();
+        BaseScriptedDecisionNodeBindingsStep1<ConfigProviderNodeBindings> withHttpClient(ChfHttpClient httpClient);
     }
 
     /**
@@ -223,37 +123,21 @@ public final class ConfigProviderNodeBindings implements LegacyScriptBindings, N
      * Before modifying this builder, or creating a new one, please read
      * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
      */
-    private static final class Builder implements
-            ConfigProviderNodeBindingsStep1, ConfigProviderNodeBindingsStep2, ConfigProviderNodeBindingsStep3,
-            ConfigProviderNodeBindingsStep4, ConfigProviderNodeBindingsStep5, ConfigProviderNodeBindingsStep6,
-            ConfigProviderNodeBindingsStep7, ConfigProviderNodeBindingsStep8, ConfigProviderNodeBindingsFinalStep {
-        private NodeState nodeState;
+    private static final class Builder extends BaseScriptedDecisionNodeBindings.Builder<ConfigProviderNodeBindings>
+            implements ConfigProviderNodeBindingsStep1, ConfigProviderNodeBindingsStep2,
+            ConfigProviderNodeBindingsStep3 {
         private ScriptIdentityRepository identityRepository;
         private IScriptedSecrets secrets;
-        private Map<String, List<String>> headers;
         private ChfHttpClient httpClient;
-        private Map<String, String> existingSession;
-        private Map<String, List<String>> queryParameters;
-        private ScriptedIdentityRepository scriptedIdentityRepository;
 
         /**
          * Creates the {@link ConfigProviderNodeBindings} from the configured attributes.
          *
          * @return an instance of {@link ConfigProviderNodeBindings}.
          */
+        @Override
         public ConfigProviderNodeBindings build() {
             return new ConfigProviderNodeBindings(this);
-        }
-
-        /**
-         * Set the node state.
-         *
-         * @param nodeState The node state {@link NodeState}
-         * @return The next step of the builder.
-         */
-        public ConfigProviderNodeBindingsStep2 withNodeState(NodeState nodeState) {
-            this.nodeState = nodeState;
-            return this;
         }
 
         /**
@@ -262,7 +146,8 @@ public final class ConfigProviderNodeBindings implements LegacyScriptBindings, N
          * @param identityRepository The identityRepository {@link ScriptIdentityRepository}.
          * @return The next step of the builder.
          */
-        public ConfigProviderNodeBindingsStep3 withIdRepo(ScriptIdentityRepository identityRepository) {
+        @Override
+        public ConfigProviderNodeBindingsStep2 withIdRepo(ScriptIdentityRepository identityRepository) {
             this.identityRepository = identityRepository;
             return this;
         }
@@ -273,21 +158,12 @@ public final class ConfigProviderNodeBindings implements LegacyScriptBindings, N
          * @param secrets The secrets {@link IScriptedSecrets}.
          * @return The next step of the builder.
          */
-        public ConfigProviderNodeBindingsStep4 withSecrets(IScriptedSecrets secrets) {
+        @Override
+        public ConfigProviderNodeBindingsStep3 withSecrets(IScriptedSecrets secrets) {
             this.secrets = secrets;
             return this;
         }
 
-        /**
-         * Set the headers for the builder.
-         *
-         * @param headers The headers.
-         * @return The next step of the builder.
-         */
-        public ConfigProviderNodeBindingsStep5 withHeaders(Map<String, List<String>> headers) {
-            this.headers = headers;
-            return this;
-        }
 
         /**
          * Set the httpClient for the builder.
@@ -295,36 +171,10 @@ public final class ConfigProviderNodeBindings implements LegacyScriptBindings, N
          * @param httpClient The httpClient {@link ChfHttpClient}
          * @return The next step of the builder.
          */
-        public ConfigProviderNodeBindingsStep6 withHttpClient(ChfHttpClient httpClient) {
-            this.httpClient = httpClient;
-            return this;
-        }
-
-        /**
-         * Set the queryParameters for the builder.
-         *
-         * @param queryParameters The queryParameters.
-         * @return The next step of the builder.
-         */
-        public ConfigProviderNodeBindingsStep7 withQueryParameters(Map<String, List<String>> queryParameters) {
-            this.queryParameters = queryParameters;
-            return this;
-        }
-
-        /**
-         * Set the existingSession for the builder.
-         *
-         * @param existingSession The existingSession.
-         * @return The next step of the builder.
-         */
-        public ConfigProviderNodeBindingsStep8 withExistingSession(Map<String, String> existingSession) {
-            this.existingSession = existingSession;
-            return this;
-        }
-
         @Override
-        public ConfigProviderNodeBindingsFinalStep withScriptedIdentityRepository(
-                ScriptedIdentityRepository scriptedIdentityRepository) {
+        public BaseScriptedDecisionNodeBindingsStep1<ConfigProviderNodeBindings> withHttpClient(
+                ChfHttpClient httpClient) {
+            this.httpClient = httpClient;
             return this;
         }
     }

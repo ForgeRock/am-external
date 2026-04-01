@@ -19,7 +19,7 @@ package org.forgerock.openam.services.push;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
 import org.forgerock.openam.utils.Time;

@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.http.header.SetCookieHeader;
 import org.forgerock.http.protocol.Cookie;

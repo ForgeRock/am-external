@@ -15,11 +15,8 @@
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-
-import java.util.Optional;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
@@ -53,8 +50,10 @@ final class TreeContextFactory {
      * @return The {@link TreeContext}.
      */
     static TreeContext newTreeContext(JsonValue sharedState) {
-        return new TreeContext(sharedState,
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.of(TEST_UNIVERSAL_ID));
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .universalId(TEST_UNIVERSAL_ID)
+                .build();
     }
 
     /**
@@ -65,8 +64,11 @@ final class TreeContextFactory {
      * @return The {@link TreeContext}.
      */
     static TreeContext newTreeContext(JsonValue sharedState, JsonValue secureState) {
-        return new TreeContext(sharedState, json(object()), secureState,
-            new ExternalRequestContext.Builder().build(), emptyList(), Optional.of(TEST_UNIVERSAL_ID));
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .secureState(secureState)
+                .universalId(TEST_UNIVERSAL_ID)
+                .build();
     }
 
     /**
@@ -77,8 +79,10 @@ final class TreeContextFactory {
      * @return The {@link TreeContext}.
      */
     static TreeContext newTreeContext(JsonValue sharedState, PreferredLocales preferredLocales) {
-        return new TreeContext(sharedState, new ExternalRequestContext.Builder().locales(preferredLocales).build(),
-                emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .requestContext(new ExternalRequestContext.Builder().locales(preferredLocales).build())
+                .build();
     }
 
     /**
@@ -90,8 +94,11 @@ final class TreeContextFactory {
      * @return The {@link TreeContext}.
      */
     static TreeContext newTreeContext(JsonValue sharedState, JsonValue secureState, PreferredLocales preferredLocales) {
-        return new TreeContext(sharedState,  json(object()), secureState,
-            new ExternalRequestContext.Builder().locales(preferredLocales).build(), emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .secureState(secureState)
+                .requestContext(new ExternalRequestContext.Builder().locales(preferredLocales).build())
+                .build();
     }
 
 }

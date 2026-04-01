@@ -41,7 +41,7 @@ import org.forgerock.openam.radius.common.StateAttribute;
 /**
  * Used for handling received challenge responses from radius servers.
  */
-public class ChallengeException extends Exception {
+public class ChallengeException extends Exception implements Challenge {
     /**
      * The received packet.
      */
@@ -65,11 +65,17 @@ public class ChallengeException extends Exception {
         return challenge.getAttributeSet();
     }
 
+    @Override
+    public StateAttribute getStateAttribute() {
+        return (StateAttribute) challenge.getAttributeSet().getAttributeByType(AttributeType.STATE);
+    }
+
     /**
      * Returns the state value for the packet as contained in the nested state attribute.
      *
      * @return the state value.
      */
+    @Override
     public String getState() {
         return ((StateAttribute) (challenge.getAttributeSet().
                 getAttributeByType(AttributeType.STATE))).getState();
@@ -80,6 +86,7 @@ public class ChallengeException extends Exception {
      *
      * @return the message string or the empty string if not found
      */
+    @Override
     public String getReplyMessage() {
         ReplyMessageAttribute a = ((ReplyMessageAttribute) (challenge.getAttributeSet().
                 getAttributeByType(AttributeType.REPLY_MESSAGE)));

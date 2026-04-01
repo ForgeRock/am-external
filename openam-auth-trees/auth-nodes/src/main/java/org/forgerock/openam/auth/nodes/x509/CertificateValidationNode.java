@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
@@ -34,7 +34,7 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.Vector;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.am.identity.application.IdentityStoreLdapParametersProvider;
 import org.forgerock.am.identity.application.model.LdapConnectionParameters;
@@ -46,8 +46,9 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.feature.Features;
 import org.forgerock.openam.ldap.LDAPURL;
-import org.forgerock.openam.ldap.LDAPUtils;
+import org.forgerock.openam.ldap.LdapUtils;
 import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.openam.sm.annotations.adapters.Password;
 import org.forgerock.openam.sm.annotations.adapters.SecretPurpose;
@@ -58,7 +59,6 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.am.util.SystemProperties;
@@ -83,6 +83,7 @@ public class CertificateValidationNode extends AbstractDecisionNode {
     private final Realm realm;
     private final Secrets secrets;
     private final IdentityStoreLdapParametersProvider identityStoreLdapParametersProvider;
+    private final Features features;
 
     /**
      * Configuration for the node.
@@ -261,14 +262,16 @@ public class CertificateValidationNode extends AbstractDecisionNode {
      * @param realm the realm configuration
      * @param secrets the secrets API object
      * @param identityStoreLdapParametersProvider the {@link IdentityStoreLdapParametersProvider}
+     * @param features the feature registry, used to check if validation of the full certificate chain is enabled
      */
     @Inject
     public CertificateValidationNode(@Assisted Config config, @Assisted Realm realm, Secrets secrets,
-            IdentityStoreLdapParametersProvider identityStoreLdapParametersProvider) {
+            IdentityStoreLdapParametersProvider identityStoreLdapParametersProvider, Features features) {
         this.config = config;
         this.realm = realm;
         this.secrets = secrets;
         this.identityStoreLdapParametersProvider = identityStoreLdapParametersProvider;
+        this.features = features;
     }
 
     private static String getDirectoryServerURL() {
@@ -285,15 +288,20 @@ public class CertificateValidationNode extends AbstractDecisionNode {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         LdapConnectionParameters ldapParam = null;
-        List<X509Certificate> certs = context.transientState.get("X509Certificate").asList(X509Certificate.class);
-        X509Certificate theCert = getX509Certificate(certs, logger);
+        List<X509Certificate> transientStateCerts = context.transientState.get("X509Certificate")
+                .asList(X509Certificate.class);
+        X509Certificate theCert = getX509Certificate(transientStateCerts, logger);
 
         if (config.checkCertificateExpiry()) {
-            try {
-                theCert.checkValidity();
-            } catch (CertificateExpiredException | CertificateNotYetValidException e) {
-                logger.debug("Certificate Expired", e);
-                return Action.goTo(CertificateValidationOutcome.EXPIRED.name()).build();
+            List<X509Certificate> certs = features.validateEntireCertificateChain().isEnabled()
+                    ? transientStateCerts : Collections.singletonList(theCert);
+            for (X509Certificate certInChain : certs) {
+                try {
+                    certInChain.checkValidity();
+                } catch (CertificateExpiredException | CertificateNotYetValidException e) {
+                    logger.debug("Certificate Expired", e);
+                    return Action.goTo(CertificateValidationOutcome.EXPIRED.name()).build();
+                }
             }
         }
 
@@ -314,11 +322,11 @@ public class CertificateValidationNode extends AbstractDecisionNode {
         }
 
         if (config.matchCertificateToCRL() || config.ocspValidationEnabled()) {
-            if (!isCertificatePathValid(certs)) {
+            if (!isCertificatePathValid(transientStateCerts)) {
                 logger.error("Certificate path is not valid");
                 return Action.goTo(CertificateValidationOutcome.PATH_VALIDATION_FAILED.name()).build();
             }
-            if (!isCertificateRevoked(certs, ldapParam)) {
+            if (!isCertificateRevoked(transientStateCerts, ldapParam)) {
                 logger.error("Certificate is revoked");
                 return Action.goTo(CertificateValidationOutcome.REVOKED.name()).build();
             }
@@ -358,7 +366,7 @@ public class CertificateValidationNode extends AbstractDecisionNode {
             }
         }
         logger.debug("CertificateRevocationLists size = {}", certificateRevocationLists.size());
-        if (certificateRevocationLists.size() > 0) {
+        if (!certificateRevocationLists.isEmpty()) {
             logger.debug("CRL = {}", certificateRevocationLists);
         }
         AMCertPath certPath;
@@ -402,7 +410,7 @@ public class CertificateValidationNode extends AbstractDecisionNode {
             throw new NodeProcessException("Unable to set LDAP Server configuration, LDAP Configuration is null");
         }
         LdapUrl ldapUrl = LdapUrl.valueOf("ldap://" + serverHost);
-        Set<LDAPURL> ldapUrls = LDAPUtils.getLdapUrls(ldapUrl.getHost(), ldapUrl.getPort(), config.sslEnabled());
+        Set<LDAPURL> ldapUrls = LdapUtils.getLdapUrls(ldapUrl.getHost(), ldapUrl.getPort(), config.sslEnabled());
         return LdapConnectionParameters.builder()
                 .ldapServers(ldapUrls)
                 .ldapUser(getLdapUser())
@@ -480,7 +488,7 @@ public class CertificateValidationNode extends AbstractDecisionNode {
         public List<Outcome> getOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(CertificateValidationNode.BUNDLE,
                     CertificateValidationOutcomeProvider.class.getClassLoader());
-            return ImmutableList.of(
+            return List.of(
                     new Outcome(CertificateValidationOutcome.TRUE.name(), bundle.getString("trueOutcome")),
                     new Outcome(CertificateValidationOutcome.FALSE.name(), bundle.getString("falseOutcome")),
                     new Outcome(CertificateValidationOutcome.NOT_FOUND.name(), bundle.getString("notFound")),

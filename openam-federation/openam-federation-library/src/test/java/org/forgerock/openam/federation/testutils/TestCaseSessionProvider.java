@@ -77,7 +77,8 @@ public class TestCaseSessionProvider implements SessionProvider {
     }
 
     @Override
-    public void invalidateSession(Object session, HttpServletRequest request, HttpServletResponse response) throws SessionException {
+    public void invalidateSession(Object session, HttpServletRequest request, HttpServletResponse response,
+                                  String realm) throws SessionException {
 
     }
 

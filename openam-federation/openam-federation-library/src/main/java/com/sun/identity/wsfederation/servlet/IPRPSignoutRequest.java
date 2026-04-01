@@ -234,7 +234,7 @@ public class IPRPSignoutRequest extends WSFederationAction {
                 }
 
                 MultiProtocolUtils.invalidateSession(session, 
-                    request, response, SingleLogoutManager.WS_FED);
+                    request, response, SingleLogoutManager.WS_FED, realm);
             }
 
             request.setAttribute(WSFederationConstants.LOGOUT_PROVIDER_LIST, 

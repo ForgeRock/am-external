@@ -11,22 +11,28 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 import { createAction, handleActions } from "redux-actions";
+import { merge } from "lodash";
 
 // Types
 const ADD_OR_UPDATE_SCHEMA = "remote/config/realm/authentication/trees/nodeTypes/schema/ADD_OR_UPDATE_SCHEMA";
 
 // Actions
 export const addOrUpdateSchema = createAction(ADD_OR_UPDATE_SCHEMA,
-    (payload) => payload, (payload, nodeType) => ({ nodeType }));
+    (payload) => payload, (payload, nodeType, nodeVersion) => ({ nodeType, nodeVersion }));
 
 // Reducer
 const initialState = {};
 export default handleActions({
-    [ADD_OR_UPDATE_SCHEMA]: (state, action) => ({
-        ...state,
-        [action.meta.nodeType]: action.payload
-    })
+    [ADD_OR_UPDATE_SCHEMA]: (state, action) => {
+        // Merge mutates the first parameter here so in order to make this
+        // reducer 'pure' we pass an empty object first
+        return merge({}, state, {
+            [action.meta.nodeType]: {
+                [action.meta.nodeVersion]: action.payload
+            }
+        });
+    }
 }, initialState);

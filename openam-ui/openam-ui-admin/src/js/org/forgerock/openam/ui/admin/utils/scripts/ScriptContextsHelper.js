@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 
 /**
@@ -33,6 +33,58 @@ const DUAL_VERSION_SCRIPT_TYPES = {
     "CONFIG_PROVIDER_NODE": {
         "legacyContext": "CONFIG_PROVIDER_NODE",
         "nextGenContext": "CONFIG_PROVIDER_NODE_NEXT_GEN"
+    },
+    "OAUTH2_ACCESS_TOKEN_MODIFICATION": {
+        "legacyContext": "OAUTH2_ACCESS_TOKEN_MODIFICATION",
+        "nextGenContext": "OAUTH2_ACCESS_TOKEN_MODIFICATION_NEXT_GEN"
+    },
+    "OIDC_CLAIMS": {
+        "legacyContext": "OIDC_CLAIMS",
+        "nextGenContext": "OIDC_CLAIMS_NEXT_GEN"
+    },
+    "OAUTH2_SCRIPTED_JWT_ISSUER": {
+        "legacyContext": "OAUTH2_SCRIPTED_JWT_ISSUER",
+        "nextGenContext": "OAUTH2_SCRIPTED_JWT_ISSUER_NEXT_GEN"
+    },
+    "OAUTH2_VALIDATE_SCOPE": {
+        "legacyContext": "OAUTH2_VALIDATE_SCOPE",
+        "nextGenContext": "OAUTH2_VALIDATE_SCOPE_NEXT_GEN"
+    },
+    "OAUTH2_AUTHORIZE_ENDPOINT_DATA_PROVIDER": {
+        "legacyContext": "OAUTH2_AUTHORIZE_ENDPOINT_DATA_PROVIDER",
+        "nextGenContext": "OAUTH2_AUTHORIZE_ENDPOINT_DATA_PROVIDER_NEXT_GEN"
+    },
+    "OAUTH2_EVALUATE_SCOPE": {
+        "legacyContext": "OAUTH2_EVALUATE_SCOPE",
+        "nextGenContext": "OAUTH2_EVALUATE_SCOPE_NEXT_GEN"
+    },
+    "OAUTH2_MAY_ACT": {
+        "legacyContext": "OAUTH2_MAY_ACT",
+        "nextGenContext": "OAUTH2_MAY_ACT_NEXT_GEN"
+    },
+    "SAML2_SP_ADAPTER": {
+        "legacyContext": "SAML2_SP_ADAPTER",
+        "nextGenContext": "SAML2_SP_ADAPTER_NEXTGEN"
+    },
+    "SAML2_IDP_ADAPTER": {
+        "legacyContext": "SAML2_IDP_ADAPTER",
+        "nextGenContext": "SAML2_IDP_ADAPTER_NEXTGEN"
+    },
+    "SAML2_IDP_ATTRIBUTE_MAPPER": {
+        "legacyContext": "SAML2_IDP_ATTRIBUTE_MAPPER",
+        "nextGenContext": "SAML2_IDP_ATTRIBUTE_MAPPER_NEXT_GEN"
+    },
+    "SOCIAL_IDP_PROFILE_TRANSFORMATION": {
+        "legacyContext": "SOCIAL_IDP_PROFILE_TRANSFORMATION",
+        "nextGenContext": "SOCIAL_IDP_PROFILE_TRANSFORMATION_NEXT_GEN"
+    },
+    "SOCIAL_PROVIDER_HANDLER_NODE": {
+        "legacyContext": "SOCIAL_IDP_PROFILE_TRANSFORMATION",
+        "nextGenContext": "SOCIAL_PROVIDER_HANDLER_NODE"
+    },
+    "OIDC_NODE": {
+        "legacyContext": "SOCIAL_IDP_PROFILE_TRANSFORMATION",
+        "nextGenContext": "OIDC_NODE"
     }
 };
 

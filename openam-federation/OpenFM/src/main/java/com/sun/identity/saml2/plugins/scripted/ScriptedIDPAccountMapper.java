@@ -16,7 +16,7 @@
 
 package com.sun.identity.saml2.plugins.scripted;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.script.ScriptException;
 
 import org.apache.commons.lang3.NotImplementedException;

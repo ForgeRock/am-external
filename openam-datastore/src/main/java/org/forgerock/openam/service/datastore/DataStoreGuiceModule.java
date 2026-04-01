@@ -17,8 +17,8 @@ package org.forgerock.openam.service.datastore;
 
 import static com.google.inject.name.Names.named;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import org.forgerock.openam.services.datastore.DataStoreConsistencyController;
 import org.forgerock.openam.services.datastore.DataStoreLookup;

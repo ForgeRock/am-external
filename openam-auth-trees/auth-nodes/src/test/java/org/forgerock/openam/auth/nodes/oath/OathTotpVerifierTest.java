@@ -118,7 +118,8 @@ public class OathTotpVerifierTest {
 
         // When / Then
         assertThatThrownBy(() -> totpVerifier.verify("000000"))
-                .isInstanceOf(OathVerificationException.class);
+                .isInstanceOf(OathVerificationException.class)
+                .hasMessageContaining("Invalid OTP code");
     }
 
     @Test

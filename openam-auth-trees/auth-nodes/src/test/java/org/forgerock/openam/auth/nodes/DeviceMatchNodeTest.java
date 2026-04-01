@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2025 Ping Identity Corporation.
+ * Copyright 2020-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -46,12 +46,13 @@ import javax.script.SimpleBindings;
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.am.cts.CTSPersistentStore;
+import org.forgerock.am.trees.api.Tree;
 import org.forgerock.json.JsonValue;
 import org.forgerock.oauth2.core.application.tree.OAuthScriptedBindingObjectAdapter;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.auth.node.api.ScriptedLocalizedMessage;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.DeviceMatchNode.Config;
 import org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper;
@@ -131,6 +132,10 @@ public class DeviceMatchNodeTest {
     @Mock
     private SessionService sessionService;
     private UUID nodeId;
+    @Mock
+    private Tree tree;
+    @Mock
+    private ScriptedLocalizedMessage.Factory localizedMessageProvider;
 
     private static JsonValue getSharedState() {
         JsonValue metadata = JsonValueBuilder.jsonValue().build();
@@ -158,7 +163,8 @@ public class DeviceMatchNodeTest {
                 .willReturn(scriptEvaluator);
         var authScriptUtilities = new ScriptedNodeHelper(httpClientFactory, () -> sessionService, cts, adapter);
         node = new DeviceMatchNode(deviceProfilesDao, scriptEvaluatorFactory, deviceMatchNodeScriptContext,
-                    identityProvider, config, realm, scriptedIdentityRepository, nodeId, authScriptUtilities);
+                    identityProvider, config, realm, scriptedIdentityRepository, nodeId, authScriptUtilities, tree,
+                    localizedMessageProvider);
 
     }
 
@@ -544,7 +550,12 @@ public class DeviceMatchNodeTest {
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbacks, Optional.of("bob"));
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .universalId("bob")
+                .build();
     }
 
 }

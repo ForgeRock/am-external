@@ -11,16 +11,26 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
-import com.sun.identity.authentication.callbacks.HiddenValueCallback;
-import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
-import com.sun.identity.authentication.spi.HttpCallback;
-import com.sun.identity.authentication.spi.MetadataCallback;
-import com.sun.identity.authentication.spi.RedirectCallback;
-import com.sun.identity.authentication.spi.X509CertificateCallback;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.ChoiceCallback;
+import javax.security.auth.callback.ConfirmationCallback;
+import javax.security.auth.callback.LanguageCallback;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.TextInputCallback;
+import javax.security.auth.callback.TextOutputCallback;
+
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.Supported;
 import org.forgerock.openam.auth.node.api.SuspendedTextOutputCallback;
@@ -37,19 +47,12 @@ import org.forgerock.openam.authentication.callbacks.TermsAndConditionsCallback;
 import org.forgerock.openam.authentication.callbacks.ValidatedPasswordCallback;
 import org.forgerock.openam.authentication.callbacks.ValidatedUsernameCallback;
 
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.ChoiceCallback;
-import javax.security.auth.callback.ConfirmationCallback;
-import javax.security.auth.callback.LanguageCallback;
-import javax.security.auth.callback.NameCallback;
-import javax.security.auth.callback.PasswordCallback;
-import javax.security.auth.callback.TextInputCallback;
-import javax.security.auth.callback.TextOutputCallback;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import com.sun.identity.authentication.callbacks.HiddenValueCallback;
+import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
+import com.sun.identity.authentication.spi.HttpCallback;
+import com.sun.identity.authentication.spi.MetadataCallback;
+import com.sun.identity.authentication.spi.RedirectCallback;
+import com.sun.identity.authentication.spi.X509CertificateCallback;
 
 /**
  * Constructor and collector class for ScriptedDecisionNode scripts to create and save a list of callbacks required by
@@ -153,6 +156,77 @@ public class ScriptedCallbacksBuilder {
         ChoiceCallback choiceCallback = new ChoiceCallback(prompt, choices, defaultChoice, multipleSelectionsAllowed);
         choiceCallback.setSelectedIndex(defaultChoice);
         callbacks.add(choiceCallback);
+    }
+
+    /**
+     * Construct and save to the list of callbacks a {@code ChoiceCallback} with a prompt,
+     * a list of choices, a default choice, and a boolean specifying
+     * whether or not multiple selections from the list of choices are allowed.
+     *
+     *
+     * @param prompt the prompt used to describe the list of choices.
+     *
+     * @param choices the list of choices.
+     *
+     * @param defaultChoice the choice to be used as the default choice
+     *                  when the list of choices are displayed.  This value
+     *                  is represented as an index into the
+     *                  {@code choices} array.
+     *
+     * @param multipleSelectionsAllowed boolean specifying whether or
+     *                  not multiple selections can be made from the
+     *                  list of choices.
+     *
+     * @exception IllegalArgumentException if {@code prompt} is null,
+     *                  if {@code prompt} has a length of 0,
+     *                  if {@code choices} is null,
+     *                  if {@code choices} has a length of 0,
+     *                  if any element from {@code choices} is null,
+     *                  if any element from {@code choices}
+     *                  has a length of 0 or if {@code defaultChoice}
+     *                  does not fall within the array boundaries of
+     *                  {@code choices}.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public void choiceCallback(String prompt, List<Object> choices, int defaultChoice,
+            boolean multipleSelectionsAllowed) {
+        choiceCallback(prompt, choices.stream().map(Object::toString).toArray(String[]::new), defaultChoice,
+                multipleSelectionsAllowed);
+    }
+
+    /**
+     * Construct and save to the list of callbacks a {@code ChoiceCallback} with a prompt,
+     * a list of choices, a default choice, and a boolean specifying
+     * whether or not multiple selections from the list of choices are allowed.
+     *
+     *
+     * @param prompt the prompt used to describe the list of choices.
+     *
+     * @param choices the list of choices.
+     *
+     * @param defaultChoice the choice to be used as the default choice
+     *                  when the list of choices are displayed.  This value
+     *                  is represented as an index into the
+     *                  {@code choices} array.
+     *
+     * @param multipleSelectionsAllowed boolean specifying whether or
+     *                  not multiple selections can be made from the
+     *                  list of choices.
+     *
+     * @exception IllegalArgumentException if {@code prompt} is null,
+     *                  if {@code prompt} has a length of 0,
+     *                  if {@code choices} is null,
+     *                  if {@code choices} has a length of 0,
+     *                  if any element from {@code choices} is null,
+     *                  if any element from {@code choices}
+     *                  has a length of 0 or if {@code defaultChoice}
+     *                  does not fall within the array boundaries of
+     *                  {@code choices}.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public void choiceCallback(String prompt, Object[] choices, int defaultChoice, boolean multipleSelectionsAllowed) {
+        var stringChoices = Arrays.stream(choices).map(Object::toString).toArray(String[]::new);
+        choiceCallback(prompt, stringChoices, defaultChoice, multipleSelectionsAllowed);
     }
 
     /**
@@ -566,6 +640,33 @@ public class ScriptedCallbacksBuilder {
     /**
      * Construct and save into the list of callbacks a {@link ConfirmationCallback}.
      *
+     * @param messageType the message type (INFORMATION, WARNING or ERROR).
+     * @param options the list of confirmation options.
+     * @param defaultOption the default option from the provided optionType (YES, NO, CANCEL or OK).
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public void confirmationCallback(int messageType, List<Object> options, int defaultOption) {
+        confirmationCallback(messageType, options.stream()
+                                                  .map(Object::toString)
+                                                  .toArray(String[]::new), defaultOption);
+    }
+
+    /**
+     * Construct and save into the list of callbacks a {@link ConfirmationCallback}.
+     *
+     * @param messageType the message type (INFORMATION, WARNING or ERROR).
+     * @param options the list of confirmation options.
+     * @param defaultOption the default option from the provided optionType (YES, NO, CANCEL or OK).
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public void confirmationCallback(int messageType, Object[] options, int defaultOption) {
+        var stringOptions = Arrays.stream(options).map(Object::toString).toArray(String[]::new);
+        confirmationCallback(messageType, stringOptions, defaultOption);
+    }
+
+    /**
+     * Construct and save into the list of callbacks a {@link ConfirmationCallback}.
+     *
      * @param prompt the prompt used to describe the list of options.
      * @param messageType the message type (INFORMATION, WARNING or ERROR).
      * @param optionType the option type (YES_NO_OPTION, YES_NO_CANCEL_OPTION or OK_CANCEL_OPTION).
@@ -587,6 +688,34 @@ public class ScriptedCallbacksBuilder {
     @Supported(scriptingApi = true, javaApi = false)
     public void confirmationCallback(String prompt, int messageType, String[] options, int defaultOption) {
         callbacks.add(new ConfirmationCallback(prompt, messageType, options, defaultOption));
+    }
+
+    /**
+     * Construct and save into the list of callbacks a {@link ConfirmationCallback}.
+     *
+     * @param prompt the prompt used to describe the list of options.
+     * @param messageType the message type (INFORMATION, WARNING or ERROR).
+     * @param options the list of confirmation options.
+     * @param defaultOption the default option from the provided optionType (YES, NO, CANCEL or OK).
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public void confirmationCallback(String prompt, int messageType, List<Object> options, int defaultOption) {
+        confirmationCallback(prompt, messageType, options.stream().map(Object::toString).toArray(String[]::new),
+                defaultOption);
+    }
+
+    /**
+     * Construct and save into the list of callbacks a {@link ConfirmationCallback}.
+     *
+     * @param prompt the prompt used to describe the list of options.
+     * @param messageType the message type (INFORMATION, WARNING or ERROR).
+     * @param options the list of confirmation options.
+     * @param defaultOption the default option from the provided optionType (YES, NO, CANCEL or OK).
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public void confirmationCallback(String prompt, int messageType, Object[] options, int defaultOption) {
+        var stringOptions = Arrays.stream(options).map(Object::toString).toArray(String[]::new);
+        confirmationCallback(prompt, messageType, stringOptions, defaultOption);
     }
 
     /**
@@ -701,7 +830,7 @@ public class ScriptedCallbacksBuilder {
     */
     @Supported(scriptingApi = true, javaApi = false)
     public void validatedUsernameCallback(String prompt, Object policies, Boolean validateOnly) {
-        callbacks.add(new ValidatedUsernameCallback(prompt, JsonValue.json(policies), validateOnly));
+        callbacks.add(new ValidatedUsernameCallback(prompt, JsonValue.json(policies), validateOnly, List.of()));
     }
 
     /**
@@ -716,7 +845,7 @@ public class ScriptedCallbacksBuilder {
     public void validatedUsernameCallback(String prompt, Object policies, Boolean validateOnly,
                                           List<String> failedPolicies) {
         ValidatedUsernameCallback validatedUsernameCallback = new ValidatedUsernameCallback(prompt,
-                JsonValue.json(policies), validateOnly);
+                JsonValue.json(policies), validateOnly, List.of());
         failedPolicies.forEach(validatedUsernameCallback::addFailedPolicy);
         callbacks.add(validatedUsernameCallback);
     }

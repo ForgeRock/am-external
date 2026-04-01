@@ -127,7 +127,7 @@ public class UtilProxySAMLAuthenticatorTest {
         JwtClaimsSet decryptedJwtClaimsSet = decryptedJwt.getClaimsSet();
         assertThat(decryptedJwtClaimsSet.getIssuer()).containsAnyOf(idpEntityID, URLEncoder.encode(idpEntityID, UTF_8));
         assertThat(decryptedJwtClaimsSet.getType()).isEqualTo(SAML2Constants.SAML2_REQUEST_JWT_TYPE);
-        assertThat(decryptedJwtClaimsSet.getExpirationTime()).isNotNull();
+        assertThat(decryptedJwtClaimsSet.getExpirationTime()).isNull();
         assertThat(decryptedJwtClaimsSet.get("authnRequest").asString()).contains("<samlp:AuthnRequest").contains(
                 idpSsoRequest.getAuthnRequest().getID());
         assertThat(decryptedJwtClaimsSet.get("authnContext").asString()).contains("<saml:AuthnContext");

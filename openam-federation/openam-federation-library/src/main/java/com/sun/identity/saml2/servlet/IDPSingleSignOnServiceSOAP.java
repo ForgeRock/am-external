@@ -32,15 +32,16 @@ package com.sun.identity.saml2.servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import javax.inject.Inject;
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPMessage;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPMessage;
 
-import org.forgerock.guice.core.InjectorHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,14 +56,21 @@ import com.sun.identity.saml2.profile.IDPSSOFederate;
  * This class <code>SPSingleSignOnServiceSOAP</code> receives and processes 
  * AuthnRequest using SOAP binding on IDP side.
  */
+@Singleton
 public class IDPSingleSignOnServiceSOAP extends HttpServlet {
 
-    private SOAPCommunicator soapCommunicator;
+    private final SOAPCommunicator soapCommunicator;
 
     private static final Logger logger = LoggerFactory.getLogger(IDPSingleSignOnServiceSOAP.class);
 
+    @Inject
+    IDPSingleSignOnServiceSOAP(SOAPCommunicator soapCommunicator) {
+        this.soapCommunicator = soapCommunicator;
+    }
+
+
     public void init() throws ServletException {
-        soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        logger.debug("IDPSingleSignOnServiceSOAP initialized");
     }
 
     public void doPost(HttpServletRequest req, HttpServletResponse resp)

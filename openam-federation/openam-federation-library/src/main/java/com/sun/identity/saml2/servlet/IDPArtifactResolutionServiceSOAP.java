@@ -32,6 +32,8 @@ package com.sun.identity.saml2.servlet;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml2.profile.IDPArtifactResolution;
 import java.io.IOException;
+
+import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServlet;
@@ -41,6 +43,7 @@ import jakarta.servlet.ServletException;
  * This class <code>IDPArtifactResolutionServiceSOAP</code> receives and
  * processes ArtififactResolve request using SOAP binding on IDP side.
  */
+@Singleton
 public class IDPArtifactResolutionServiceSOAP extends HttpServlet {
 
     public void init() throws ServletException {

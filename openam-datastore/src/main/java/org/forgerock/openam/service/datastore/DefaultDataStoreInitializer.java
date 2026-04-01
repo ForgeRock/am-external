@@ -24,7 +24,7 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;

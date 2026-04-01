@@ -18,7 +18,7 @@ package org.forgerock.openam.auth.nodes.framework;
 
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.AUTH_LEVEL;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;

@@ -16,8 +16,8 @@
 
 package org.forgerock.openam.authentication.modules.deviceprint;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.forgerock.openam.core.rest.devices.deviceprint.DeviceIdDao;
 

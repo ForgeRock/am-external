@@ -19,6 +19,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.identity.saml2.assertion.Assertion;
+import com.sun.identity.saml2.assertion.Subject;
+import com.sun.identity.saml2.assertion.impl.AssertionImpl;
+import com.sun.identity.saml2.assertion.impl.SubjectImpl;
+import com.sun.identity.saml2.profile.ResponseInfo;
 import org.forgerock.openam.annotations.Supported;
 import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 
@@ -34,22 +39,33 @@ import com.sun.identity.saml2.protocol.impl.AuthnRequestImpl;
  * request.
  */
 @Supported(scriptingApi = true, javaApi = false)
-public class SAMLScriptedBindingObjectImpl implements SAMLScriptedBindingObject {
+public class SAMLScriptedBindingObjectImpl implements SAMLData, SAMLScriptedBindingObject {
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     private final String applicationId;
     private final FlowInitiator flowInitiator;
     private final AuthnRequest authnRequest;
     private final Map<String, List<String>> idpAttributes;
     private final Map<String, List<String>> spAttributes;
+    private Subject subject;
+    private Assertion assertion;
+    private String sessionIndex;
+    private ResponseInfo responseInfo;
 
-    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    /**
+     * Create a new SAMLScriptedBindingObjectImpl with the values available on the IdP side of a SAML flow.
+     * @param applicationId The application ID of the SAML2 service provider.
+     * @param flowInitiator Either IDP or SP depending on where the flow was initiated.
+     * @param authnRequest The {@link AuthnRequest} object.
+     * @param idpAttributes The idp configuration attributes.
+     * @param spAttributes The sp configuration attributes.
+     */
     public SAMLScriptedBindingObjectImpl(
-            @JsonProperty("applicationId") String applicationId,
-            @JsonProperty("flowInitiator") FlowInitiator flowInitiator,
-            @JsonProperty("authnRequest") AuthnRequest authnRequest,
-            @JsonProperty("idpAttributes") Map<String, List<String>> idpAttributes,
-            @JsonProperty("spAttributes") Map<String, List<String>> spAttributes
-    ) {
+            String applicationId,
+            FlowInitiator flowInitiator,
+            AuthnRequest authnRequest,
+            Map<String, List<String>> idpAttributes,
+            Map<String, List<String>> spAttributes) {
         this.applicationId = applicationId;
         this.flowInitiator = flowInitiator;
         this.authnRequest = authnRequest;
@@ -57,9 +73,46 @@ public class SAMLScriptedBindingObjectImpl implements SAMLScriptedBindingObject 
         this.spAttributes = spAttributes;
     }
 
+    /**
+     * Create a new SAMLScriptedBindingObjectImpl with all values. Used by the JsonCreator to instantiate the object.
+     * @param applicationId The application ID of the SAML2 service provider.
+     * @param flowInitiator Either IDP or SP depending on where the flow was initiated.
+     * @param authnRequest The {@link AuthnRequest} object.
+     * @param idpAttributes The idp configuration attributes.
+     * @param spAttributes The sp configuration attributes.
+     * @param subject The {@link Subject} object.
+     * @param assertion The {@link Assertion} object.
+     * @param sessionIndex The session index.
+     * @param responseInfo The {@link ResponseInfo} object.
+     */
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public SAMLScriptedBindingObjectImpl(
+            @JsonProperty("applicationId") String applicationId,
+            @JsonProperty("flowInitiator") FlowInitiator flowInitiator,
+            @JsonProperty("authnRequest") AuthnRequest authnRequest,
+            @JsonProperty("idpAttributes") Map<String, List<String>> idpAttributes,
+            @JsonProperty("spAttributes") Map<String, List<String>> spAttributes,
+            @JsonProperty("subject") Subject subject,
+            @JsonProperty("assertion") Assertion assertion,
+            @JsonProperty("sessionIndex") String sessionIndex,
+            @JsonProperty("responseInfo") ResponseInfo responseInfo
+    ) {
+        this(applicationId, flowInitiator, authnRequest, idpAttributes, spAttributes);
+        this.subject = subject;
+        this.assertion = assertion;
+        this.sessionIndex = sessionIndex;
+        this.responseInfo = responseInfo;
+    }
+
+    /**
+     * Provides an example SAMLScriptedBindingObject.
+     *
+     * @return An example {@link SAMLScriptedBindingObject}.
+     */
     public static SAMLScriptedBindingObject getExampleObject() {
         return new SAMLScriptedBindingObjectImpl(
-                "applicationId", FlowInitiator.IDP, new AuthnRequestImpl(), new HashMap<>(), new HashMap<>()
+                "applicationId", FlowInitiator.IDP, new AuthnRequestImpl(), new HashMap<>(), new HashMap<>(),
+                new SubjectImpl(), new AssertionImpl(), "sessionIndex", new ResponseInfo()
         );
     }
 
@@ -78,9 +131,16 @@ public class SAMLScriptedBindingObjectImpl implements SAMLScriptedBindingObject 
     @Supported(scriptingApi = true, javaApi = false)
     @Override
     public Map<String, Object> getAuthnRequest() {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.convertValue(authnRequest, new TypeReference<>() {
+        return MAPPER.convertValue(authnRequest, new TypeReference<>() {
         });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public AuthnRequest getRawAuthnRequest() {
+        return authnRequest;
     }
 
     /**
@@ -111,5 +171,50 @@ public class SAMLScriptedBindingObjectImpl implements SAMLScriptedBindingObject 
         // 'Access to Java class "org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject$FLowInitiator" is prohibited'
         // in the logs.  Maybe the script binding security doesn't like internal enums/classes?
         return flowInitiator.toString();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Subject getRawSubject() {
+        return subject;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    @Override
+    public Map<String, Object> getAssertion() {
+        if (assertion == null) {
+            return null;
+        }
+        return MAPPER.convertValue(assertion, new TypeReference<>() {
+        });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Assertion getRawAssertion() {
+        return assertion;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getSessionIndex() {
+        return sessionIndex;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResponseInfo getRawResponseInfo() {
+        return responseInfo;
     }
 }

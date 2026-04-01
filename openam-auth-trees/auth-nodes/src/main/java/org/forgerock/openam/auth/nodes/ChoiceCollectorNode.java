@@ -32,13 +32,14 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.callback.ChoiceCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.JsonValueException;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.ConfigProviderEnabled;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.TreeMetaData;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
@@ -59,6 +60,7 @@ import com.google.inject.assistedinject.Assisted;
 @Node.Metadata(outcomeProvider = ChoiceCollectorNode.ChoiceCollectorOutcomeProvider.class,
         configClass = ChoiceCollectorNode.Config.class,
         tags = {"utilities"})
+@ConfigProviderEnabled
 public class ChoiceCollectorNode implements Node {
 
     /**
@@ -70,6 +72,7 @@ public class ChoiceCollectorNode implements Node {
          * @return The choices.
          */
         @Attribute(order = 100)
+        @ConfigProviderEnabled.StaticConfig
         List<String> choices();
 
         /**

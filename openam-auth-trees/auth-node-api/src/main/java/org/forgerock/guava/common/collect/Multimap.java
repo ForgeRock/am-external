@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Portions Copyright 2018-2025 Ping Identity Corporation.
+ * Portions Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.guava.common.collect;
 
@@ -163,7 +163,7 @@ import com.google.common.annotations.GwtCompatible;
  * @deprecated Use {@link com.google.common.collect.Multimap} instead.
  */
 @GwtCompatible
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 public interface Multimap<K, V> {
     // Query Operations
 

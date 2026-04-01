@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -108,7 +108,7 @@ public class DeviceBindingTest {
         String kid = UUID.randomUUID().toString();
 
         Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.SECOND, -30);
+        calendar.add(Calendar.SECOND, -60);
         Date exp = calendar.getTime();
 
         String challenge = deviceBinding.createRandomBytes();

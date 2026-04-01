@@ -15,34 +15,10 @@
  */
 package org.forgerock.am.saml2.impl;
 
-import static com.sun.identity.saml2.common.SAML2Constants.RELAY_STATE;
-import static org.forgerock.am.saml2.impl.Saml2ClientConstants.AM_LOCATION_COOKIE;
-import static org.forgerock.am.saml2.impl.Saml2ClientConstants.ERROR_CODE_PARAM_KEY;
-import static org.forgerock.am.saml2.impl.Saml2ClientConstants.ERROR_MESSAGE_PARAM_KEY;
-import static org.forgerock.am.saml2.impl.Saml2ClientConstants.ERROR_PARAM_KEY;
-import static org.forgerock.am.saml2.impl.Saml2ClientConstants.RESPONSE_KEY;
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-import static org.forgerock.openam.utils.StringUtils.isBlank;
-import static org.forgerock.openam.utils.StringUtils.isNotBlank;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
-import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
-import org.forgerock.openam.utils.StringUtils;
-import org.forgerock.util.encode.Base64url;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml2.assertion.Assertion;
+import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.assertion.Subject;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
@@ -56,6 +32,40 @@ import com.sun.identity.saml2.profile.SPACSUtils;
 import com.sun.identity.saml2.profile.SPCache;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.shared.encode.CookieUtils;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
+import org.forgerock.openam.saml2.SAMLScriptedBindingObjectImpl;
+import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
+import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject.FlowInitiator;
+import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.util.encode.Base64url;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import static com.sun.identity.saml2.common.SAML2Constants.IDP_ROLE;
+import static com.sun.identity.saml2.common.SAML2Constants.RELAY_STATE;
+import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
+import static org.forgerock.am.saml2.impl.Saml2ClientConstants.AM_LOCATION_COOKIE;
+import static org.forgerock.am.saml2.impl.Saml2ClientConstants.ERROR_CODE_PARAM_KEY;
+import static org.forgerock.am.saml2.impl.Saml2ClientConstants.ERROR_MESSAGE_PARAM_KEY;
+import static org.forgerock.am.saml2.impl.Saml2ClientConstants.ERROR_PARAM_KEY;
+import static org.forgerock.am.saml2.impl.Saml2ClientConstants.RESPONSE_KEY;
+import static org.forgerock.am.saml2.impl.Saml2ClientConstants.SAML_OBJECT_KEY_PARAM;
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
+import static org.forgerock.openam.utils.StringUtils.contains;
+import static org.forgerock.openam.utils.StringUtils.isBlank;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
 /**
  * Called on the way back into the SAML2 Authentication Module
@@ -95,10 +105,11 @@ public final class Saml2Proxy {
     private static final Logger DEBUG = LoggerFactory.getLogger(Saml2Proxy.class);
 
     private static final String EMPTY_STRING = "";
+
     /**
-     * Private, utilities-class constructor.
+     * Constructs a new Saml2Proxy instance.
      */
-    private Saml2Proxy() {
+    public Saml2Proxy() {
     }
 
     private static String generateKey() {
@@ -114,13 +125,13 @@ public final class Saml2Proxy {
      * @throws IOException If there was an IO error while retrieving the SAML response.
      * @throws SAML2Exception If the RelayState is invalid.
      */
-    public static void processSamlResponse(HttpServletRequest request, HttpServletResponse response)
+    public void processSamlResponse(HttpServletRequest request, HttpServletResponse response)
             throws IOException, SAML2Exception {
         String url = getUrl(request, response);
         response.sendRedirect(url);
     }
 
-    private static String getUrl(HttpServletRequest request, HttpServletResponse response)
+    private String getUrl(HttpServletRequest request, HttpServletResponse response)
             throws IOException, SAML2Exception {
         if (request == null || response == null) {
             DEBUG.error("SAML2Proxy: Null request or response");
@@ -181,32 +192,28 @@ public final class Saml2Proxy {
             DEBUG.error("SAML2Proxy: An error occurred while verifying the SAML response", se);
             return getUrlWithError(request, SAML_VERIFY_RESPONSE_ERROR, se.getL10NMessage(request.getLocale()));
         }
-        String key = generateKey();
 
         //survival time is one hour
         Assertion assertion = (Assertion) smap.get(SAML2Constants.POST_ASSERTION);
-        Saml2ResponseData data = new Saml2ResponseData((String) smap.get(SAML2Constants.SESSION_INDEX),
-                (Subject) smap.get(SAML2Constants.SUBJECT),
-                assertion,
-                respInfo,
-                (AuthnRequest) smap.get(SAML2Constants.AUTHN_REQUEST));
 
         if (respInfo.getProfileBinding().equals(SAML2Constants.HTTP_POST)) {
             String assertionId = assertion.getID();
             SPCache.assertionByIDCache.put(assertionId, SAML2Constants.ONETIME);
+
             try {
                 SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(
                         assertionId,
                         SAML2Constants.ONETIME,
-                        ((Long) smap.get(SAML2Constants.NOTONORAFTER)).longValue() / 1000);
+                        (Long) smap.get(SAML2Constants.NOTONORAFTER));
             } catch (SAML2TokenRepositoryException se) {
                 DEBUG.error("There was a problem saving the assertionID to the SAML2 Token Repository for assertionID:"
                         + assertionId, se);
             }
         }
 
+        String samlScriptedBindingObjectKey = generateKey();
         try {
-            SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, data);
+            saveSAMLScriptedBindingObject(hostEntityId, realm, samlScriptedBindingObjectKey, smap, respInfo);
         } catch (SAML2TokenRepositoryException e) {
             DEBUG.error("An error occurred while persisting the SAML token", e);
             return getUrlWithError(request, SAML_FAILOVER_DISABLED_ERROR);
@@ -214,10 +221,33 @@ public final class Saml2Proxy {
 
         String relayState = getRelayState(request, requestURL, metaManager, hostEntityId, realm, respInfo);
         Optional<String> localAuthUrl = getLocalAuthURL(realm, hostEntityId, metaManager);
-        return getUrlWithKey(request, key, relayState, localAuthUrl);
+        Optional<String> treeName = getHostedSpTreeName(realm, hostEntityId, metaManager);
+
+        return getUrlWithKey(request, samlScriptedBindingObjectKey, relayState, localAuthUrl, realm, treeName);
     }
 
-    private static String getRelayState(HttpServletRequest request, String requestURL, SAML2MetaManager metaManager,
+    private static void saveSAMLScriptedBindingObject(String spEntityID, String realm, String key, Map smap,
+                                                      ResponseInfo responseInfo) throws SAML2TokenRepositoryException {
+        AuthnRequest authnRequest = (AuthnRequest) smap.get(SAML2Constants.AUTHN_REQUEST);
+        Assertion assertion = (Assertion) smap.get(SAML2Constants.POST_ASSERTION);
+        String sessionIndex = (String) smap.get(SAML2Constants.SESSION_INDEX);
+        Subject subject = (Subject) smap.get(SAML2Constants.SUBJECT);
+
+        String idpEntityID = Optional.ofNullable(assertion).map(Assertion::getIssuer).map(Issuer::getValue)
+                .orElse(null);
+        FlowInitiator flowInitiator = authnRequest == null ? FlowInitiator.IDP : FlowInitiator.SP;
+        Map<String, List<String>> spAttributes =
+                SAML2Utils.getAllAttributesFromSSOConfig(realm, spEntityID, SP_ROLE);
+        Map<String, List<String>>  idpAttributes =
+                SAML2Utils.getAllAttributesFromSSOConfig(realm, idpEntityID, IDP_ROLE);
+
+        SAMLScriptedBindingObject data = new SAMLScriptedBindingObjectImpl(spEntityID, flowInitiator, authnRequest,
+                idpAttributes, spAttributes, subject, assertion, sessionIndex, responseInfo);
+
+        SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, data);
+    }
+
+    private String getRelayState(HttpServletRequest request, String requestURL, SAML2MetaManager metaManager,
             String hostEntityId, String realm, ResponseInfo respInfo) throws SAML2Exception {
         String relayStateParameter;
         if (isNotBlank(respInfo.getRelayState())) {
@@ -226,30 +256,37 @@ public final class Saml2Proxy {
             relayStateParameter = request.getParameter(RELAY_STATE);
         }
         String relayStateUrl = SPACSUtils.getRelayState(relayStateParameter, realm, hostEntityId, metaManager);
-        SAML2Utils.validateRelayStateURL(realm, hostEntityId, relayStateUrl, SAML2Constants.SP_ROLE, requestURL);
+        SAML2Utils.validateRelayStateURL(realm, hostEntityId, relayStateUrl, SP_ROLE, requestURL);
         return relayStateUrl;
     }
 
     /**
-     * Auto-submits the passed-in parameters to the authentication module, as taken from
-     * a known cookie location in the request.
+     * Auto-submits the passed-in parameters to the authentication module, using information from
+     * the request. This version adds support for a hosted SP tree URL.
      *
-     * @param req The request.
-     * @param key The key to reference.
-     * @param localAuthUrl The configured local authentication url, may be {@link Optional#empty()}.
-     * @param relayState The configured relay state.
-     * @return An HTML form to render to the user's user-agent.
+     * @param req The HTTP servlet request
+     * @param samlScriptedBindingObjectKey The key to reference the SAMLScriptedBindingObject.
+     * @param relayState The configured relay state
+     * @param localAuthUrl The configured local authentication URL, may be {@link Optional#empty()}
+     * @return A URL to redirect the user to continue the authentication flow
+     * @throws IllegalStateException If no valid URL could be constructed
      */
-    static String getUrlWithKey(final HttpServletRequest req, final String key, final String relayState,
-            Optional<String> localAuthUrl) {
-        final StringBuilder value = localAuthUrl
-                .map(StringBuilder::new)
-                .map(sb -> appendQueryParams(sb, getLocationRequestParams(req)))
+    String getUrlWithKey(final HttpServletRequest req, final String samlScriptedBindingObjectKey,
+                                final String relayState, Optional<String> localAuthUrl, String realm,
+                                Optional<String> treeName) {
+        StringBuilder value =
+                localAuthUrl.map(StringBuilder::new)
+                .map(sb -> appendNonDuplicatedQueryParams(sb, getLocationRequestParams(req)))
                 .orElseGet(() -> getLocationValue(req));
+
+        if (value == null && treeName.isPresent()) {
+            value = buildHostedSpTreeUrl(req, realm, treeName.get());
+        }
         if (value == null) {
+            DEBUG.error("getUrlWithKey: Unable to determine AuthURL");
             throw new IllegalStateException(DEFAULT_ERROR_MESSAGE);
         }
-        return encodeMessage(value, key, relayState);
+        return encodeMessage(value, samlScriptedBindingObjectKey, relayState);
     }
 
     /**
@@ -259,7 +296,7 @@ public final class Saml2Proxy {
      * @param errorType The Error type that has occurred.
      * @return An HTML form to render to the user's user-agent.
      */
-    static String getUrlWithError(HttpServletRequest req, String errorType) {
+    String getUrlWithError(HttpServletRequest req, String errorType) {
         return getUrlWithError(req, errorType, DEFAULT_ERROR_MESSAGE);
     }
 
@@ -271,10 +308,11 @@ public final class Saml2Proxy {
      * @param messageDetail a text description of the message.
      * @return An HTML form to render to the user's user-agent.
      */
-    static String getUrlWithError(HttpServletRequest req, String errorType, String messageDetail) {
+    String getUrlWithError(HttpServletRequest req, String errorType, String messageDetail) {
         StringBuilder value = getLocationValue(req);
 
         if (value == null) {
+            DEBUG.error("getUrlWithError: Unable to determine AuthURL");
             throw new IllegalStateException(DEFAULT_ERROR_MESSAGE);
         }
 
@@ -287,14 +325,16 @@ public final class Saml2Proxy {
         return value.toString();
     }
 
-    private static String encodeMessage(StringBuilder value, String key, String relayState) {
+    private String encodeMessage(StringBuilder value, String samlObjectKey, String relayState) {
         if (value.toString().contains("?")) {
             value.append("&");
         } else {
             value.append("?");
         }
 
-        value.append(RESPONSE_KEY).append("=").append(urlEncodeQueryParameterNameOrValue(key))
+        var encodedKey = urlEncodeQueryParameterNameOrValue(samlObjectKey);
+        value.append(RESPONSE_KEY).append("=").append(encodedKey)
+                .append("&").append(SAML_OBJECT_KEY_PARAM).append("=").append(encodedKey)
                 .append("&").append(ERROR_PARAM_KEY).append("=").append(false);
 
         if (isNotBlank(relayState)) {
@@ -303,7 +343,7 @@ public final class Saml2Proxy {
         return value.toString();
     }
 
-    private static StringBuilder appendQueryParams(StringBuilder sb, String paramString) {
+    private StringBuilder appendQueryParams(StringBuilder sb, String paramString) {
         if (sb.indexOf("?") >= 0) {
             sb.append("&");
         } else {
@@ -313,7 +353,38 @@ public final class Saml2Proxy {
         return sb;
     }
 
-    private static String getLocationRequestParams(HttpServletRequest req) {
+    /**
+     * Appends query parameters from paramString to sb, avoiding duplication of keys already present in sb.
+     *
+     * @param sb The StringBuilder to append to.
+     * @param paramString The query parameter string to parse and append.
+     * @return The updated StringBuilder with non-duplicated parameters appended.
+     */
+    private StringBuilder appendNonDuplicatedQueryParams(StringBuilder sb, String paramString) {
+        if (isBlank(paramString)) {
+            return sb;
+        }
+        Arrays.stream(paramString.split("&"))
+                .map(this::toEntry)
+                .filter(entry -> !contains(sb.toString(), entry.getKey() + "="))
+                .forEach(entry -> appendQueryParams(sb, entry.getKey() + "=" + entry.getValue()));
+
+        return sb;
+    }
+
+    /**
+     * Converts a key=value pair string into a Map.Entry.
+     *
+     * @param pair The key=value pair string.
+     * @return A Map.Entry representing the key and value.
+     */
+    private Map.Entry<String, String> toEntry(String pair) {
+        String[] parts = pair.split("=");
+        return new AbstractMap.SimpleEntry<>(parts[0], parts[1]);
+    }
+
+
+    private String getLocationRequestParams(HttpServletRequest req) {
         StringBuilder location = getLocationValue(req);
         if (location != null) {
             int paramsStart = location.indexOf("?");
@@ -324,7 +395,7 @@ public final class Saml2Proxy {
         return EMPTY_STRING;
     }
 
-    private static StringBuilder getLocationValue(HttpServletRequest req) {
+    private StringBuilder getLocationValue(HttpServletRequest req) {
         String value = CookieUtils.getCookieValueFromReq(req, AM_LOCATION_COOKIE);
 
         if (isBlank(value)) {
@@ -334,9 +405,56 @@ public final class Saml2Proxy {
         return new StringBuilder(Base64url.decodeToString(value));
     }
 
-    private static Optional<String> getLocalAuthURL(String realm, String hostEntityId, SAML2MetaManager metaManager) {
+    private Optional<String> getLocalAuthURL(String realm, String hostEntityId, SAML2MetaManager metaManager) {
         final String localAuthUrl = SPACSUtils.getAttributeValueFromSPSSOConfig(realm, hostEntityId, metaManager,
                 SAML2Constants.LOCAL_AUTH_URL);
         return isBlank(localAuthUrl) ? Optional.empty() : Optional.of(localAuthUrl);
     }
+
+    /**
+     * Retrieves the name of the hosted SP tree from the SPSSOConfig.
+     *
+     * @param realm The realm in which the SPSSOConfig is located.
+     * @param hostEntityId The entity ID of the hosted SP.
+     * @param metaManager The SAML2MetaManager instance to retrieve metadata.
+     * @return An Optional containing the tree name if it exists, otherwise empty.
+     */
+    private Optional<String> getHostedSpTreeName(String realm, String hostEntityId,
+                                                        SAML2MetaManager metaManager) {
+        final String treeName = SPACSUtils.getConfiguredServiceForHostedSP(realm, hostEntityId, metaManager,
+                SAML2Constants.REDIRECT_TREE_NAME);
+        return StringUtils.isEmptyOrEmptySelection(treeName) ? Optional.empty() : Optional.of(treeName);
+    }
+
+    /**
+     * Builds the URL for the user redirect back to the authentication process based on the hosted SP tree name.
+     *
+     * @param req The HTTP servlet request.
+     * @param realm The realm in which the SPSSOConfig is located.
+     * @param treeName The tree name from Hosted SP configuration.
+     *
+     * @return An Optional containing the constructed URL if successful, otherwise empty.
+     */
+    private StringBuilder buildHostedSpTreeUrl(HttpServletRequest req, String realm, String treeName) {
+
+        StringBuilder urlBuilder = new StringBuilder();
+        urlBuilder.append(req.getScheme())
+                .append("://")
+                .append(req.getServerName())
+                .append(":")
+                .append(req.getServerPort())
+                .append(req.getContextPath())
+                .append("?");
+
+        if (isNotBlank(realm)) {
+            urlBuilder.append("realm=").append(realm);
+        }
+
+        urlBuilder.append("&authIndexType=service")
+                .append("&authIndexValue=")
+                .append(treeName);
+
+        return urlBuilder;
+    }
+
 }

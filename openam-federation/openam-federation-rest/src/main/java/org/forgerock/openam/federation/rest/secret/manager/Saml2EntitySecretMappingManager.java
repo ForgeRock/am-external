@@ -18,7 +18,7 @@ package org.forgerock.openam.federation.rest.secret.manager;
 
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.secrets.config.KeyStoreSecretStore;
@@ -120,7 +120,7 @@ public class Saml2EntitySecretMappingManager implements ServiceListener {
             KeyStoreSecretStore store, Multiple <PurposeMapping> mappings, boolean isHosted) {
         if (mappings != null) {
             try {
-                mappings.idSet().stream()
+                mappings.nameSet().stream()
                         .filter(id -> isHosted ? helper.isUnusedHostedEntitySecretMapping(secretIdIdentifiers, id)
                                 : helper.isUnusedRemoteEntitySecretMapping(secretIdIdentifiers, id))
                         .forEach(id -> helper.deleteSecretMapping(mappings, id));

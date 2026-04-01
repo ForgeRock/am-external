@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.net.ssl.KeyManager;
 import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPConnection;

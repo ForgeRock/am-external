@@ -130,7 +130,7 @@ public class Saml2EntitySecretMappingManagerTest {
     void shouldNotDeleteWhenNoSubConfigFoundInMappings() throws Exception {
         //given
         given(secretStore.mappings()).willReturn(mappings);
-        given(mappings.idSet()).willReturn(emptySet());
+        given(mappings.nameSet()).willReturn(emptySet());
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
 
         //when
@@ -149,7 +149,7 @@ public class Saml2EntitySecretMappingManagerTest {
         String mappingId = "some.secret.mapping";
         given(helper.getAllHostedEntitySecretIdIdentifiers(REALM)).willReturn(secretIds);
         given(secretStore.mappings()).willReturn(mappings);
-        given(mappings.idSet()).willReturn(singleton(mappingId));
+        given(mappings.nameSet()).willReturn(singleton(mappingId));
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
         given(helper.isUnusedHostedEntitySecretMapping(secretIds, mappingId)).willReturn(false);
 
@@ -167,7 +167,7 @@ public class Saml2EntitySecretMappingManagerTest {
         String mappingId = "some.secret.mapping";
         given(helper.getAllRemoteEntitySecretIdIdentifiers(REALM)).willReturn(secretIds);
         given(secretStore.mappings()).willReturn(mappings);
-        given(mappings.idSet()).willReturn(singleton(mappingId));
+        given(mappings.nameSet()).willReturn(singleton(mappingId));
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
         given(helper.isUnusedRemoteEntitySecretMapping(secretIds, mappingId)).willReturn(false);
 
@@ -185,7 +185,7 @@ public class Saml2EntitySecretMappingManagerTest {
         String mappingId = "unused.secret.mapping";
         given(helper.getAllHostedEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
         given(secretStore.mappings()).willReturn(mappings);
-        given(mappings.idSet()).willReturn(singleton(mappingId));
+        given(mappings.nameSet()).willReturn(singleton(mappingId));
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
         given(helper.isUnusedHostedEntitySecretMapping(secretIds, mappingId)).willReturn(true);
 
@@ -205,7 +205,7 @@ public class Saml2EntitySecretMappingManagerTest {
         given(helper.getAllHostedEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
         given(helper.getAllRemoteEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
         given(secretStore.mappings()).willReturn(mappings);
-        given(mappings.idSet()).willReturn(Set.of(hostedMappingId, remoteMappingId));
+        given(mappings.nameSet()).willReturn(Set.of(hostedMappingId, remoteMappingId));
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
         given(helper.isUnusedHostedEntitySecretMapping(secretIds, hostedMappingId)).willReturn(true);
         given(helper.isUnusedRemoteEntitySecretMapping(secretIds, remoteMappingId)).willReturn(false);
@@ -225,7 +225,7 @@ public class Saml2EntitySecretMappingManagerTest {
         String mappingId = "unused.secret.mapping";
         given(helper.getAllRemoteEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
         given(secretStore.mappings()).willReturn(mappings);
-        given(mappings.idSet()).willReturn(singleton(mappingId));
+        given(mappings.nameSet()).willReturn(singleton(mappingId));
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
         given(helper.isUnusedRemoteEntitySecretMapping(secretIds, mappingId)).willReturn(true);
 
@@ -245,7 +245,7 @@ public class Saml2EntitySecretMappingManagerTest {
         given(helper.getAllHostedEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
         given(helper.getAllRemoteEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
         given(secretStore.mappings()).willReturn(mappings);
-        given(mappings.idSet()).willReturn(Set.of(hostedMappingId, remoteMappingId));
+        given(mappings.nameSet()).willReturn(Set.of(hostedMappingId, remoteMappingId));
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
         given(helper.isUnusedHostedEntitySecretMapping(secretIds, hostedMappingId)).willReturn(false);
         given(helper.isUnusedRemoteEntitySecretMapping(secretIds, remoteMappingId)).willReturn(true);

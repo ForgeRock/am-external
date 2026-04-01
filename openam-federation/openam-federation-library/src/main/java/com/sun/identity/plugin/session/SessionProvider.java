@@ -35,6 +35,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.core.realms.Realm;
 
 /**
  * Interface used for creating sessions, and for accessing session
@@ -177,13 +178,15 @@ public interface SessionProvider {
      * @param session the session to be invalidated
      * @param request the browser initiated HTTP request.
      * @param response the HTTP response going back to browser.
+     * @param realm the realm name.
      * @throws SessionException if an error occurred during session
      * retrieval.     
      */
     public void invalidateSession(
-        Object session,
-        HttpServletRequest request,   // optional input
-        HttpServletResponse response  // optional input
+            Object session,
+            HttpServletRequest request,   // optional input
+            HttpServletResponse response,  // optional input
+            String realm // optional input
     ) throws SessionException;
 
     /**

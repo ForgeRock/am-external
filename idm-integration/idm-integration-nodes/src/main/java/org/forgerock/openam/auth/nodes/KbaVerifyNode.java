@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.callback.PasswordCallback;
 
 import org.forgerock.json.JsonValue;

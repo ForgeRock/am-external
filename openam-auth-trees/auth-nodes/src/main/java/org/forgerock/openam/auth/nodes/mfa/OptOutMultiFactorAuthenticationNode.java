@@ -25,7 +25,7 @@ import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.WEBAUTHN_
 
 import java.util.Optional;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.auth.node.api.Action;

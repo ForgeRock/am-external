@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2025 Ping Identity Corporation.
+ * Copyright 2013-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
@@ -38,6 +38,7 @@ import javax.security.auth.message.AuthException;
 import javax.security.auth.message.MessageInfo;
 
 import org.forgerock.caf.authentication.framework.AuthenticationFramework;
+import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.jaspi.modules.session.jwt.JwtSessionModule;
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.openam.authentication.modules.common.JaspiAuthLoginModule;
@@ -85,7 +86,7 @@ public class PersistentCookieAuthModule extends JaspiAuthLoginModule {
      * Used by the PersistentCookie in a server deployment environment.
      */
     public PersistentCookieAuthModule() {
-        this(new CoreWrapper(), new PersistentCookieModuleWrapper());
+        this(InjectorHolder.getInstance(CoreWrapper.class), new PersistentCookieModuleWrapper());
     }
 
     /**

@@ -16,7 +16,6 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
@@ -35,10 +34,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Optional;
-
 import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
@@ -68,16 +64,16 @@ public class IncrementLoginCountNodeTest {
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
 
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveSharedState(), json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(retrieveSharedState())
+                .build();
         node = new IncrementLoginCountNode(config, realm, idmIntegrationService);
     }
 
     @Test
     void shouldReturnOutcomeIfNoIdentityFound() throws Exception {
         when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, json(object()), json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder().build();
         node = new IncrementLoginCountNode(config, realm, idmIntegrationService);
 
         assertThat(node.process(context).outcome).isEqualTo("outcome");
@@ -88,8 +84,9 @@ public class IncrementLoginCountNodeTest {
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
                 .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));
         when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveUsernameSharedState(),
-                json(object()), new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(retrieveUsernameSharedState())
+                .build();
         node = new IncrementLoginCountNode(config, realm, idmIntegrationService);
 
         assertThat(node.process(context).outcome).isEqualTo("outcome");

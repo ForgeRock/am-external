@@ -17,10 +17,6 @@ package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.cuppa.Cuppa.beforeEach;
-import static org.forgerock.cuppa.Cuppa.describe;
-import static org.forgerock.cuppa.Cuppa.it;
-import static org.forgerock.cuppa.Cuppa.when;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -30,21 +26,18 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.OATH_AUTH_TYPE;
 import static org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.PUSH_AUTH_TYPE;
 import static org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.WEB_AUTHN_AUTH_TYPE;
-import static org.mockito.BDDMockito.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verify;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 
-import org.forgerock.cuppa.Test;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.Config;
 import org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.RecoveryCodeType;
@@ -56,149 +49,220 @@ import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.core.rest.devices.push.UserPushDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@Test
-@SuppressWarnings("unchecked")
-public class RecoveryCodeCollectorDecisionNodeTest {
+/**
+ * Tests for {@link RecoveryCodeCollectorDecisionNode}.
+ */
+@ExtendWith(MockitoExtension.class)
+class RecoveryCodeCollectorDecisionNodeTest {
 
-    private final String user = "badger";
-    private final String realm = "weasel";
+    private static final String USER = "badger";
+    private static final String REALM_VALUE = "weasel";
+    private static final String TEST_RECOVERY_CODE = "ferret";
+    private static final String INVALID_RECOVERY_CODE = "otter";
+
     @Mock
     private Config config;
+
     @Mock
     private UserOathDeviceProfileManager oathDeviceManager;
+
     @Mock
     private UserPushDeviceProfileManager pushDeviceManager;
+
     @Mock
     private UserWebAuthnDeviceProfileManager webAuthnDeviceManager;
 
-    private OathDeviceSettings oathDeviceSettings;
-    private PushDeviceSettings pushDeviceSettings;
-    private WebAuthnDeviceSettings webAuthnDeviceSettings;
-
-    private DeviceSettings settings;
-    private DeviceProfileManager<? extends DeviceSettings> manager;
-    private String deviceType;
-    private TreeContext treeContext;
-    private List<Callback> callbacks;
     private RecoveryCodeCollectorDecisionNode node;
+    private DeviceProfileManager<? extends DeviceSettings> manager;
+    private DeviceSettings settings;
+    private String deviceType;
+    private List<Callback> callbacks;
+    private TreeContext treeContext;
 
-    {
-        describe("Recovery Code Collector Decision Node", () -> {
-            beforeEach(() -> {
-                MockitoAnnotations.initMocks(this);
-                oathDeviceSettings = new OathDeviceSettings();
-                pushDeviceSettings = new PushDeviceSettings();
-                webAuthnDeviceSettings = new WebAuthnDeviceSettings();
-            });
-            for (String type : Arrays.asList("OATH", "PUSH", "WEB_AUTHN")) {
-                when("recovery code type is: " + type, () -> {
-                    beforeEach(() -> {
-                        given(config.recoveryCodeType()).willReturn(RecoveryCodeType.valueOf(type));
-                        node = new RecoveryCodeCollectorDecisionNode(config, pushDeviceManager, oathDeviceManager,
-                                webAuthnDeviceManager);
+    @ParameterizedTest
+    @EnumSource(RecoveryCodeType.class)
+    void shouldReturnNameCallbackGivenNoCallbackProvided(RecoveryCodeType codeType) {
+        // Given
+        setupForType(codeType);
+        setupEmptyCallbacks();
 
-                        switch (type) {
-                        case "OATH":
-                            manager = oathDeviceManager;
-                            settings = oathDeviceSettings;
-                            deviceType = OATH_AUTH_TYPE;
-                            break;
-                        case "PUSH":
-                            manager = pushDeviceManager;
-                            settings = pushDeviceSettings;
-                            deviceType = PUSH_AUTH_TYPE;
-                            break;
-                        default:
-                            manager = webAuthnDeviceManager;
-                            settings = webAuthnDeviceSettings;
-                            deviceType = WEB_AUTHN_AUTH_TYPE;
-                            break;
-                        }
-                    });
-                    when("there is no callback provided", () -> {
-                        beforeEach(() -> {
-                            callbacks = Collections.emptyList();
-                            treeContext = getContext();
-                        });
-                        it("returns a NameCallback", this::returnsNameCallback);
-                    });
-                    when("an empty callback value is provided", () -> {
-                        beforeEach(() -> {
-                            NameCallback nameCallback = new NameCallback(("foo"));
-                            nameCallback.setName("");
-                        });
-                        it("returns a NameCallback", this::returnsNameCallback);
-                    });
-                    when("a code is provided", () -> {
-                        beforeEach(() -> {
-                            NameCallback nameCallback = new NameCallback("foo");
-                            nameCallback.setName("ferret");
-                            callbacks = singletonList(nameCallback);
-                            treeContext = getContext();
-                        });
-                        it("retrieves the recovery codes using the correct dao", () -> {
-                            Action result = node.process(treeContext);
-
-                            assertThat(result.outcome).isEqualTo("false");
-                            verify(manager).getDeviceProfiles("badger", "weasel");
-                        });
-                        it("returns true if the recovery code is correct", () -> {
-                            mockRecoveryCodes("ferret");
-                            Action result = node.process(treeContext);
-
-                            assertThat(result.outcome).isEqualTo("true");
-                        });
-                        it("returns false if the recovery code is incorrect", () -> {
-                            mockRecoveryCodes("otter");
-                            Action result = node.process(treeContext);
-
-                            assertThat(result.outcome).isEqualTo("false");
-                        });
-                        it("removes the code from the list", () -> {
-                            mockRecoveryCodes("ferret", "otter");
-                            int recoveryCodesSize = settings.getRecoveryCodes().size();
-                            Action result = node.process(treeContext);
-
-                            assertThat(result.outcome).isEqualTo("true");
-                            assertThat(settings.getRecoveryCodes().size()).isLessThan(recoveryCodesSize);
-                        });
-                        it("returns correct NodeType if the recovery code is correct", () -> {
-                            mockRecoveryCodes("ferret");
-                            Action result = node.process(treeContext);
-                            String nodeType = result.sessionProperties.get(NODE_TYPE);
-
-                            assertThat(nodeType).contains(deviceType);
-                        });
-                        it("returns no NodeType if the recovery code is incorrect", () -> {
-                            mockRecoveryCodes("otter");
-                            Action result = node.process(treeContext);
-
-                            assertThat(result.sessionProperties).doesNotContainKey(NODE_TYPE);
-                        });
-                    });
-                });
-            }
-        });
-    }
-
-    private void returnsNameCallback() {
+        // When
         Action result = node.process(treeContext);
 
+        // Then
+        verifyNameCallbackReturned(result);
+    }
+
+    @ParameterizedTest
+    @EnumSource(RecoveryCodeType.class)
+    void shouldRetrieveRecoveryCodesUsingCorrectDaoGivenNameCallbackWithCode(RecoveryCodeType codeType)
+            throws Exception {
+        // Given
+        setupForType(codeType);
+        setupCallbackWithCode();
+
+        // When
+        Action result = node.process(treeContext);
+
+        // Then
+        verify(manager).getDeviceProfiles(eq(USER), eq(REALM_VALUE));
+        assertThat(result.outcome).isEqualTo("false");
+    }
+
+    @ParameterizedTest
+    @EnumSource(RecoveryCodeType.class)
+    void shouldReturnTrueGivenCorrectRecoveryCode(RecoveryCodeType codeType) throws Exception {
+        // Given
+        setupForType(codeType);
+        setupCallbackWithCode();
+        mockRecoveryCodes(codeType, TEST_RECOVERY_CODE);
+
+        // When
+        Action result = node.process(treeContext);
+
+        // Then
+        assertThat(result.outcome).isEqualTo("true");
+    }
+
+    @ParameterizedTest
+    @EnumSource(RecoveryCodeType.class)
+    void shouldReturnFalseGivenIncorrectRecoveryCode(RecoveryCodeType codeType) throws Exception {
+        // Given
+        setupForType(codeType);
+        setupCallbackWithCode();
+        mockRecoveryCodes(codeType, INVALID_RECOVERY_CODE);
+
+        // When
+        Action result = node.process(treeContext);
+
+        // Then
+        assertThat(result.outcome).isEqualTo("false");
+    }
+
+    @ParameterizedTest
+    @EnumSource(RecoveryCodeType.class)
+    void shouldRemoveCodeFromListGivenCodeIsValid(RecoveryCodeType codeType) throws Exception {
+        // Given
+        setupForType(codeType);
+        setupCallbackWithCode();
+        mockRecoveryCodes(codeType, TEST_RECOVERY_CODE, INVALID_RECOVERY_CODE);
+        int recoveryCodesSize = settings.getRecoveryCodes().size();
+
+        // When
+        Action result = node.process(treeContext);
+
+        // Then
+        assertThat(result.outcome).isEqualTo("true");
+        assertThat(settings.getRecoveryCodes().size()).isLessThan(recoveryCodesSize);
+    }
+
+    @ParameterizedTest
+    @EnumSource(RecoveryCodeType.class)
+    void shouldSetCorrectNodeTypeGivenValidRecoveryCode(RecoveryCodeType codeType) throws Exception {
+        // Given
+        setupForType(codeType);
+        setupCallbackWithCode();
+        mockRecoveryCodes(codeType, TEST_RECOVERY_CODE);
+
+        // When
+        Action result = node.process(treeContext);
+
+        // Then
+        String nodeType = result.sessionProperties.get(NODE_TYPE);
+        assertThat(nodeType).contains(deviceType);
+    }
+
+    @ParameterizedTest
+    @EnumSource(RecoveryCodeType.class)
+    void shouldNotSetNodeTypeGivenInvalidRecoveryCode(RecoveryCodeType codeType) throws Exception {
+        // Given
+        setupForType(codeType);
+        setupCallbackWithCode();
+        mockRecoveryCodes(codeType, INVALID_RECOVERY_CODE);
+
+        // When
+        Action result = node.process(treeContext);
+
+        // Then
+        assertThat(result.sessionProperties).doesNotContainKey(NODE_TYPE);
+    }
+
+    // Helper methods
+    private void setupForType(RecoveryCodeType codeType) {
+        given(config.recoveryCodeType()).willReturn(codeType);
+        node = new RecoveryCodeCollectorDecisionNode(config, pushDeviceManager, oathDeviceManager,
+                webAuthnDeviceManager);
+
+        switch (codeType) {
+            case OATH:
+                manager = oathDeviceManager;
+                settings = new OathDeviceSettings();
+                deviceType = OATH_AUTH_TYPE;
+                break;
+            case PUSH:
+                manager = pushDeviceManager;
+                settings = new PushDeviceSettings();
+                deviceType = PUSH_AUTH_TYPE;
+                break;
+            case WEB_AUTHN:
+                manager = webAuthnDeviceManager;
+                settings = new WebAuthnDeviceSettings();
+                deviceType = WEB_AUTHN_AUTH_TYPE;
+                break;
+        }
+    }
+
+    private void setupEmptyCallbacks() {
+        callbacks = Collections.emptyList();
+        treeContext = getContext();
+    }
+
+    private void setupCallbackWithCode() {
+        NameCallback nameCallback = new NameCallback("foo");
+        nameCallback.setName(RecoveryCodeCollectorDecisionNodeTest.TEST_RECOVERY_CODE);
+        callbacks = singletonList(nameCallback);
+        treeContext = getContext();
+    }
+
+    private void verifyNameCallbackReturned(Action result) {
         assertThat(result.outcome).isNull();
         assertThat(result.callbacks).isNotNull().hasSize(1);
         assertThat(result.callbacks.get(0)).isInstanceOf(NameCallback.class);
     }
 
     private TreeContext getContext() {
-        return new TreeContext(json(object(field(USERNAME, user), field(REALM, realm))),
-                new Builder().build(), callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(json(object(field(USERNAME, USER), field(REALM, REALM_VALUE))))
+                .callbacks(callbacks)
+                .build();
     }
 
-    private void mockRecoveryCodes(String... codes) throws Exception {
-        given(manager.getDeviceProfiles(anyString(), anyString())).willAnswer(ignored -> singletonList(settings));
-        settings.setRecoveryCodes(Arrays.asList(codes));
+    private void mockRecoveryCodes(RecoveryCodeType codeType, String... codes) throws Exception {
+        // Set recovery codes if provided
+        if (codes != null && codes.length > 0) {
+            settings.setRecoveryCodes(Arrays.asList(codes));
+        }
+
+        // Use type-specific mocking based on code type
+        switch (codeType) {
+            case OATH:
+                given(oathDeviceManager.getDeviceProfiles(eq(USER), eq(REALM_VALUE)))
+                        .willReturn(Collections.singletonList((OathDeviceSettings) settings));
+                break;
+            case PUSH:
+                given(pushDeviceManager.getDeviceProfiles(eq(USER), eq(REALM_VALUE)))
+                        .willReturn(Collections.singletonList((PushDeviceSettings) settings));
+                break;
+            case WEB_AUTHN:
+                given(webAuthnDeviceManager.getDeviceProfiles(eq(USER), eq(REALM_VALUE)))
+                        .willReturn(Collections.singletonList((WebAuthnDeviceSettings) settings));
+                break;
+        }
     }
 }

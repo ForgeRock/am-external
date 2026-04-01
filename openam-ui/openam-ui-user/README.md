@@ -210,6 +210,20 @@ yarn run build
 ```
 The result is production-ready XUI output in the `build` directory.
 
+### Webpack / OpenSSL error on Node.js 17+
+
+If you see an error like:
+```
+Error: error:0308010C:digital envelope routines::unsupported
+```
+This happens because Node.js 17+ and later use OpenSSL 3, which is not fully supported by older versions of Webpack.
+
+Fix:
+```sh
+export NODE_OPTIONS=--openssl-legacy-provider
+yarn run build
+```
+
 [github-dotenv]: https://github.com/motdotla/dotenv
 [github-nvm]: https://github.com/creationix/nvm
 [github-webpack-dev-server]: https://github.com/webpack/webpack-dev-server

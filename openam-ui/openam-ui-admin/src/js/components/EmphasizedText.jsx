@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 import { map, uniqueId } from "lodash";
@@ -31,7 +31,9 @@ import React from "react";
  */
 function emphasizeMatchingText (children, match) {
     const isOdd = (number) => (number % 2) === 1;
-    const snippets = children.split(new RegExp(`(${match})`, "gi"));
+    // Ensure special regex characters are escaped before matching
+    const matchEscaped = match.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const snippets = children.split(new RegExp(`(${matchEscaped})`, "gi"));
     return map(snippets, (snippet, index) => {
         const key = uniqueId(`emphasizedText${snippet}`);
         return isOdd(index) ? <strong key={ key }>{snippet}</strong> : snippet;

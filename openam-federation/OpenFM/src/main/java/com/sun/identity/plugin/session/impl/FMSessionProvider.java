@@ -24,7 +24,7 @@
  *
  * $Id: FMSessionProvider.java,v 1.23 2009/11/20 00:30:40 exu Exp $
  *
- * Portions Copyrighted 2010-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2010-2026 Ping Identity Corporation.
  */
 
 package com.sun.identity.plugin.session.impl;
@@ -32,7 +32,7 @@ package com.sun.identity.plugin.session.impl;
 import static com.sun.identity.authentication.client.AuthClientUtils.getCookieDomainsForRequest;
 import static com.sun.identity.shared.encode.CookieUtils.addCookieToResponse;
 import static com.sun.identity.shared.encode.CookieUtils.newCookie;
-import static org.forgerock.openam.session.SessionConstants.PERSISTENT_COOKIE_SESSION_PROPERTY;
+import static org.forgerock.openam.utils.StringUtils.isEmpty;
 
 import java.security.SecureRandom;
 import java.util.Collections;
@@ -49,6 +49,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.authentication.service.AuthUtilsWrapper;
+import org.forgerock.openam.feature.Feature;
+import org.forgerock.openam.feature.Features;
+import org.forgerock.util.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +74,8 @@ import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.locale.Locale;
 import com.sun.identity.sm.DNMapper;
 
+import java.util.regex.Pattern;
+
 /**
  * Used for creating sessions, and for accessing session
  * information.
@@ -88,7 +93,7 @@ public class FMSessionProvider implements SessionProvider {
     private static final String PROPERTY_VALUES_SEPARATOR = "|";
     private static ResourceBundle bundle =
         Locale.getInstallResourceBundle("fmSessionProvider");
-    private static Logger debug = LoggerFactory.getLogger(FMSessionProvider.class);;
+    private static Logger debug = LoggerFactory.getLogger(FMSessionProvider.class);
     private static String cookieName = SystemPropertiesManager.
         get(Constants.AM_COOKIE_NAME);
 /**
@@ -106,8 +111,11 @@ public class FMSessionProvider implements SessionProvider {
     private static final int SECRET_LENGTH = 20;
     private static Set secretSet = Collections.synchronizedSet(
         new HashSet(1000));
+    private static final Pattern URI_SCHEME_PATTERN = Pattern.compile("^[A-Za-z][A-Za-z0-9+.-]*:.*");
 
-    private final FMSessionNotification sessionNotification = InjectorHolder.getInstance(FMSessionNotification.class);
+    private final FMSessionNotification sessionNotification;
+    private final AuthUtilsWrapper authUtilsWrapper;
+    private final Feature wsFedAuthMethodUriPrefixCheckFeature;
     
     static {
         String urlRewriteEnabledStr = SystemPropertiesManager.
@@ -123,6 +131,16 @@ public class FMSessionProvider implements SessionProvider {
      * Default Constructor
      */
     public FMSessionProvider() {
+        this(InjectorHolder.getInstance(FMSessionNotification.class),
+                InjectorHolder.getInstance(AuthUtilsWrapper.class),
+                InjectorHolder.getInstance(Features.class));
+    }
+
+    @VisibleForTesting
+    FMSessionProvider(FMSessionNotification sessionNotification, AuthUtilsWrapper authUtilsWrapper, Features features) {
+        this.sessionNotification = sessionNotification;
+        this.authUtilsWrapper = authUtilsWrapper;
+        this.wsFedAuthMethodUriPrefixCheckFeature = features.wsFedAuthMethodUriPrefixCheck();
     }
 
     /**
@@ -201,7 +219,7 @@ public class FMSessionProvider implements SessionProvider {
                     (!oldPrincipal.startsWith(
                     "id=" + principalName.toLowerCase() +",")))
                 {
-                    invalidateSession(oldSession, request, response);
+                    invalidateSession(oldSession, request, response, realm);
                     oldSession = null;
                 }
             } catch (SessionException se) {
@@ -378,7 +396,7 @@ public class FMSessionProvider implements SessionProvider {
             throw new SessionException(ex);
         }
     }
-    
+
     /**
      * May be used by both SP and IDP side to invalidate a session.
      * In case of SLO with SOAP, the last two input parameters
@@ -386,17 +404,19 @@ public class FMSessionProvider implements SessionProvider {
      * @param session the session to be invalidated
      * @param request the browser initiated HTTP request.
      * @param response the HTTP response going back to browser.
+     * @param realm the realm name.
      * @throws SessionException if an error occurred during session
-     * retrieval.     
+     * retrieval.
      */
     public void invalidateSession(
-        Object session,
-        HttpServletRequest request,   // optional input
-        HttpServletResponse response  // optional input
+            Object session,
+            HttpServletRequest request,   // optional input
+            HttpServletResponse response,  // optional input
+            String realm
     ) throws SessionException {
         try {
             SSOToken token = (SSOToken)session;
-            AuthUtils.logout(token.getTokenID().toString(), request, response);
+            authUtilsWrapper.logout(token.getTokenID().toString(), request, response, realm);
             if ((request != null) && (response != null)) {
                 AuthUtils.clearAllCookies(request, response);
             }
@@ -416,7 +436,6 @@ public class FMSessionProvider implements SessionProvider {
     public void clearPersistentCookie(Object session, HttpServletRequest request, HttpServletResponse response)
             throws SessionException {
         try {
-            AuthUtilsWrapper authUtilsWrapper = new AuthUtilsWrapper();
             authUtilsWrapper.clearPersistentCookie((SSOToken)session, request, response);
         } catch (SSOException se) {
             throw new SessionException(se);
@@ -519,13 +538,13 @@ public class FMSessionProvider implements SessionProvider {
      */
     public String[] getProperty(Object session, String name)
         throws SessionException {
-        if (session == null || name == null || name.length() == 0) {
+        if (session == null || isEmpty(name)) {
             return null;
         }
         if (name.equals(AUTH_METHOD)) {
             name = AUTH_TYPE;
         }
-        String values = null;
+        String values;
         try {
             if (SAML2Constants.IDP_SESSION_INDEX.equals(name)) {
                 // get session property by ignoring session state
@@ -538,28 +557,11 @@ public class FMSessionProvider implements SessionProvider {
         } catch (SSOException se) {
             throw new SessionException(se);
         }
-        if (values == null || values.length() == 0) {
+        if (isEmpty(values)) {
             return null;
         }
         if (name.equals(AUTH_TYPE)) {
-            String[] retValues = new String[1];
-            if (values.equalsIgnoreCase(SAMLConstants.AUTH_METHOD_CERT)) {
-                retValues[0] = SAMLConstants.AUTH_METHOD_CERT_URI;
-            }
-            if (values.equalsIgnoreCase(SAMLConstants.AUTH_METHOD_KERBEROS)) {
-                retValues[0] = SAMLConstants.AUTH_METHOD_KERBEROS_URI;
-            }
-            if (SAMLConstants.passwordAuthMethods.contains(
-                values.toLowerCase())) {
-                retValues[0] = SAMLConstants.AUTH_METHOD_PASSWORD_URI;
-            }
-            if (SAMLConstants.tokenAuthMethods.contains(
-                values.toLowerCase())) {
-                retValues[0] = SAMLConstants.AUTH_METHOD_HARDWARE_TOKEN_URI;
-            } else {
-                retValues[0] = SAMLConstants.AUTH_METHOD_URI_PREFIX+values;
-            }
-            return retValues;
+            return resolveAuthTypeValues(values);
         }
         
         if (name.equals(SAML2Constants.ORGANIZATION)) {
@@ -573,6 +575,28 @@ public class FMSessionProvider implements SessionProvider {
             returnVals[i] = StringUtils.getUnescapedValue(returnVals[i]);
         }
         return returnVals; 
+    }
+
+    private String[] resolveAuthTypeValues(String values) {
+        String[] retValues = new String[1];
+        String lower = values.toLowerCase();
+        boolean looksLikeUri = wsFedAuthMethodUriPrefixCheckFeature.isEnabled() &&
+                URI_SCHEME_PATTERN.matcher(values).matches();
+
+        if (looksLikeUri) {
+            retValues[0] = values;
+        } else if (values.equalsIgnoreCase(SAMLConstants.AUTH_METHOD_CERT)) {
+            retValues[0] = SAMLConstants.AUTH_METHOD_CERT_URI;
+        } else if (values.equalsIgnoreCase(SAMLConstants.AUTH_METHOD_KERBEROS)) {
+            retValues[0] = SAMLConstants.AUTH_METHOD_KERBEROS_URI;
+        } else if (SAMLConstants.passwordAuthMethods.contains(lower)) {
+            retValues[0] = SAMLConstants.AUTH_METHOD_PASSWORD_URI;
+        } else if (SAMLConstants.tokenAuthMethods.contains(lower)) {
+            retValues[0] = SAMLConstants.AUTH_METHOD_HARDWARE_TOKEN_URI;
+        } else {
+            retValues[0] = SAMLConstants.AUTH_METHOD_URI_PREFIX + values;
+        }
+        return retValues;
     }
 
     /**

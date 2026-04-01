@@ -136,7 +136,7 @@
             "complete" : "Complete",
             "confirm": "Confirm",
             "continue" : "Continue",
-            "copyright" : "Copyright &copy; 2010-2025 Ping Identity Corporation. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2026 Ping Identity Corporation. All rights reserved.",
             "create" : "Create",
             "createdAt" : "Created at",
             "createNew": "Create New",
@@ -314,6 +314,10 @@
             "applications-oauth2-trustedJwtIssuer": {
                 "breadcrumb": "Applications - OAuth 2.0 - Trusted JWT Issuer",
                 "title": "Trusted JWT Issuer"
+            },
+            "applications-oauth2-ai-agents": {
+                "breadcrumb": "Applications - OAuth 2.0 - AI Agents",
+                "title": "AI Agents"
             },
             "authentication": {
                 "title": "Authentication"
@@ -498,7 +502,11 @@
                             "title": "Start"
                         },
                         "properties": {
-                            "noProperties": "There are no properties to display."
+                            "latestVersion": "Latest (v__version__)",
+                            "noProperties": "There are no properties to display.",
+                            "updateAvailable": "Update Available",
+                            "updateAvailableDesc": "There is a new version of this node available.",
+                            "viewDetails": "View Details"
                         },
                         "nodeTypes": {
                             "label": "Enter some text to filter the list of authentication node types",
@@ -515,7 +523,9 @@
                                 "iot": "IoT",
                                 "designer": "Designer",
                                 "uncategorized": "Uncategorized"
-                            }
+                            },
+                            "errorLoading": "Failed to load available node types",
+                            "updateAvailable": "Update Available"
                         },
                         "selectedNode": {
                             "nodeName": "Node name"
@@ -523,6 +533,19 @@
                         "pages": {
                             "noNodes": "Drag a node here to add it to the page",
                             "alreadyComplete": "Only the last node in a page can contain multiple outcomes, which has already been added. To add another node, remove the last node from this page."
+                        },
+                        "revertNodeModal": {
+                          "desc": "Are you sure you want to revert to <b>version __version__</b>? Older versions may not offer the same capabilities as newer versions and may disrupt current tree function.",
+                          "title": "Revert Node Version",
+                          "revertingNode": "Reverting node..."
+                        },
+                        "updateNodeModal": {
+                          "errorLoadingVersionInfo": "Error loading new version information",
+                          "errorUpdatingNodeVersion": "Error updating node version",
+                          "moreInfo": "More info",
+                          "updatingNode": "Updating node...",
+                          "updateNodeVersion": "Update Node Version",
+                          "whatsNew": "What's New"
                         }
                     },
                     "toolbar": {
@@ -530,6 +553,7 @@
                         "fullscreen": "Toggle fullscreen",
                         "autoLayout": "Auto layout"
                     },
+                    "errorLoading": "Error retrieving tree",
                     "type": "Trees"
                 },
                 "list": {
@@ -835,6 +859,7 @@
                     "addEnvironmentCondition": "Add an Environment Condition",
                     "addSubjectCondition": "Add a Subject Condition",
                     "canAcceptOneChild": "The \"Not...\" logical operator can only accept one child",
+                    "authModuleDeprecated": "The Authentication by Module condition is no longer supported and always evaluates to false. You should remove this condition from all policies.",
 
                     "operators": {
                         "NOT": "Not...",
@@ -883,12 +908,13 @@
                             }
                         },
                         "AuthScheme": {
-                            "title": "Authentication by Module Instance",
+                            "title": "Authentication by Module Instance (deprecated)",
                             "props": {
                                 "authScheme": "Authentication Scheme",
                                 "applicationIdleTimeout": "Application Idle Timeout Scheme",
                                 "applicationName": "Application Name"
-                            }
+                            },
+                            "deprecated": true
                         },
                         "AuthenticateToRealm": {
                             "title": "Authentication to a Realm",
@@ -1446,8 +1472,44 @@
                             "title": "New Trusted JWT Issuer Agent Group"
                         }
                     }
+                },
+                "ai-agents": {
+                    "title": "AI Agents",
+                    "tabs": ["AI Agents", "AI Agent Groups"],
+                    "agents": {
+                        "list": {
+                            "grid": [ "Agent ID", "Group", "Status" ],
+                            "callToAction": {
+                                "button": "Add AI Agent",
+                                "title": "No AI Agents configured.",
+                                "description": "Configure AI Agents to use access tokens issued by AM to access protected resources."
+                            }
+                        },
+                        "edit": {
+                            "type": "AI Agent"
+                        },
+                        "new": {
+                            "clientId": "Client ID",
+                            "title": "New AI Agent"
+                        }
+                    },
+                    "groups": {
+                        "list": {
+                            "callToAction": {
+                                "button": "Add AI Agent Group",
+                                "title": "No AI Agent groups configured.",
+                                "description": "Specify settings for multiple OAuth 2.0 AI Agents by adding them to a group."
+                            },
+                            "grid": [ "Group ID", "Status" ]
+                        },
+                        "edit": {
+                            "type": "AI Agent Group"
+                        },
+                        "new": {
+                            "title": "New AI Agent Group"
+                        }
+                    }
                 }
-
             }
         },
         "identities": {
@@ -1499,6 +1561,9 @@
                     },
                     "noSuchUser": "No such user found",
                     "search": "Search Identities..."
+                },
+                "validation": {
+                    "invalidCharacters": "Must not contain the <code>*</code>, <code>(</code>, <code>)</code>, <code>&</code>, <code>!</code>, <code>{</code>, <code>}</code>, or <code>;</code> characters."
                 }
             },
             "groups": {
@@ -1675,6 +1740,10 @@
         "oauth20Client": "OAuth 2.0 Client",
         "oauth20Group_plural": "OAuth 2.0 Groups",
         "oauth20Group": "OAuth 2.0 Group",
+        "AIAgent": "AI Agent",
+        "AIAgent_plural": "AI Agents",
+        "AIAgentGroup": "AI Agent Group",
+        "AIAgentGroup_plural": "AI Agent Groups",
         "realm": "Realm",
         "role": "Role",
         "secretStore_plural": "Secret Stores",
@@ -1689,5 +1758,17 @@
         "node_type": "Node Type",
         "xacmlPolicyDecisionPointAbbr": "XACML PDP",
         "xacmlPolicyEnforcementPointAbbr": "XACML PEP"
+    },
+    "pingone": {
+        "worker": {
+            "test": {
+                "configurationError": "Invalid configuration provided",
+                "connectionCreationError": "Connection attempt failed",
+                "error": "Connection failed",
+                "success": "Connection was successful",
+                "saveAndTestConnection" : "Save and Test Connection",
+                "title": "Test Results"
+            }
+        }
     }
 }

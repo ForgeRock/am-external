@@ -15,8 +15,8 @@
  */
 package org.forgerock.openam.service.datastore;
 
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import com.google.inject.Provider;
+import jakarta.inject.Singleton;
 
 import org.forgerock.openam.services.datastore.DataStoreException;
 import org.forgerock.opendj.ldap.ConnectionFactory;

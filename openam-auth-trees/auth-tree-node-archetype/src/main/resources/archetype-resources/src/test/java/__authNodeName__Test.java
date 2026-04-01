@@ -217,7 +217,10 @@ class ${authNodeName}Test {
 
     private TreeContext createTreeContext(JsonValue sharedState, JsonValue transientState,
             ExternalRequestContext requestContext) {
-        return new TreeContext(sharedState, transientState, json(object()),
-                requestContext, List.of(), false, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .requestContext(requestContext)
+                .build();
     }
 }

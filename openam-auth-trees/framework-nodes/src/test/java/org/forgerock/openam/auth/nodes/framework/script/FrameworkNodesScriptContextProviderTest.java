@@ -40,7 +40,8 @@ class FrameworkNodesScriptContextProviderTest {
 
     @BeforeEach
     void setUp() {
-        provider = new FrameworkNodesScriptContextProvider(annotatedServiceRegistry, new ConfigProviderNodeContext());
+        provider = new FrameworkNodesScriptContextProvider(annotatedServiceRegistry,
+                new ConfigProviderNodeContext(null, null));
     }
 
     @Test

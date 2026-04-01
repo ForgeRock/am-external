@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -79,7 +79,7 @@ public interface HmacSigningKeyConfig {
      * @return The signing key.
      * @deprecated use {@link #signingKeyPurpose()} instead.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     Optional<char[]> hmacSigningKey();
 
     /**
@@ -88,7 +88,7 @@ public interface HmacSigningKeyConfig {
      * @return an optional signing key.
      * @deprecated use {@link #signingKeyReference(SecretCache)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     default Optional<SigningKey> wrappedHmacSigningKey() {
         return hmacSigningKey()
                 .map(key -> Base64.getDecoder().decode(new String(key)))
@@ -121,7 +121,7 @@ public interface HmacSigningKeyConfig {
      * @return an optional verification key.
      * @deprecated use {@link #verificationKeyPurpose()} instead.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     default Optional<VerificationKey> wrappedHmacVerificationKey() {
         return hmacSigningKey()
                 .map(key -> Base64.getDecoder().decode(new String(key)))

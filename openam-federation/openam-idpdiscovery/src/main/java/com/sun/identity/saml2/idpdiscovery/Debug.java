@@ -24,14 +24,13 @@
  *
  * $Id: Debug.java,v 1.5 2008/06/25 05:47:47 qcheng Exp $
  *
- * Portions Copyrighted 2015-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2015-2026 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.idpdiscovery;
 
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.newDate;
 
-import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -41,10 +40,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.MissingResourceException;
+
+import com.sun.identity.shared.configuration.SystemPropertiesManager;
 
 // NOTE: Since JVM specs guarantee atomic access/updates to int variables
 // (actually all variables except double and long), the design consciously
@@ -57,15 +57,15 @@ import java.util.MissingResourceException;
 /*******************************************************************************
 <p>Allows a uniform interface to file debug and exception information in a
 uniform format. <code>Debug</code> supports different levels/states of
-filing debug information (in the ascending order): <code>OFF</code>, 
-<code>ERROR</code>, <code>WARNING</code>, <code>MESSAGE</code> and 
+filing debug information (in the ascending order): <code>OFF</code>,
+<code>ERROR</code>, <code>WARNING</code>, <code>MESSAGE</code> and
 <code>ON</code>. A given debug level/state is enabled if the debug
 state/level is set to at least that state/level. For example, if the debug
-state is <code>ERROR</code>, only errors will be filed. If the debug state is 
+state is <code>ERROR</code>, only errors will be filed. If the debug state is
 <code>WARNING</code>, only errors and warnings will be filed. If the debug
 state is <code>MESSAGE</code>, everything will be filed.
-<code>MESSAGE</code> and <code>ON</code> are of the same levels; 
-the difference between them being <code>MESSAGE</code> writes to a file, 
+<code>MESSAGE</code> and <code>ON</code> are of the same levels;
+the difference between them being <code>MESSAGE</code> writes to a file,
 whereas <code>ON</code> writes to System.out.</p>
 <p>
 Debug service uses the property file, <code>DebugConfig.properties</code>, to
@@ -84,17 +84,17 @@ com.iplanet.services.debug.level
 com.iplanet.services.debug.directory
 </pre></blockquote>
 
-If there is an error reading or loading the properties, 
+If there is an error reading or loading the properties,
 debug service will redirect all debug information to <code>System.out</code>
 
 If these properties are changed, the server must be restarted for the
 changes to take effect.
 
 <p><b>NOTE:</b> Debugging is an IO intensive operation and may hurt
-application performance when abused. Particularly, note that Java evaluates 
-the arguments to <code>message()</code> and <code>warning()</code> even 
+application performance when abused. Particularly, note that Java evaluates
+the arguments to <code>message()</code> and <code>warning()</code> even
 when debugging is turned off.
-It is recommended that the debug state be checked before invoking any 
+It is recommended that the debug state be checked before invoking any
 <code>message()</code> or <code>warning()</code> methods to avoid unnecessary
 argument evaluation and to maximize application performance.</p>
 ******************************************************************************/
@@ -102,12 +102,12 @@ public class Debug {
     /** flags the disabled debug state.  */
     public static final int OFF = 0;
 
-    /** flags the state where error debugging is enabled. When debugging is set 
+    /** flags the state where error debugging is enabled. When debugging is set
      * to less than <code>ERROR</code>, error debugging is also disabled.
      */
     public static final int ERROR = 1;
 
-    /** flags the state where warning debugging is enabled, but message 
+    /** flags the state where warning debugging is enabled, but message
      * debugging is disabled. When debugging is set to less than
      * <code>WARNING</code>, warning debugging is also disabled.
      */
@@ -116,9 +116,9 @@ public class Debug {
     /** This state enables debugging of messages, warnings and errors. */
     public static final int MESSAGE = 3;
 
-    /** flags the enabled debug state for warnings, errors and messages. 
+    /** flags the enabled debug state for warnings, errors and messages.
      * Printing to a file is disabled. All printing is done on System.out.
-     */ 
+     */
     public static final int ON = 4;
 
     /** debugMap is a container of all active Debug objects. Log file name is
@@ -151,7 +151,7 @@ public class Debug {
 
     /** Initializes the Debug service so that Debug objects can be created. At
      * startup (when the first Debug object is ever created in a JVM), this
-     * method reads <code>DebugConfig.properties</code> file (using 
+     * method reads <code>DebugConfig.properties</code> file (using
      * {@link java.util.ResourceBundle} semantics) from one of the directories
      * in the CLASSPATH, and loads the properties. It creates the debug
      * directory. If all the directories in output dir don't have adequate
@@ -207,19 +207,19 @@ public class Debug {
         }
     }
 
-    /** This constructor takes as an argument the name of the debug file. The 
-     * debug file is neither created nor opened until the first time 
-     * <code>message()</code>, <code>warning()</code> or <code>error()</code> 
-     * is invoked and the debug state is neither <code>OFF</code> nor 
+    /** This constructor takes as an argument the name of the debug file. The
+     * debug file is neither created nor opened until the first time
+     * <code>message()</code>, <code>warning()</code> or <code>error()</code>
+     * is invoked and the debug state is neither <code>OFF</code> nor
      * <code>ON</code>.
-     * <p><b>NOTE:</b>The recommended and preferred method to create Debug 
+     * <p><b>NOTE:</b>The recommended and preferred method to create Debug
      * objects is <code>getInstance(String)</code>. This constructor may be
      * deprecated in future.</p>
      *
      * @param debugName name of the debug file to create or use
      * @deprecated  Use {@link #getInstance}
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public Debug(String debugName) {
         // Initialize the debug service the first time a Debug object is
         // created.
@@ -239,7 +239,7 @@ public class Debug {
     /**
      * Returns an existing instance of Debug for the specified debug file or a
      * new one if no such instance already exists. If a Debug object has to be
-     * created, its level is set to the level defined in the 
+     * created, its level is set to the level defined in the
      * <code>DebugConfig.properties</code> file. The level can be changed later
      * by using {@link #setDebug(int)} or {@link #setDebug(String)}
      *
@@ -255,11 +255,11 @@ public class Debug {
         }
         return debugObj;
     }
-    
+
     /** Checks if message debugging is enabled.
      *
      * <p><b>NOTE:</b> It is recommended that <code>messageEnabled()</code>
-     * be used instead of <code>debugEnabled()</code> as the former is more 
+     * be used instead of <code>debugEnabled()</code> as the former is more
      * intuitive.</>
      *
      * @return <code>true</code> if message debugging is enabled
@@ -267,7 +267,7 @@ public class Debug {
      *
      * @deprecated Use {@link #messageEnabled}
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public boolean debugEnabled() {
         return (debugLevel > Debug.WARNING);
     }
@@ -275,9 +275,9 @@ public class Debug {
     /** Checks if message debugging is enabled.
      *
      * <p><b>NOTE:</b> Debugging is an IO intensive operation and may hurt
-     * application performance when abused. Particularly, note that Java 
-     * evaluates arguments to <code>message()</code> even when 
-     * debugging is turned off. It is recommended that 
+     * application performance when abused. Particularly, note that Java
+     * evaluates arguments to <code>message()</code> even when
+     * debugging is turned off. It is recommended that
      * <code>messageEnabled()</code> be called to check the debug state
      * before invoking any <code>message()</code> methods to avoid
      * unnecessary argument evaluation and maximize application performance.</p>
@@ -292,9 +292,9 @@ public class Debug {
     /** Checks if warning debugging is enabled.
      *
      * <p><b>NOTE:</b> Debugging is an IO intensive operation and may hurt
-     * application performance when abused. Particularly, note that Java 
-     * evaluates arguments to <code>warning()</code> even when 
-     * warning debugging is turned off. It is recommended that 
+     * application performance when abused. Particularly, note that Java
+     * evaluates arguments to <code>warning()</code> even when
+     * warning debugging is turned off. It is recommended that
      * <code>warningEnabled()</code> be called to check the debug state
      * before invoking any <code>warning()</code> methods to avoid
      * unnecessary argument evaluation and maximize application performance.</p>
@@ -321,17 +321,17 @@ public class Debug {
     public int getState() {
         return debugLevel;
     }
-    
-    /** Prints messages only when the debug state is either 
+
+    /** Prints messages only when the debug state is either
      * DEBUG.MESSAGE or Debug.ON.
      *
      * <p><b>NOTE:</b> Debugging is an IO intensive operation and may hurt
-     * application performance when abused. Particularly, note that Java 
-     * evaluates arguments to <code>message()</code> even when 
+     * application performance when abused. Particularly, note that Java
+     * evaluates arguments to <code>message()</code> even when
      * debugging is turned off. So when the argument to this method involves
-     * the String concatenation operator '+' or any other method invocation, 
-     * <code>messageEnabled</code> <b>MUST</b> be used. It is recommended that 
-     * the debug state be checked by invoking <code>messageEnabled()</code> 
+     * the String concatenation operator '+' or any other method invocation,
+     * <code>messageEnabled</code> <b>MUST</b> be used. It is recommended that
+     * the debug state be checked by invoking <code>messageEnabled()</code>
      * before invoking any <code>message()</code> methods to avoid
      * unnecessary argument evaluation and maximize application performance.</p>
      *
@@ -346,10 +346,10 @@ public class Debug {
             message(msg, null);
         }
     }
-    
+
     /** <p> Prints debug and exception messages only when the debug
-     * state is either DEBUG.MESSAGE or Debug.ON. If the debug file is not 
-     * accessible and debugging is enabled, the message along with a time stamp 
+     * state is either DEBUG.MESSAGE or Debug.ON. If the debug file is not
+     * accessible and debugging is enabled, the message along with a time stamp
      * and thread info will be printed on <code>System.out</code>.</p>
      *
      * <p>This method creates the debug file if does not exist; otherwise it
@@ -362,11 +362,11 @@ public class Debug {
      * collector to clean up.</p>
      *
      * <p><b>NOTE:</b> Debugging is an IO intensive operation and may hurt
-     * application performance when abused. Particularly, note that 
-     * Java evaluates arguments to <code>message()</code> even when 
-     * debugging is turned off. It is recommended that the debug state be 
-     * checked by invoking <code>messageEnabled()</code> before invoking any 
-     * <code>message()</code> methods to avoid unnecessary argument evaluation 
+     * application performance when abused. Particularly, note that
+     * Java evaluates arguments to <code>message()</code> even when
+     * debugging is turned off. It is recommended that the debug state be
+     * checked by invoking <code>messageEnabled()</code> before invoking any
+     * <code>message()</code> methods to avoid unnecessary argument evaluation
      * and to maximize application performance.</p>
      *
      * @param msg message to be printed. A newline will be appended to the
@@ -384,18 +384,18 @@ public class Debug {
         }
     }
 
-    /** Prints warning messages only when debug level is greater than 
+    /** Prints warning messages only when debug level is greater than
      * DEBUG.ERROR.
      *
      * <p><b>NOTE:</b> Debugging is an IO intensive operation and may hurt
-     * application performance when abused. Particularly, note that 
-     * Java evaluates arguments to <code>warning()</code> even when 
+     * application performance when abused. Particularly, note that
+     * Java evaluates arguments to <code>warning()</code> even when
      * debugging is turned off. So when the argument to this method involves
-     * the String concatenation operator '+' or any other method invocation, 
-     * <code>warningEnabled</code> <b>MUST</b> be used. It is recommended that 
-     * the debug state be checked by invoking <code>warningEnabled()</code> 
-     * before invoking any <code>warning()</code> methods to avoid 
-     * unnecessary argument evaluation and to maximize application 
+     * the String concatenation operator '+' or any other method invocation,
+     * <code>warningEnabled</code> <b>MUST</b> be used. It is recommended that
+     * the debug state be checked by invoking <code>warningEnabled()</code>
+     * before invoking any <code>warning()</code> methods to avoid
+     * unnecessary argument evaluation and to maximize application
      * performance.</p>
      *
      * @param msg message to be printed. A newline will be appended to the
@@ -409,19 +409,19 @@ public class Debug {
             formatAndWrite("WARNING: ", msg, null);
         }
     }
-    
+
     /** Prints warning messages only when debug level is greater than
      * DEBUG.ERROR.
      *
      * <p><b>NOTE:</b> Debugging is an IO intensive operation and may hurt
-     * application performance when abused. Particularly, note that 
-     * Java evaluates arguments to <code>warning()</code> even when 
-     * debugging is turned off. It is recommended that the debug state be 
-     * checked by invoking <code>warningEnabled()</code> before invoking any 
-     * <code>warning()</code> methods to avoid unnecessary argument evaluation 
+     * application performance when abused. Particularly, note that
+     * Java evaluates arguments to <code>warning()</code> even when
+     * debugging is turned off. It is recommended that the debug state be
+     * checked by invoking <code>warningEnabled()</code> before invoking any
+     * <code>warning()</code> methods to avoid unnecessary argument evaluation
      * and to maximize application performance.</p>
      *
-     * <p>If the debug file is not accessible and debugging is enabled, the 
+     * <p>If the debug file is not accessible and debugging is enabled, the
      * message along with a time stamp and thread info will be printed on
      * <code>System.out</code>.</p>
      *
@@ -447,7 +447,7 @@ public class Debug {
             formatAndWrite("WARNING: ", msg, t);
         }
     }
-    
+
     /**
      * Prints error messages only when debug level is greater than DEBUG.OFF.
      *
@@ -462,9 +462,9 @@ public class Debug {
             formatAndWrite("ERROR: ", msg, null);
         }
     }
-    
+
     /** Prints error messages only if debug state is greater than
-     * Debug.OFF. If the debug file is not accessible and debugging is enabled, 
+     * Debug.OFF. If the debug file is not accessible and debugging is enabled,
      * the message along with a time stamp and thread info will be printed on
      * <code>System.out</code>.</p>
      *
@@ -506,7 +506,7 @@ public class Debug {
             }
             return;
         }
-            
+
         // The default capacity of StringBuffer in StringWriter is 16, but we
         // know for sure that the minimum header size is about 35. Hence, to
         // avoid reallocation allocate at least 160 chars.
@@ -530,15 +530,15 @@ public class Debug {
             t.printStackTrace(buf);
         }
         buf.flush();
-        
+
         write(swriter.toString());
     }
 
     /** Actually writes to the debug file. If it cannot write to the debug
-     * file, it turn off debugging. The first time this method is invoked on 
+     * file, it turn off debugging. The first time this method is invoked on
      * a Debug object, that object's debug file is created/opened in the
-     * directory specified by the 
-     * <code>property com.iplanet.services.debug.directory</code> in the 
+     * directory specified by the
+     * <code>property com.iplanet.services.debug.directory</code> in the
      * properties file, <code>DebugConfig.properties</code>.
      */
     private synchronized void write(String msg) {
@@ -565,7 +565,7 @@ public class Debug {
             debugFile.println(msg);
         } catch (IOException e) {
             System.err.println(msg);
-                
+
             // turn off debugging because debugFile is not accessible
             debugLevel = Debug.OFF;
         }
@@ -612,7 +612,7 @@ public class Debug {
      *             automatically set the debug level based on the information in
      *             <code>DebugConfig.properties</code> file.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public void setDebug() {
         // The following initService is temporary. setDebug() is anyways
         // deprecated and will be removed in future.
@@ -670,18 +670,18 @@ public class Debug {
     public void destroy() {
         finalize();
     }
-    
+
     /** Flushes and then closes the debug file. */
     protected void finalize() {
         synchronized (debugMap) {
             debugMap.remove(debugName);
         }
-        
+
         synchronized (this) {
             if (debugFile == null) {
                 return;
             }
-            
+
             debugLevel = Debug.OFF;
             debugFile.flush();
             debugFile.close();

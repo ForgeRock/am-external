@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.script;
@@ -27,7 +27,7 @@ import org.forgerock.openam.scripting.domain.ScriptContextDetails;
 import org.forgerock.openam.scripting.persistence.config.defaults.AnnotatedServiceRegistryScriptContextDetailsProvider;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 /**
  * Responsible for providing the auth node script contexts.
@@ -36,6 +36,7 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
 
     private final ScriptedDecisionNodeContext scriptedDecisionNodeContext;
     private final DeviceMatchNodeScriptContext deviceMatchNodeScriptContext;
+    private final OidcNodeScriptContext oidcNodeScriptContext;
 
     /**
      * Construct a new {@code AuthNodesScriptContextProvider}.
@@ -43,14 +44,16 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
      * @param annotatedServiceRegistry the annotated service registry.
      * @param scriptedDecisionNodeContext the next-gen scripted decision node context.
      * @param deviceMatchNodeScriptContext the device match node script context.
+     * @param oidcNodeScriptContext the OIDC node script context.
      */
     @Inject
     protected AuthNodesScriptContextProvider(AnnotatedServiceRegistry annotatedServiceRegistry,
             ScriptedDecisionNodeContext scriptedDecisionNodeContext, DeviceMatchNodeScriptContext
-            deviceMatchNodeScriptContext) {
+            deviceMatchNodeScriptContext, OidcNodeScriptContext oidcNodeScriptContext) {
         super(annotatedServiceRegistry);
         this.scriptedDecisionNodeContext = scriptedDecisionNodeContext;
         this.deviceMatchNodeScriptContext = deviceMatchNodeScriptContext;
+        this.oidcNodeScriptContext = oidcNodeScriptContext;
     }
 
     private List<String> whitelist() {
@@ -153,6 +156,7 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
 
         scriptContexts.add(scriptedDecisionNodeContext);
         scriptContexts.add(deviceMatchNodeScriptContext);
+        scriptContexts.add(oidcNodeScriptContext);
 
         return scriptContexts;
     }

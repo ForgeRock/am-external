@@ -31,9 +31,14 @@ public final class Saml2ClientConstants {
      */
     public static final String AM_LOCATION_COOKIE = "authenticationStep";
     /**
-     * Key for looking up the response key in the http query string.
+     * Legacy Key for looking up the response key in the http query string. No longer used by AM but retained as a
+     * query parameter in case any customers might be using it.
      */
     public static final String RESPONSE_KEY = "responsekey";
+    /**
+     * Key for looking up the SAML2 Object key in the http query string.
+     */
+    public static final String SAML_OBJECT_KEY_PARAM = "samlObjectKey";
     /**
      * Key for looking up the boolean error state from the http query string.
      */

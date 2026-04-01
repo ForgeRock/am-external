@@ -28,14 +28,12 @@ import static org.mockito.BDDMockito.given;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.PasswordCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.junit.jupiter.api.Test;
@@ -156,6 +154,9 @@ public class OneTimePasswordCollectorDecisionNodeTest {
     }
 
     private TreeContext getContext(JsonValue transientState, List<Callback> callbacks) {
-        return new TreeContext(json(object()), transientState, new Builder().build(), callbacks, Optional.empty());
+        return TreeContext.builder()
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 }

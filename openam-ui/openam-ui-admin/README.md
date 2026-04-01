@@ -260,6 +260,19 @@ More info: https://stackoverflow.com/questions/23620827/envsubst-command-not-fou
 
 Please see package.json for any modifications to these rules
 
+### Webpack / OpenSSL error on Node.js 17+
+
+If you see an error like:
+```
+Error: error:0308010C:digital envelope routines::unsupported
+```
+This happens because Node.js 17+ and later use OpenSSL 3, which is not fully supported by older versions of Webpack.
+
+Fix:
+```sh
+export NODE_OPTIONS=--openssl-legacy-provider
+yarn run build
+```
 
 [dotenv]: https://github.com/motdotla/dotenv
 [nodejs]: https://nodejs.org/en

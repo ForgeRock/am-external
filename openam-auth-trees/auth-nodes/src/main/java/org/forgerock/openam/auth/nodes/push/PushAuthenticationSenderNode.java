@@ -45,7 +45,7 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.am.cts.exceptions.CoreTokenException;
 import org.forgerock.json.JsonValue;
@@ -253,9 +253,10 @@ public class PushAuthenticationSenderNode implements Node {
         servicePredicates.add(new SignedJwtVerificationPredicate(secret, JWT));
         servicePredicates.add(new PushMessageChallengeResponsePredicate(secret, challenge, JWT));
 
-        // Update claims and state for the selected push type
+        // Update claims, state, and predicates for the selected push type
         config.pushType().updateClaims(jwtClaimsSetBuilder);
         config.pushType().updateState(context, this);
+        config.pushType().updatePredicates(servicePredicates);
 
         String jwt = new SignedJwtBuilderImpl(new SigningManager()
                 .newHmacSigningHandler(Base64.decode(device.getSharedSecret())))

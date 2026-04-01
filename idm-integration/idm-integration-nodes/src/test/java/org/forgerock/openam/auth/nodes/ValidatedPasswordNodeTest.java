@@ -24,13 +24,13 @@ import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_PASSWORD_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import java.util.Enumeration;
 import java.util.List;
@@ -52,7 +52,6 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -78,31 +77,29 @@ public class ValidatedPasswordNodeTest {
 
     @Mock
     private ValidatedPasswordNode.Config config;
-
     @Mock
     private Realm realm;
-
     @Mock
     private IdmIntegrationService idmIntegrationService;
 
     @InjectMocks
     private ValidatedPasswordNode node;
+
     private PreferredLocales preferredLocales;
+    private ValidatedPasswordCallback validatedPasswordCallback;
 
     @BeforeEach
     void before() throws Exception {
         preferredLocales = mock(PreferredLocales.class);
-        when(config.validateInput()).thenReturn(false);
+        given(config.validateInput()).willReturn(false);
+        validatedPasswordCallback = new ValidatedPasswordCallback("Password", false, json(array()), false);
+        validatedPasswordCallback.setPassword("mypw".toCharArray());
     }
 
     @Test
-    void processWithoutCallbackShouldReturnCallback() throws Exception {
+    void shouldSendPasswordCallbackIfNoCallbackPresentInContext() throws Exception {
         // Given
-        JsonValue sharedState = json(object(
-                field(OBJECT_ATTRIBUTES, object(
-                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
-                ))
-        ));
+        JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
         ResourceBundle resourceBundle = new ValidatedPasswordNodeTest.MockResourceBundle("Password");
         given(preferredLocales.getBundleInPreferredLocale(any(), any())).willReturn(resourceBundle);
@@ -119,22 +116,18 @@ public class ValidatedPasswordNodeTest {
     }
 
     @Test
-    void processWithCallbackShouldStorePasswordInState() throws Exception {
+    void shouldStorePasswordFromCallbackInState() throws Exception {
         // Given
-        JsonValue sharedState = json(object(
-                field(OBJECT_ATTRIBUTES, object(
-                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
-                ))
-        ));
+        JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
-
-        // When
         ResourceBundle resourceBundle = new ValidatedPasswordNodeTest.MockResourceBundle("Password");
         given(preferredLocales.getBundleInPreferredLocale(any(), any())).willReturn(resourceBundle);
-        when(config.passwordAttribute()).thenReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
-        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
+        given(config.passwordAttribute()).willReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
+        given(idmIntegrationService.storeAttributeInState(any(), any(), any())).willCallRealMethod();
         PasswordCallback callback = new PasswordCallback("Enter password", true);
         callback.setPassword("mypw".toCharArray());
+
+        // When
         Action action = node.process(getContext(singletonList(callback), sharedState, transientState));
 
         // Then
@@ -147,105 +140,83 @@ public class ValidatedPasswordNodeTest {
     }
 
     @Test
-    void processWithStateContainingIdShouldAppendIdToIdentityResource() throws Exception {
+    void shouldSendIdToIdentityResourceIfIdPresentInState() throws Exception {
         // Given
         JsonValue sharedState = json(object(
-                field(FIELD_CONTENT_ID, "id"),
-                field(OBJECT_ATTRIBUTES, object(
-                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
-
-                ))
+                field(FIELD_CONTENT_ID, "id")
         ));
         JsonValue transientState = json(object());
+        given(idmIntegrationService.getSchema(any(), any(), any())).willReturn(new JsonValue(OBJECT_MAPPER.readValue(
+                ValidatedPasswordNodeTest.class.getResource("/ValidatedPasswordNode/idmSchema.json"), Map.class)));
+        given(idmIntegrationService.getValidationRequirements(any(), any(), any()))
+                .willReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
+                        "/ValidatedPasswordNode/idmPolicyRead.json"), Map.class)));
+        given(config.passwordAttribute()).willReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
+        given(config.validateInput()).willReturn(true);
+        given(idmIntegrationService.validateInput(any(), any(), any(), any(), any(), eq(Optional.of("id"))))
+                .willReturn(json(object(field("result", true))));
 
         // When
-        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(new JsonValue(OBJECT_MAPPER.readValue(
-                ValidatedPasswordNodeTest.class.getResource("/ValidatedPasswordNode/idmSchema.json"), Map.class)));
-        when(idmIntegrationService.getValidationRequirements(any(), any(), any()))
-                .thenReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
-                        "/ValidatedPasswordNode/idmPolicyRead.json"), Map.class)));
-        when(config.passwordAttribute()).thenReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
-        when(config.validateInput()).thenReturn(true);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        when(idmIntegrationService.validateInput(any(), any(), captor.capture(), any(), any())).thenReturn(json(object(
-                field("result", false),
-                field("failedPolicyRequirements", array(
-                        object(
-                                field("policyRequirements", array(
-                                        object(
-                                                field("policyRequirement", "IS_NEW")
-                                        )
-                                )),
-                                field("property", DEFAULT_IDM_PASSWORD_ATTRIBUTE)
-                        )
-                ))
-        )));
-        ValidatedPasswordCallback callback = new ValidatedPasswordCallback("Password", false, json(array()), false);
-        callback.setPassword("mypw".toCharArray());
-        node.process(getContext(singletonList(callback), sharedState, transientState));
+        node.process(getContext(singletonList(validatedPasswordCallback), sharedState, transientState));
 
         // Then
-        assertThat(captor.getValue()).isEqualTo("managed/user/id");
+        verify(idmIntegrationService).validateInput(any(), any(), any(), any(), any(), eq(Optional.of("id")));
     }
 
     @Test
-    void processWithStateContainingNoIdForIdentityResource() throws Exception {
-        // When
-        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(new JsonValue(OBJECT_MAPPER.readValue(
+    void shouldUseIdResourceWithoutIdIfNotPresentInState() throws Exception {
+        // Given
+        given(idmIntegrationService.getSchema(any(), any(), any())).willReturn(new JsonValue(OBJECT_MAPPER.readValue(
                 ValidatedPasswordNodeTest.class.getResource("/ValidatedPasswordNode/idmSchema.json"), Map.class)));
-        when(idmIntegrationService.getValidationRequirements(any(), any(), any()))
-                .thenReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
+        given(idmIntegrationService.getValidationRequirements(any(), any(), any()))
+                .willReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
                         "/ValidatedPasswordNode/idmPolicyRead.json"), Map.class)));
-        when(config.passwordAttribute()).thenReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
-        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
-        when(config.validateInput()).thenReturn(true);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        when(idmIntegrationService.validateInput(any(), any(), captor.capture(), any(), any())).thenReturn(json(object(
-                field("result", true))));
-        ValidatedPasswordCallback callback = new ValidatedPasswordCallback("Password", false, json(array()), false);
-        callback.setPassword("mypw".toCharArray());
-        node.process(getContext(singletonList(callback), json(object()), json(object())));
+        given(config.passwordAttribute()).willReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
+        given(idmIntegrationService.storeAttributeInState(any(), any(), any())).willCallRealMethod();
+        given(config.validateInput()).willReturn(true);
+        given(idmIntegrationService.validateInput(any(), any(), any(), any(), any(), eq(Optional.empty())))
+                .willReturn(json(object(field("result", true))));
+
+        // When
+        node.process(getContext(singletonList(validatedPasswordCallback), json(object()), json(object())));
 
         // Then
-        assertThat(captor.getValue()).isEqualTo("managed/user");
+        verify(idmIntegrationService).validateInput(any(), any(), any(), any(), any(), eq(Optional.empty()));
     }
 
     @Test
     void processWithBadPasswordShouldReturnCallbackWithPolicyFailures() throws Exception {
         // Given
-        JsonValue sharedState = json(object(
-                field(OBJECT_ATTRIBUTES, object(
-                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
-                ))
-        ));
+        JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
-
-        // When
-        when(config.passwordAttribute()).thenReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
-        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(new JsonValue(OBJECT_MAPPER.readValue(
+        given(config.passwordAttribute()).willReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
+        given(idmIntegrationService.getSchema(any(), any(), any())).willReturn(new JsonValue(OBJECT_MAPPER.readValue(
                 ValidatedPasswordNodeTest.class.getResource("/ValidatedPasswordNode/idmSchema.json"), Map.class)));
-        when(idmIntegrationService.getValidationRequirements(any(), any(), any()))
-                .thenReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
+        given(idmIntegrationService.getValidationRequirements(any(), any(), any()))
+                .willReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
                         "/ValidatedPasswordNode/idmPolicyRead.json"), Map.class)));
-        when(config.validateInput()).thenReturn(true);
-        when(idmIntegrationService.validateInput(any(), any(), any(), any(), any())).thenReturn(json(object(
-                field("result", false),
-                field("failedPolicyRequirements", array(
-                        object(
-                                field("policyRequirements", array(
-                                        object(
-                                                field("params", object(
-                                                        field("minLength", 8)
-                                                )),
-                                                field("policyRequirement", "MIN_LENGTH")
-                                        )
-                                )),
-                                field("property", DEFAULT_IDM_PASSWORD_ATTRIBUTE)
-                        )
-                ))
-        )));
+        given(config.validateInput()).willReturn(true);
+        given(idmIntegrationService.validateInput(any(), any(), any(), any(), any(), any()))
+                .willReturn(json(object(
+                    field("result", false),
+                    field("failedPolicyRequirements", array(
+                            object(
+                                    field("policyRequirements", array(
+                                            object(
+                                                    field("params", object(
+                                                            field("minLength", 8)
+                                                    )),
+                                                    field("policyRequirement", "MIN_LENGTH")
+                                            )
+                                    )),
+                                    field("property", DEFAULT_IDM_PASSWORD_ATTRIBUTE)
+                            )
+                    ))
+            )));
         ValidatedPasswordCallback callback = new ValidatedPasswordCallback("Password", false, json(array()), false);
         callback.setPassword("mypw".toCharArray());
+
+        // When
         Action action = node.process(getContext(singletonList(callback), sharedState, transientState));
 
         // Then
@@ -259,10 +230,12 @@ public class ValidatedPasswordNodeTest {
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState,
             JsonValue transientState) {
-
-        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, transientState,
-                new ExternalRequestContext.Builder().locales(preferredLocales).build(),
-                callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .requestContext(new ExternalRequestContext.Builder().locales(preferredLocales).build())
+                .build();
     }
 
     static class MockResourceBundle extends ResourceBundle {

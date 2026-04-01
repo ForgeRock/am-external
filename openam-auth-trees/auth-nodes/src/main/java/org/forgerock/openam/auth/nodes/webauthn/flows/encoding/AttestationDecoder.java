@@ -22,7 +22,7 @@ import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2025 Ping Identity Corporation.
+ * Copyright 2019-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.json.JsonValue;
@@ -47,6 +47,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.feature.Features;
 import org.forgerock.openam.security.X509Decoder;
 import org.forgerock.openam.sm.ServiceConfigException;
 import org.forgerock.openam.sm.ServiceConfigValidator;
@@ -73,6 +74,7 @@ public class CertificateCollectorNode implements Node {
     private static final Logger logger = LoggerFactory.getLogger(CertificateCollectorNode.class);
     private final Config config;
     private final X509Decoder certificateDecoder;
+    private final Features features;
 
     /**
      * Validates the certificate collector node.
@@ -137,12 +139,14 @@ public class CertificateCollectorNode implements Node {
      * The constructor.
      *
      * @param config node config.
-     * @param certificateDecoder the X.509 decoder used for decoding the certificate
+     * @param certificateDecoder the X.509 decoder used for decoding the certificate.
+     * @param features the feature registry, used to check if validation of the full certificate chain is enabled
      */
     @Inject
-    public CertificateCollectorNode(@Assisted Config config, X509Decoder certificateDecoder) {
+    public CertificateCollectorNode(@Assisted Config config, X509Decoder certificateDecoder, Features features) {
         this.config = config;
         this.certificateDecoder = certificateDecoder;
+        this.features = features;
     }
 
     @Override
@@ -180,7 +184,7 @@ public class CertificateCollectorNode implements Node {
     }
 
     private boolean isHostTrusted(Set<String> trustedRemoteHosts, String clientIp) {
-        if (trustedRemoteHosts.size() == 0) {
+        if (trustedRemoteHosts.isEmpty()) {
             logger.debug("No trusted hosts specified, return false");
             return false;
         }
@@ -196,9 +200,9 @@ public class CertificateCollectorNode implements Node {
                 .getAttribute("jakarta.servlet.request.X509Certificate");
         if (allCerts != null && allCerts.length != 0) {
             X509Certificate userCert = allCerts[0];
-            logger.debug("X509Certificate: principal is: {}\nissuer DN:{}\nserial number:{}\nsubject dn:{}",
-                    userCert.getSubjectDN().getName(), userCert.getIssuerDN().getName(), userCert.getSerialNumber(),
-                    userCert.getSubjectDN().getName());
+            logger.debug("X509Certificate: principal (subject dn) is: {}\nissuer DN:{}\nserial number:{}",
+                    userCert.getSubjectX500Principal().getName(), userCert.getIssuerX500Principal().getName(),
+                    userCert.getSerialNumber());
             return allCerts;
         }
         return null;
@@ -206,25 +210,38 @@ public class CertificateCollectorNode implements Node {
 
     private X509Certificate[] getPortalStyleCert(ListMultimap<String, String> headers,
             String clientCertificateHttpHeaderName) throws NodeProcessException {
-        if (clientCertificateHttpHeaderName != null && clientCertificateHttpHeaderName.length() > 0) {
-            logger.debug("Checking cert in HTTP header");
-            StringTokenizer tok = new StringTokenizer(clientCertificateHttpHeaderName, ",");
-            while (tok.hasMoreTokens()) {
-                String key = tok.nextToken();
-                if (!headers.containsKey(key)) {
-                    continue;
-                }
-                String certHeader = headers.get(key).get(0).trim();
+        if (clientCertificateHttpHeaderName == null || clientCertificateHttpHeaderName.isEmpty()) {
+            return null;
+        }
+        logger.debug("Checking cert in HTTP header");
+        StringTokenizer tokenizer = new StringTokenizer(clientCertificateHttpHeaderName, ",");
+        while (tokenizer.hasMoreTokens()) {
+            String key = tokenizer.nextToken();
+            if (!headers.containsKey(key)) {
+                continue;
+            }
+            String certHeader = headers.get(key).get(0).trim();
+            X509Certificate[] certificates = null;
 
-                try {
+            try {
+                if (features.validateEntireCertificateChain().isEnabled()) {
+                    List<X509Certificate> certsInChain = certificateDecoder.decodeCertificateChain(certHeader);
+                    if (!certsInChain.isEmpty()) {
+                        certificates = certsInChain.toArray(new X509Certificate[0]);
+                    }
+                } else {
                     X509Certificate userCert = certificateDecoder.decodeCertificate(certHeader);
-                    logger.debug("X509Certificate: principal is: {}\nissuer DN:{}\nserial number:{}\nsubject dn:{}",
-                            userCert.getSubjectDN().getName(), userCert.getIssuerDN().getName(),
-                            userCert.getSerialNumber(), userCert.getSubjectDN().getName());
-                    return new X509Certificate[]{userCert};
-                } catch (CertificateException e) {
-                    throw new NodeProcessException("CertificateFromParameter(X509Cert)", e);
+                    certificates = new X509Certificate[]{userCert};
                 }
+                if (certificates != null) {
+                    X509Certificate userCert = certificates[0];
+                    logger.debug("X509Certificate: principal (subject dn) is: {}\nissuer DN:{}\nserial number:{}",
+                            userCert.getSubjectX500Principal().getName(),
+                            userCert.getIssuerX500Principal().getName(), userCert.getSerialNumber());
+                    return certificates;
+                }
+            } catch (CertificateException e) {
+                throw new NodeProcessException("CertificateFromParameter(X509Cert)", e);
             }
         }
         return null;

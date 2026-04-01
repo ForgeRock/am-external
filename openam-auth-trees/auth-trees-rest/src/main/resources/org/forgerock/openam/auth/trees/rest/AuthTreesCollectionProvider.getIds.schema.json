@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "i18n:api-descriptor/AuthTreesCollectionProvider#getIds.title",
+  "description": "i18n:api-descriptor/AuthTreesCollectionProvider#getIds.description",
+  "properties": {
+    "results": {
+      "type": "array",
+      "title": "i18n:api-descriptor/AuthTreesCollectionProvider#getIds.title",
+      "description": "i18n:api-descriptor/AuthTreesCollectionProvider#getIds.description",
+      "items": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": ["results"]
+}

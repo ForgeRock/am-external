@@ -45,9 +45,9 @@ import com.sun.identity.shared.configuration.SystemPropertiesManager;
  *
  * @deprecated since 14.0.0, use Common Audit Service
  */
-@Deprecated
+@Deprecated(since = "14.0.0")
 public class FedletLogger implements com.sun.identity.plugin.log.Logger {
-    
+
     protected Logger accessLogger;
     protected Logger errorLogger;
 
@@ -71,9 +71,9 @@ public class FedletLogger implements com.sun.identity.plugin.log.Logger {
         accessLogger = Logger.getLogger(componentName + ".access");
         errorLogger = Logger.getLogger(componentName + ".error");
     }
-    
+
     /**
-     * Logs message to the access logs. 
+     * Logs message to the access logs.
      *
      * @param level the log level , these are based on those
      *		defined in java.util.logging.Level, the values for
@@ -117,12 +117,12 @@ public class FedletLogger implements com.sun.identity.plugin.log.Logger {
         Map props) throws LogException
     {
         if (isAccessLoggable(level)) {
-            LogRecord lr = new LogRecord(level, 
+            LogRecord lr = new LogRecord(level,
                 formatMessage(messageId, data, session));
             accessLogger.log(lr);
         }
    }
-   
+
     private static String formatMessage(String messageId, String[] param,
         Object session) {
         if ((param == null) || (param.length == 0)) {
@@ -136,8 +136,8 @@ public class FedletLogger implements com.sun.identity.plugin.log.Logger {
             }
             return messageId;
         }
-    } 
-    
+    }
+
     /**
      * Logs error messages to the error logs.
      *
@@ -180,12 +180,12 @@ public class FedletLogger implements com.sun.identity.plugin.log.Logger {
       Map props) throws LogException
     {
         if (isErrorLoggable(level)) {
-            LogRecord lr = new LogRecord(level, 
+            LogRecord lr = new LogRecord(level,
                 formatMessage(messageId, data, session));
             errorLogger.log(lr);
         }
     }
-    
+
     /**
      * Returns <code>true</code> if logging is enabled.
      *
@@ -194,7 +194,7 @@ public class FedletLogger implements com.sun.identity.plugin.log.Logger {
     public boolean isLogEnabled() {
         return logStatus;
     }
-    
+
     /**
      * Checks if an access message of the given level would actually be logged
      * by this logger. This check is based on the Logger's effective level.
@@ -205,7 +205,7 @@ public class FedletLogger implements com.sun.identity.plugin.log.Logger {
     public boolean isAccessLoggable(Level level) {
         return accessLogger.isLoggable(level);
     }
-    
+
     /**
      * Checks if an error message of the given level would actually be logged
      * by this logger. This check is based on the Logger's effective level.

@@ -23,7 +23,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ResourceBundle;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.callback.PasswordCallback;
 
 import org.forgerock.json.JsonValue;

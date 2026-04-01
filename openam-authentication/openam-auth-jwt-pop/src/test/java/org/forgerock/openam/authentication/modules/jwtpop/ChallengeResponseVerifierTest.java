@@ -239,7 +239,7 @@ public class ChallengeResponseVerifierTest {
                 field("alg", "ES256"),
                 field("x", "57iUXcWTc-suFhA3fzImc_L4ImheHXgmiKAuOs7pUms"),
                 field("y", "lrABXqEjgPLlaUBXerhourCX2W9Uev3lQ49HSvetckE"),
-                field("d", Base64url.encode(new byte[32]))
+                field("d", Base64url.encode("invalid"))
         )));
 
         final String responseJwt = buildResponse(responseEncryptionKey, confirmationKey, challenge.getExpiresAt(),

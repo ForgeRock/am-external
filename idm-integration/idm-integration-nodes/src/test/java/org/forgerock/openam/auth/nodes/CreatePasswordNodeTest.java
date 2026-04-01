@@ -16,16 +16,13 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static javax.security.auth.callback.TextOutputCallback.ERROR;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.openam.auth.nodes.CreatePasswordNode.BUNDLE;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -35,7 +32,6 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.TextOutputCallback;
 
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,8 +51,7 @@ public class CreatePasswordNodeTest {
     @Test
     void processReturnsCallbacksOutcomeNoCallbacksArePresent() throws Exception {
         //GIVEN
-        TreeContext context = new TreeContext(json(new Object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder().build();
         CreatePasswordNode node = new CreatePasswordNode(config);
 
         //WHEN
@@ -70,8 +65,7 @@ public class CreatePasswordNodeTest {
     void processReturnsTrueOutcomeIfPasswordIsValid() throws Exception {
         //GIVEN
         when(config.minPasswordLength()).thenReturn(PASSWORD_LENGTH_MIN);
-        TreeContext context = new TreeContext(json(new Object()), new ExternalRequestContext.Builder().build(),
-                createPasswordCallback("password", "password"), Optional.empty());
+        TreeContext context = TreeContext.builder().callbacks(createPasswordCallback("password", "password")).build();
         CreatePasswordNode node = new CreatePasswordNode(config);
 
         //WHEN
@@ -85,8 +79,7 @@ public class CreatePasswordNodeTest {
     void processSetAPasswordInTransientStateOutcomeIfPasswordIsValid() throws Exception {
         //GIVEN
         when(config.minPasswordLength()).thenReturn(PASSWORD_LENGTH_MIN);
-        TreeContext context = new TreeContext(json(new Object()), new ExternalRequestContext.Builder().build(),
-                createPasswordCallback("password", "password"), Optional.empty());
+        TreeContext context = TreeContext.builder().callbacks(createPasswordCallback("password", "password")).build();
         CreatePasswordNode node = new CreatePasswordNode(config);
 
         //WHEN
@@ -101,8 +94,9 @@ public class CreatePasswordNodeTest {
     void processReturnsCallbacksIfPasswordsMismatch() throws Exception {
         //GIVEN
         when(config.minPasswordLength()).thenReturn(PASSWORD_LENGTH_MIN);
-        TreeContext context = new TreeContext(json(new Object()), new ExternalRequestContext.Builder().build(),
-                createPasswordCallback("password1", "password2"), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(createPasswordCallback("password1", "password2"))
+                .build();
         CreatePasswordNode node = new CreatePasswordNode(config);
 
         //WHEN
@@ -129,8 +123,9 @@ public class CreatePasswordNodeTest {
                 .mapToObj(String::valueOf)
                 .collect(Collectors.joining());
 
-        TreeContext context = new TreeContext(json(new Object()), new ExternalRequestContext.Builder().build(),
-                createPasswordCallback(shortPassword, shortPassword), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(createPasswordCallback(shortPassword, shortPassword))
+                .build();
         CreatePasswordNode node = new CreatePasswordNode(config);
 
         //WHEN

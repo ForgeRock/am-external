@@ -23,7 +23,7 @@ import static org.forgerock.openam.saml2.plugins.PluginRegistry.newKey;
 import java.util.List;
 import java.util.Set;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.forgerock.openam.saml2.plugins.PluginRegistry;
 import org.forgerock.openam.utils.StringUtils;

@@ -19,19 +19,31 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-radius</artifactId>
-        <version>8.0.2</version>
+        <version>8.1.0</version>
     </parent>
 
     <artifactId>openam-radius-common</artifactId>
     <name>OpenAM RADIUS common library</name>
     <description>
-        OpenAM Radius common library. Used by the openam-radius-server and openam-auth-radius modules
+        OpenAM Radius common library.
+        Used by the openam-radius-server, openam-auth-radius and openam-radius-node modules
     </description>
 
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.commons</groupId>
+            <artifactId>forgerock-util</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>${mockito-inline.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

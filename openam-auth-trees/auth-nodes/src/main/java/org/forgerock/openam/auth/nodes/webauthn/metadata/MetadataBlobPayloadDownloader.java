@@ -18,7 +18,7 @@ package org.forgerock.openam.auth.nodes.webauthn.metadata;
 import java.io.IOException;
 import java.security.cert.CertPath;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.exceptions.JwtReconstructionException;

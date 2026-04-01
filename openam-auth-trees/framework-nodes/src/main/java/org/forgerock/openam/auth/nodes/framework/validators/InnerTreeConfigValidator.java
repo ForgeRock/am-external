@@ -24,7 +24,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.am.trees.api.Tree;
 import org.forgerock.am.trees.api.TreeProvider;

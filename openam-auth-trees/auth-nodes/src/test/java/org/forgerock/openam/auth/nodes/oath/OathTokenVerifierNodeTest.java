@@ -37,7 +37,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
@@ -46,7 +45,6 @@ import javax.security.auth.callback.NameCallback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
@@ -54,9 +52,11 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
+import org.forgerock.openam.test.extensions.LoggerExtension;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -64,6 +64,9 @@ import com.google.common.collect.ImmutableList;
 
 @ExtendWith({MockitoExtension.class})
 public class OathTokenVerifierNodeTest {
+
+    @RegisterExtension
+    public LoggerExtension loggerExtension = new LoggerExtension(OathTokenVerifierNode.class);
 
     @Mock
     private OathTokenVerifierNode.Config config;
@@ -201,26 +204,29 @@ public class OathTokenVerifierNodeTest {
 
         // Then
         assertThat(result.outcome).isEqualTo(FAILURE_OUTCOME_ID);
+        assertThat(loggerExtension.getFormattedErrors()).contains("Invalid OTP code");
     }
 
     private TreeContext getContext(JsonValue sharedState) {
-        return new TreeContext(
-                sharedState, new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(
-                sharedState, new ExternalRequestContext.Builder().build(), callbacks, Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {
-        return new TreeContext(
-                sharedState, transientState, new ExternalRequestContext.Builder().build(),
-                callbacks, Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private OathDeviceSettings getDeviceSettings() {

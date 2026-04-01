@@ -23,8 +23,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.forgerock.audit.events.AccessAuditEventBuilder.ResponseStatus;
 import org.forgerock.json.JsonValue;

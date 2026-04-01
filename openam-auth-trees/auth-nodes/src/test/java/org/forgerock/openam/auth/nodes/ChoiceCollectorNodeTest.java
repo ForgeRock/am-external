@@ -38,7 +38,6 @@ import javax.security.auth.callback.ChoiceCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.TreeMetaData;
 import org.forgerock.openam.auth.nodes.ChoiceCollectorNode.Config;
@@ -236,6 +235,9 @@ public class ChoiceCollectorNodeTest {
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(sharedState, new Builder().build(), callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .callbacks(callbacks)
+                .build();
     }
 }

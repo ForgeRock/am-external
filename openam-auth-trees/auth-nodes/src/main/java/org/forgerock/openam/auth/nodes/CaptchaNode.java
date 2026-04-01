@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -29,8 +29,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.forgerock.http.Handler;
 import org.forgerock.http.protocol.Form;
@@ -106,9 +106,10 @@ public class CaptchaNode extends AbstractDecisionNode {
         /**
          * The reCAPTCHA secret key.
          *
+         * @deprecated Use {@link #secretKeyPurpose()} instead.
          * @return the key.
          */
-        @Deprecated
+        @Deprecated(since = "8.0.0", forRemoval = true)
         @Attribute(order = 200)
         Optional<String> secretKey();
 

@@ -17,7 +17,7 @@ package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
 
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
 
-import com.google.inject.Singleton;
+import jakarta.inject.Singleton;
 
 /**
  * Represents the None format attestation. If none is specified, then attestation is not performed.

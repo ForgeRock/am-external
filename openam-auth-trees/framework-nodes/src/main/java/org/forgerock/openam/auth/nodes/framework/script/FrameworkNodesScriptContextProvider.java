@@ -21,7 +21,7 @@ import static org.forgerock.openam.auth.nodes.framework.script.FrameworkNodesScr
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.scripting.domain.LegacyScriptContextDetails;
 import org.forgerock.openam.scripting.domain.ScriptContextDetails;

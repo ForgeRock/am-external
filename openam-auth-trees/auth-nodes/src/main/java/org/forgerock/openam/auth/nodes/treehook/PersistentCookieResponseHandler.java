@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.http.header.SetCookieHeader;
 import org.forgerock.http.protocol.Cookie;
@@ -61,27 +61,29 @@ final class PersistentCookieResponseHandler {
      * @param isHttpOnly if true it adds the http only setting.
      */
     void setCookieOnResponse(Response response, Request request, String cookieName, String cookieValue,
-                             Date expiryDate, boolean isSecure, boolean isHttpOnly) {
+                             Date expiryDate, boolean isSecure, boolean isHttpOnly, Cookie.SameSite sameSite) {
 
         logger.debug("setCookieOnResponse");
         Collection<String> domains = coreWrapper.getCookieDomainsForRequest(request);
         if (!domains.isEmpty()) {
             logger.debug("domains is not empty");
             for (String domain : domains) {
-                Cookie cookie = createCookie(cookieName, cookieValue, domain, expiryDate, isSecure, isHttpOnly);
+                Cookie cookie = createCookie(cookieName, cookieValue, domain, expiryDate, isSecure, isHttpOnly,
+                        sameSite);
                 SetCookieHeader header = new SetCookieHeader(Collections.singletonList(cookie));
                 for (String headerValue : header.getValues()) {
                     response.getHeaders().add(SET_COOKIE_HEADER_KEY, headerValue);
                 }
             }
         } else {
-            Cookie cookie = createCookie(cookieName, cookieValue, null, expiryDate, isSecure, isHttpOnly);
+            Cookie cookie = createCookie(cookieName, cookieValue, null, expiryDate, isSecure, isHttpOnly,
+                    sameSite);
             response.getHeaders().put(SET_COOKIE_HEADER_KEY, cookie);
         }
     }
 
     private Cookie createCookie(String name, String value, String domain, Date expiryDate, boolean isSecure,
-                                boolean isHttpOnly) {
+                                boolean isHttpOnly, Cookie.SameSite sameSite) {
         return new Cookie()
             .setName(name)
             .setValue(value)
@@ -89,7 +91,8 @@ final class PersistentCookieResponseHandler {
             .setDomain(domain)
             .setExpires(expiryDate)
             .setSecure(isSecure)
-            .setHttpOnly(isHttpOnly);
+            .setHttpOnly(isHttpOnly)
+            .setSameSite(sameSite);
     }
 
     /**

@@ -35,7 +35,7 @@ import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.PERIOD_QR_C
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.SECRET_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.TOTP_URI_HOST_QR_CODE_KEY;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.TextOutputCallback;

@@ -34,6 +34,7 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.forgerock.openam.saml2.SAMLData;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,12 +86,12 @@ public class SPCache {
             interval * 1000, interval * 1000);
 
     /**
-     * Map saves response data so that it can be retrieved and used for Post Authentication Processing classes.
+     * Map saves {@link SAMLData} so that it can be retrieved and used for Post Authentication Processing classes.
      * Key   :   A unique key String value
-     * Value : Saml2ResponseData object
+     * Value : {@link SAMLData}
      */
-    final public static PeriodicCleanUpMap samlResponseDataHash = new PeriodicCleanUpMap(
-            interval * 1000, interval * 1000);
+    final public static PeriodicCleanUpMap samlDataHash = new PeriodicCleanUpMap(
+            interval * 1000L, interval * 1000L);
 
     /**
      * Map saves the request info.

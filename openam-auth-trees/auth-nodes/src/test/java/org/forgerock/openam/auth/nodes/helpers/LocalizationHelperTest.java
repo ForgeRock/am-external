@@ -16,10 +16,8 @@
 
 package org.forgerock.openam.auth.nodes.helpers;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.forgerock.json.JsonValue.object;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -27,10 +25,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
-import java.util.Optional;
 
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -178,8 +173,7 @@ public class LocalizationHelperTest {
     }
 
     private TreeContext getContext() {
-        return new TreeContext(JsonValue.json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        return TreeContext.builder().build();
     }
 
 }

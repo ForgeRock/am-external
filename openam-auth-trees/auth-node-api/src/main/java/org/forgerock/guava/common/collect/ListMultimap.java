@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Portions Copyright 2018-2025 Ping Identity Corporation.
+ * Portions Copyright 2018-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.guava.common.collect;
-
-import com.google.common.annotations.GwtCompatible;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+
+import com.google.common.annotations.GwtCompatible;
 
 /**
  * In order to maintain binary compatibility between product versions less than 6.5, which used forgerock-guava (a
@@ -46,7 +46,7 @@ import javax.annotation.Nullable;
  * @since 2.0 (imported from Google Collections Library)
  * @deprecated Use {@link com.google.common.collect.ListMultimap} instead.
  */
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 @GwtCompatible
 public interface ListMultimap<K, V> extends Multimap<K, V> {
     /**

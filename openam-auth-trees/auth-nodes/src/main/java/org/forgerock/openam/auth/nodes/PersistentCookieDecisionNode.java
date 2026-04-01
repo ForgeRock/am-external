@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -22,13 +22,15 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.http.protocol.Cookie;
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
@@ -56,7 +58,6 @@ import org.forgerock.secrets.ValidSecretsReference;
 import org.forgerock.secrets.keys.SigningKey;
 import org.forgerock.secrets.keys.VerificationKey;
 import org.forgerock.util.promise.NeverThrowsException;
-import org.forgerock.util.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,7 @@ public class PersistentCookieDecisionNode extends AbstractDecisionNode implement
     private static final Logger logger = LoggerFactory.getLogger(PersistentCookieDecisionNode.class);
     private static final String BUNDLE = PersistentCookieDecisionNode.class.getName();
     private static final String DEFAULT_COOKIE_NAME = "session-jwt";
-    private static final Duration JWT_IDLE_TIMEOUT_IN_HOURS = Duration.duration(5, HOURS);
+    private static final Duration JWT_IDLE_TIMEOUT_IN_HOURS = Duration.ofHours(5);
     private final PersistentJwtProvider persistentJwtProvider;
     private final PersistentJwtClaimsHandler persistentJwtClaimsHandler;
     private final UUID nodeId;
@@ -135,7 +136,7 @@ public class PersistentCookieDecisionNode extends AbstractDecisionNode implement
          */
         @Attribute(order = 500, validators = {HmacSigningKeyValidator.class})
         @Password
-        @Deprecated
+        @Deprecated(since = "8.0.0", forRemoval = true)
         @Override
         Optional<char[]> hmacSigningKey();
 
@@ -154,6 +155,16 @@ public class PersistentCookieDecisionNode extends AbstractDecisionNode implement
         @Attribute(order = 600)
         default String persistentCookieName() {
             return DEFAULT_COOKIE_NAME;
+        }
+
+        /**
+         * Same Site property of the custom cookie.
+         *
+         * @return the same site flag of the custom cookie.
+         */
+        @Attribute(order = 700)
+        default Cookie.SameSite sameSite() {
+            return Cookie.SameSite.LAX;
         }
     }
 

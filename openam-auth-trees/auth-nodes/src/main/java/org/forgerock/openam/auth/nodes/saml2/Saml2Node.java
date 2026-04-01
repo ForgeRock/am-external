@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.forgerock.am.saml2.impl.Saml2ClientConstants.AM_LOCATION_COOKIE;
 import static org.forgerock.am.saml2.impl.Saml2ClientConstants.RESPONSE_KEY;
 import static org.forgerock.am.saml2.impl.Saml2ClientConstants.SAML2_CLIENT_BUNDLE_NAME;
+import static org.forgerock.am.saml2.impl.Saml2ClientConstants.SAML_OBJECT_KEY_PARAM;
 import static org.forgerock.am.saml2.impl.Saml2ClientConstants.SAML_VERIFY_ERROR_CODE;
 import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
@@ -37,6 +38,7 @@ import static org.forgerock.openam.auth.nodes.oauth.AbstractSocialAuthLoginNode.
 import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.ATTRIBUTES_SHARED_STATE_KEY;
 import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_INFO_SHARED_STATE_KEY;
 import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_NAMES_SHARED_STATE_KEY;
+import static org.forgerock.openam.auth.nodes.saml2.Saml2Node.SamlOutcome.ERROR;
 import static org.forgerock.openam.utils.CollectionUtils.getFirstItem;
 import static org.forgerock.openam.utils.CollectionUtils.isNotEmpty;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
@@ -47,9 +49,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.UUID;
 
-import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
+
+import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -60,7 +64,6 @@ import org.forgerock.am.saml2.api.Saml2Options;
 import org.forgerock.am.saml2.api.Saml2SsoException;
 import org.forgerock.am.saml2.api.Saml2SsoInitiator;
 import org.forgerock.am.saml2.impl.Saml2ClientConstants;
-import org.forgerock.am.saml2.impl.Saml2ResponseData;
 import org.forgerock.am.saml2.impl.Saml2SsoResponseUtils;
 import org.forgerock.am.saml2.profile.Saml2SsoResult;
 import org.forgerock.json.JsonValue;
@@ -68,20 +71,23 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Action.ActionBuilder;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.Namespace;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SharedStateConstants;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.nodes.oauth.AbstractSocialAuthLoginNode;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.headers.CookieUtilsWrapper;
+import org.forgerock.openam.saml2.SAMLData;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.Options;
+import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.am.util.SystemPropertiesWrapper;
 import com.sun.identity.idm.IdType;
@@ -102,17 +108,20 @@ import com.sun.identity.saml2.meta.SAML2MetaManager;
  * implementation will act as a SAML2 SP and will trigger an SP initiated authentication with the configured remote
  * identity provider.
  */
-@Node.Metadata(outcomeProvider = AbstractSocialAuthLoginNode.SocialAuthOutcomeProvider.class,
+@Node.Metadata(outcomeProvider = Saml2Node.SamlOutcomeProvider.class,
         configClass = Saml2Node.Config.class,
         tags = {"social", "federation"},
         namespace = Namespace.PRODUCT)
 public class Saml2Node extends AbstractDecisionNode {
 
+    private static final String BUNDLE = Saml2Node.class.getName();
     private static final Logger logger = LoggerFactory.getLogger(Saml2Node.class);
     private static final String MAIL_KEY_MAPPING = "mail";
     private static final String CACHE_KEY = "cacheKey";
     private static final String IS_TRANSIENT = "isTransient";
     private static final String UID = "uid";
+    private static final String IDP_ENTITY_MISMATCH_ERROR
+            = "Configured IDP \"%s\" does not match IDP from the assertion \"%s\"";
 
     private final Config config;
     private final Saml2SsoInitiator ssoInitiator;
@@ -124,6 +133,7 @@ public class Saml2Node extends AbstractDecisionNode {
     private final String metaAlias;
     private final Realm realm;
     private final SystemPropertiesWrapper systemProperties;
+    private final UUID nodeId;
     private ResourceBundle bundle = null;
     private String spEntityId;
     private String storageKey;
@@ -142,6 +152,16 @@ public class Saml2Node extends AbstractDecisionNode {
         @Attribute(order = 100, requiredValue = true)
         default String idpEntityId() {
             return "https://";
+        }
+
+        /**
+         * Whether the IDP entity ID should be validated against the assertion issuer.
+         *
+         * @return Whether the IDP entity ID should be validated against the assertion issuer.
+         */
+        @Attribute(order = 150, requiredValue = true)
+        default boolean validateIdpEntityId() {
+            return true;
         }
 
         /**
@@ -251,6 +271,7 @@ public class Saml2Node extends AbstractDecisionNode {
      *
      * @param config The service config.
      * @param realm The realm the node is in.
+     * @param nodeId The id of this node instance.
      * @param ssoInitiator The SSO initiator implementation.
      * @param responseUtils The SAML2 SSO response utils implementation.
      * @param cookieUtilsWrapper The cookie utils implementation.
@@ -259,11 +280,13 @@ public class Saml2Node extends AbstractDecisionNode {
      * @param systemProperties The system properties wrapper.
      */
     @Inject
-    public Saml2Node(@Assisted Config config, @Assisted Realm realm, Saml2SsoInitiator ssoInitiator,
-            Saml2SsoResponseUtils responseUtils, CookieUtilsWrapper cookieUtilsWrapper, SAML2MetaManager metaManager,
+    public Saml2Node(@Assisted Config config, @Assisted Realm realm, @Assisted UUID nodeId,
+            Saml2SsoInitiator ssoInitiator, Saml2SsoResponseUtils responseUtils,
+            CookieUtilsWrapper cookieUtilsWrapper, SAML2MetaManager metaManager,
             LegacyIdentityService identityService, SystemPropertiesWrapper systemProperties) {
         this.config = config;
         this.realm = realm;
+        this.nodeId = nodeId;
         this.ssoInitiator = ssoInitiator;
         this.responseUtils = responseUtils;
         this.cookieUtilsWrapper = cookieUtilsWrapper;
@@ -286,7 +309,8 @@ public class Saml2Node extends AbstractDecisionNode {
             spEntityId = metaManager.getEntityByMetaAlias(metaAlias);
             if (parseBoolean(request.getParameter(Saml2ClientConstants.ERROR_PARAM_KEY))) {
                 throw newResponseHandlingException(request);
-            } else if (context.request.parameters.containsKey(RESPONSE_KEY)) {
+            } else if (context.request.parameters.containsKey(SAML_OBJECT_KEY_PARAM)
+                    || context.request.parameters.containsKey(RESPONSE_KEY)) {
                 return handleReturnFromRedirect(context, request, response).build();
             }
 
@@ -344,11 +368,20 @@ public class Saml2Node extends AbstractDecisionNode {
     private ActionBuilder handleReturnFromRedirect(TreeContext context, HttpServletRequest request,
             HttpServletResponse response) throws NodeProcessException, SAML2Exception {
         cookieUtilsWrapper.addCookieToResponseForRequestDomains(request, response, AM_LOCATION_COOKIE, "", 0);
-        storageKey = getFirstItem(context.request.parameters.get(RESPONSE_KEY));
+        String samlObjectKey = getFirstItem(context.request.parameters.get(SAML_OBJECT_KEY_PARAM));
+        String responseKey = getFirstItem(context.request.parameters.get(RESPONSE_KEY));
 
-        Saml2ResponseData data;
+        SAMLData data = null;
         try {
-            data = responseUtils.readSaml2ResponseData(storageKey);
+            String keyUsed = samlObjectKey;
+            if (isNotBlank(samlObjectKey)) {
+                data = responseUtils.readSAMLData(samlObjectKey);
+            }
+            if (data == null && isNotBlank(responseKey)) {
+                data = responseUtils.readSAMLData(responseKey);
+                keyUsed = responseKey;
+            }
+            storageKey = keyUsed;
         } catch (SAML2TokenRepositoryException ex) {
             logger.error("Unable to retrieve SAML2 state from SFO", ex);
             throw new NodeProcessException(bundle.getString(Saml2ClientConstants.SAML_FAILOVER_ERROR_CODE));
@@ -356,16 +389,16 @@ public class Saml2Node extends AbstractDecisionNode {
         if (data == null) {
             logger.error("Unable to complete SAML2 authentication, response data not found");
             throw new NodeProcessException(bundle.getString(Saml2ClientConstants.SAML_FAILOVER_ERROR_CODE));
-        } else {
-            try {
-                responseUtils.removeSaml2ResponseData(storageKey);
-            } catch (SAML2TokenRepositoryException e) {
-                logger.error("Failed to remove data for responseKey starting with {}", storageKey.substring(0, 6), e);
-            }
         }
 
-        Subject subject = data.getSubject();
-        Assertion assertion = data.getAssertion();
+        Subject subject = data.getRawSubject();
+        Assertion assertion = data.getRawAssertion();
+        if (!validateIdpEntity(assertion)) {
+            String assertionIssuer = assertion.getIssuer().getValue();
+            String errorMessage = String.format(IDP_ENTITY_MISMATCH_ERROR, idpEntityId, assertionIssuer);
+            return Action.goTo(SamlOutcome.ERROR.name())
+                .withErrorMessage(errorMessage);
+        }
         sessionIndex = data.getSessionIndex();
         JsonValue sharedState = context.sharedState;
 
@@ -389,6 +422,23 @@ public class Saml2Node extends AbstractDecisionNode {
         return setSessionProperties(actionBuilder.replaceSharedState(
                 updateSharedState(username, ssoResult, assertion, sharedState, relayState, request)),
                 ssoResult.getNameId());
+    }
+
+    private boolean validateIdpEntity(Assertion assertion) throws NodeProcessException {
+        // Check if SAML2 IDP Entity Validation is enabled;
+        if (!config.validateIdpEntityId()) {
+            return true;
+        }
+
+        // Validate that the IDP entity ID from the assertion matches the configured IDP entity ID
+        String assertionIssuer = assertion.getIssuer().getValue();
+        if (idpEntityId.equals(assertionIssuer)) {
+            return true;
+        }
+
+        final String errorMessage = String.format(IDP_ENTITY_MISMATCH_ERROR, idpEntityId, assertionIssuer);
+        logger.error(errorMessage);
+        return false;
     }
 
     private boolean doesUserExist(String universalId) throws NodeProcessException {
@@ -527,6 +577,56 @@ public class Saml2Node extends AbstractDecisionNode {
             public String toString() {
                 return "HTTP-POST";
             }
+        }
+    }
+
+    /**
+     * The possible outcomes for the Sam2Node.
+     */
+    public enum SamlOutcome {
+        /**
+         * Successful authentication.
+         */
+        ACCOUNT_EXISTS,
+        /**
+         * Authentication failed.
+         */
+        NO_ACCOUNT,
+        /**
+         * An error occurred during authentication.
+         */
+        ERROR
+    }
+
+    /**
+     * Defines the possible outcomes from this node.
+     */
+    public static class SamlOutcomeProvider implements BoundedOutcomeProvider {
+
+        @Override
+        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes)
+                throws NodeProcessException {
+            return getAllOutcomes(locales)
+                    .stream()
+                    .filter(outcome -> {
+                        if (outcome.id.equals("ERROR")) {
+                            return nodeAttributes.get("validateIdpEntityId").defaultTo(false).asBoolean();
+                        }
+                        return true;
+                    }).toList();
+        }
+
+        @Override
+        public List<Outcome> getAllOutcomes(PreferredLocales locales) throws NodeProcessException {
+            ResourceBundle bundle = locales.getBundleInPreferredLocale(Saml2Node.BUNDLE,
+                    Saml2Node.SamlOutcomeProvider.class.getClassLoader());
+            return ImmutableList.of(
+                    new Outcome(ACCOUNT_EXISTS.name(),
+                            bundle.getString("accountExistsOutcome")),
+                    new Outcome(NO_ACCOUNT.name(),
+                            bundle.getString("noAccountOutcome")),
+                    new Outcome(ERROR.name(),
+                            bundle.getString("errorOutcome")));
         }
     }
 }

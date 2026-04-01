@@ -11,10 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.treehook;
 
+import static com.sun.identity.shared.Constants.AM_COOKIE_DEFAULT_VALUE;
+import static com.sun.identity.shared.Constants.AM_LB_COOKIE_DEFAULT_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.json;
@@ -37,25 +39,34 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.iplanet.am.util.SystemPropertiesWrapper;
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
+import com.sun.identity.shared.Constants;
 
 @ExtendWith(MockitoExtension.class)
 class SuccessDetailsTreeHookTest {
 
     @Mock
+    private SystemPropertiesWrapper systemProperties;
+    @Mock
     private SetSuccessDetailsNode.Config config;
     @Mock
     private SSOToken ssoToken;
     private JsonValue responseBody;
+    private Response response;
     private SuccessDetailsTreeHook treeHook;
 
     @BeforeEach
     void setUp() {
         responseBody = json(object());
-        Response response = new Response(Status.OK);
+        response = new Response(Status.OK);
         response.setEntity(responseBody);
-        treeHook = new SuccessDetailsTreeHook(config, ssoToken, response);
+        given(systemProperties.get(Constants.AM_COOKIE_NAME, AM_COOKIE_DEFAULT_VALUE))
+                .willReturn(AM_COOKIE_DEFAULT_VALUE);
+        given(systemProperties.get(Constants.AM_LB_COOKIE_NAME, AM_LB_COOKIE_DEFAULT_VALUE))
+                .willReturn(AM_LB_COOKIE_DEFAULT_VALUE);
+        treeHook = new SuccessDetailsTreeHook(config, ssoToken, response, systemProperties);
     }
 
     @Test
@@ -68,6 +79,31 @@ class SuccessDetailsTreeHookTest {
 
         // then
         assertThat(responseBody.get("testKey").asString()).isEqualTo("testValue");
+    }
+
+    @Test
+    void testAcceptWillAddHeaders() throws TreeHookException {
+        // given
+        given(config.headerControl()).willReturn(Map.of("X-Test-Header", "HeaderValue"));
+
+        // when
+        treeHook.accept();
+
+        // then
+        assertThat(response.getHeaders().getFirst("X-Test-Header")).isEqualTo("HeaderValue");
+    }
+
+    @Test
+    void testAcceptWillAddHeadersEvenWhenNoSession() throws TreeHookException {
+        // given
+        given(config.headerControl()).willReturn(Map.of("X-Test-Header", "HeaderValue"));
+        treeHook = new SuccessDetailsTreeHook(config, null, response, systemProperties);
+
+        // when
+        treeHook.accept();
+
+        // then
+        assertThat(response.getHeaders().getFirst("X-Test-Header")).isEqualTo("HeaderValue");
     }
 
     @Test
@@ -103,7 +139,7 @@ class SuccessDetailsTreeHookTest {
         Entity mockEntity = mock(Entity.class);
         given(response.getEntity()).willReturn(mockEntity);
         given(mockEntity.getJson()).willThrow(new IOException());
-        treeHook = new SuccessDetailsTreeHook(config, ssoToken, response);
+        treeHook = new SuccessDetailsTreeHook(config, ssoToken, response, systemProperties);
 
         // when / then
         assertThatThrownBy(() -> treeHook.accept()).isInstanceOf(TreeHookException.class)
@@ -131,6 +167,58 @@ class SuccessDetailsTreeHookTest {
 
         // then
         assertThat(responseBody.get("testKey").asMap()).containsEntry("key", "value");
+    }
+
+    @Test
+    void shouldRejectReservedHeaders() throws TreeHookException {
+        // given
+        given(config.headerControl()).willReturn(Map.of("Content-Type", " text/html; charset=utf-8",
+                "X-Frame-Options", "DENY",
+                "X-Custom-Header", "CustomValue"));
+
+        // when
+        treeHook.accept();
+
+        // then
+        assertThat(response.getHeaders().getFirst("Content-Type")).isEqualTo("application/json; charset=UTF-8");
+        assertThat(response.getHeaders().getFirst("X-Frame-Options")).isNull();
+        assertThat(response.getHeaders().getFirst("X-Custom-Header")).isEqualTo("CustomValue");
+    }
+
+    @Test
+    void shouldRejectSetCookieWhenSsoCookieCookies() throws TreeHookException {
+        // given
+        given(config.headerControl()).willReturn(Map.of("Set-Cookie", "iPlanetDirectoryPro=abc; Path=/; HttpOnly"));
+
+        // when
+        treeHook.accept();
+
+        // then
+        assertThat(response.getHeaders().getFirst("Set-Cookie")).isNull();
+    }
+
+    @Test
+    void shouldRejectSetCookieWhenLbCookieCookies() throws TreeHookException {
+        // given
+        given(config.headerControl()).willReturn(Map.of("Set-Cookie", "amlbcookie=abc; Path=/; HttpOnly"));
+
+        // when
+        treeHook.accept();
+
+        // then
+        assertThat(response.getHeaders().getFirst("Set-Cookie")).isNull();
+    }
+
+    @Test
+    void shouldAllowCustomCookies() throws TreeHookException {
+        // given
+        given(config.headerControl()).willReturn(Map.of("Set-Cookie", "CustomCookie=abc; Path=/; HttpOnly"));
+
+        // when
+        treeHook.accept();
+
+        // then
+        assertThat(response.getHeaders().getFirst("Set-Cookie")).isEqualTo("CustomCookie=abc; Path=/; HttpOnly");
     }
 
 }

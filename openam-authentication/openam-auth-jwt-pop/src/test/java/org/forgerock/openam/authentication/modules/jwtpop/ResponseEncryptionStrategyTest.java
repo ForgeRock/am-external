@@ -27,7 +27,7 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 
-import javax.inject.Provider;
+import com.google.inject.Provider;
 
 import org.forgerock.json.jose.jwk.EcJWK;
 import org.forgerock.json.jose.jwk.JWK;

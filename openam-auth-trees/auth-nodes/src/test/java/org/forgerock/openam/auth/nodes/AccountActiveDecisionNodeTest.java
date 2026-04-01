@@ -16,7 +16,6 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
@@ -30,10 +29,9 @@ import static org.mockito.Mockito.when;
 import java.util.Optional;
 
 import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,8 +67,10 @@ public class AccountActiveDecisionNodeTest {
     void setup() {
         when(identityProvider.getAMIdentity(any(), any())).thenReturn(Optional.of(mockUser));
 
-        context = new TreeContext(retrieveSharedState(), json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.of("mockUserId"));
+        context = TreeContext.builder()
+                .sharedState(retrieveSharedState())
+                .universalId("mockUserId")
+                .build();
 
         accountActiveDecisionNode = new AccountActiveDecisionNode(realm, amAccountLockoutFactory, identityProvider);
     }
@@ -91,8 +91,9 @@ public class AccountActiveDecisionNodeTest {
 
     @Test
     void shouldThrowNodeExceptionOnMissingUser() {
-        context = new TreeContext(json(object(field(USERNAME, "test"))), json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(json(object(field(USERNAME, "test"))))
+                .build();
         when(identityProvider.getAMIdentity(any(), any())).thenReturn(Optional.empty());
         assertThatThrownBy(() -> accountActiveDecisionNode.process(context))
                 .isInstanceOf(NodeProcessException.class)

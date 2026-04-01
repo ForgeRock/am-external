@@ -20,7 +20,7 @@ import static org.forgerock.openam.shared.secrets.Labels.SAML2_METADATA_SIGNING_
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.core.realms.RealmLookupException;
 import org.forgerock.openam.core.realms.Realms;

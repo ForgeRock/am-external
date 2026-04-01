@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2025 Ping Identity Corporation.
+ * Copyright 2016-2026 Ping Identity Corporation.
  */
 
 import _ from "lodash";
@@ -28,11 +28,12 @@ import JSONValues from "org/forgerock/openam/ui/common/models/JSONValues";
  */
 const ServicesService = new AbstractDelegate(`${Constants.host}${Constants.context}/json`);
 
-const getServiceSchema = function (realm, type) {
+const getServiceSchema = function (realm, type, options) {
     return ServicesService.serviceCall({
         url: fetchUrl(`/realm-config/services/${type}?_action=schema`, { realm }),
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
-        type: "POST"
+        type: "POST",
+        ...options
     }).then((response) => new JSONSchema(response));
 };
 const getServiceSubSchema = function (realm, serviceType, subSchemaType) {
@@ -50,15 +51,16 @@ ServicesService.instance = {
             headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" }
         });
     },
-    get (realm, type) {
+    get (realm, type, options) {
         function getInstance () {
             return ServicesService.serviceCall({
                 url: fetchUrl(`/realm-config/services/${type}`, { realm }),
-                headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" }
+                headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
+                ...options
             });
         }
 
-        return Promise.all([getServiceSchema(realm, type), getInstance()]).then((response) => ({
+        return Promise.all([getServiceSchema(realm, type, options), getInstance()]).then((response) => ({
             name: response[1]._type.name,
             schema: response[0],
             values: new JSONValues(response[1])

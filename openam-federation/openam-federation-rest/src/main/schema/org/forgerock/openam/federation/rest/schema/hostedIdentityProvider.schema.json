@@ -587,6 +587,20 @@
                 "default": "[Empty]"
               }
             }
+          },
+          "applicationContext": {
+            "traverseObject": true,
+            "title": "Application Context",
+            "type": "object",
+            "properties": {
+              "applicationContextEnabled": {
+                "attributeKey": "applicationContextEnabled",
+                "title": "Enable Application Context",
+                "description": "When enabled, this setting makes the application context available by default in all SAML flows as the <code>samlApplication</code> binding in scripted decision node scripts.",
+                "type": "boolean",
+                "default": false
+              }
+            }
           }
         }
       }

@@ -16,7 +16,6 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
@@ -30,12 +29,10 @@ import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.BadRequestException;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -78,8 +75,9 @@ public class ProfileCompletenessDecisionNodeTest {
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
 
         node = new ProfileCompletenessDecisionNode(config, realm, idmIntegrationService);
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveSharedState(), json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(retrieveSharedState())
+                .build();
     }
 
     @ParameterizedTest
@@ -97,8 +95,9 @@ public class ProfileCompletenessDecisionNodeTest {
             throws Exception {
         when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
 
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveUsernameSharedState(),
-                json(object()), new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(retrieveUsernameSharedState())
+                .build();
 
         when(config.threshold()).thenReturn(threshold);
         when(idmIntegrationService.getProfileCompleteness(any(), any(), any(), any(), any())).thenReturn(score);
@@ -109,8 +108,7 @@ public class ProfileCompletenessDecisionNodeTest {
     @Test
     void shouldThrowExceptionIfNoIdentityFound() throws Exception {
         when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, json(object()),
-                json(object()), new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder().build();
 
         assertThatThrownBy(() -> node.process(context))
                 .isInstanceOf(NodeProcessException.class)

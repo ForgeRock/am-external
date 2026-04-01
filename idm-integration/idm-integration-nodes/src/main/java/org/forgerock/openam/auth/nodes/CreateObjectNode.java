@@ -29,7 +29,7 @@ import static org.forgerock.openam.integration.idm.IdmIntegrationService.mapCont
 import java.util.List;
 import java.util.ResourceBundle;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.ResourceException;

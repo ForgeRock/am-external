@@ -17,6 +17,7 @@ package org.forgerock.openam.services.push.dispatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -28,6 +29,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.HashSet;
+import java.util.Set;
 
 import org.forgerock.am.cts.CTSPersistentStore;
 import org.forgerock.am.cts.api.tokens.Token;
@@ -39,6 +41,9 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
+import org.forgerock.openam.services.push.dispatch.predicates.Predicate;
+import org.forgerock.openam.services.push.dispatch.predicates.PredicateNotMetException;
+import org.forgerock.openam.services.push.dispatch.predicates.PushNumberChallengeResponsePredicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -204,5 +209,44 @@ public class MessageDispatcherTest {
 
         //then
         assertThat(cache.asMap()).isEmpty();
+    }
+
+    @Test
+    void shouldThrowExceptionGivenNumberChallengeNotMatchedAndMessageExpectedLocally() throws Exception {
+        //given
+        given(jsonSerialisation.serialise(any())).willReturn("{ }");
+        given(messageId.toString()).willReturn("AUTHENTICATE:badger");
+        Predicate predicate = mock(PushNumberChallengeResponsePredicate.class);
+        given(predicate.perform(any())).willReturn(false);
+        messageDispatcher.expectLocally(messageId, Set.of(predicate));
+
+        //when - then
+        assertThatThrownBy(() -> messageDispatcher.handle(messageId, json(object()), mockMessageHandler))
+                .isInstanceOf(PredicateNotMetException.class)
+                .hasMessage("Number challenge predicate was not matched. Message denied.");
+    }
+
+    @Test
+    void shouldThrowExceptionGivenNumberChallengeNotMatchedAndFallbackToCTS() throws Exception {
+        //given
+        given(jsonSerialisation.serialise(any())).willReturn("{ }");
+        given(messageId.toString()).willReturn("messageId");
+        Predicate predicate = mock(PushNumberChallengeResponsePredicate.class);
+        given(predicate.perform(any())).willReturn(false);
+        messageDispatcher.expectInCluster(messageId, Set.of(predicate));
+
+        String value = json(object(field("answer", "50"), field("location", "jwt"))).toString();
+        JsonValue predicates = json(object(field(
+                "org.forgerock.openam.services.push.dispatch.predicates.PushNumberChallengeResponsePredicate",
+                value)));
+        Token token = mock(Token.class);
+        given(token.getBlob()).willReturn(predicates.toString().getBytes());
+        given(persistentStore.read("messageId")).willReturn(token);
+        given(jsonSerialisation.deserialise(any(), any())).willReturn(predicate);
+
+        //when - then
+        assertThatThrownBy(() -> messageDispatcher.handle(messageId, json(object()), mockMessageHandler))
+                .isInstanceOf(PredicateNotMetException.class)
+                .hasMessage("Number challenge predicate was not matched. Message denied.");
     }
 }

@@ -16,7 +16,7 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import javax.inject.Provider;
+import com.google.inject.Provider;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -31,7 +31,7 @@ import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.dpro.session.SessionException;
 import com.iplanet.dpro.session.SessionIDFactory;

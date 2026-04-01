@@ -29,13 +29,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Optional;
-
 import org.forgerock.http.Handler;
 import org.forgerock.http.protocol.Response;
 import org.forgerock.http.protocol.Status;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.util.promise.Promise;
@@ -76,8 +73,9 @@ public class ReCaptchaNodeTest {
     @Test
     void shouldThrowExceptionIfNoResponseProvided() throws Exception {
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, false);
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         // when
         assertThatThrownBy(() -> node.process(context))
@@ -90,8 +88,9 @@ public class ReCaptchaNodeTest {
         when(config.reCaptchaUri()).thenReturn("https://www.google.com/recaptcha/api/siteverify");
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, false);
         callback.setResponse("response");
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         Promise promise = mock(Promise.class);
 
@@ -109,8 +108,9 @@ public class ReCaptchaNodeTest {
         when(config.reCaptchaUri()).thenReturn("https://www.google.com/recaptcha/api/siteverify");
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, false);
         callback.setResponse(SUCCESS);
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         Response response = new Response(Status.OK);
         response.setEntity(json(object(
@@ -129,8 +129,9 @@ public class ReCaptchaNodeTest {
         when(config.reCaptchaUri()).thenReturn("https://www.google.com/recaptcha/api/siteverify");
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, false);
         callback.setResponse("response");
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         Response response = new Response(Status.OK);
         response.setEntity(json(object(

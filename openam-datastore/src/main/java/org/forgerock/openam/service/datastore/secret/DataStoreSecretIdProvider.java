@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.shared.datastruct.CollectionHelper;

@@ -28,12 +28,9 @@ import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
 
-import com.google.auto.service.AutoService;
-
 /**
  * Responsible for providing SAML2 global scripts.
  */
-@AutoService(GlobalScriptsProvider.class)
 public class Saml2GlobalScriptsProvider implements GlobalScriptsProvider {
 
     @Override

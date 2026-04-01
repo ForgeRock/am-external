@@ -17,15 +17,12 @@
 package org.forgerock.openam.auth.nodes;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.json.JsonValue.json;
-import static org.forgerock.json.JsonValue.object;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,8 +47,8 @@ import org.forgerock.secrets.ValidSecretsReference;
 import org.forgerock.secrets.keys.SigningKey;
 import org.forgerock.secrets.keys.VerificationKey;
 import org.forgerock.util.promise.NeverThrowsException;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
@@ -121,8 +118,9 @@ public class PersistentCookieDecisionNodeTest {
                 .cookies(Map.of("session-jwt", COOKIE_VALUE)).build();
 
         // when
-        Action action = persistentCookieDecisionNode.process(new TreeContext(json(object()),
-                externalRequestContext, List.of(), Optional.empty()));
+        Action action = persistentCookieDecisionNode.process(TreeContext.builder()
+                .requestContext(externalRequestContext)
+                .build());
 
         // then
         assertThat(action.outcome).isEqualTo("true");
@@ -140,8 +138,9 @@ public class PersistentCookieDecisionNodeTest {
                 .build();
 
         //when
-        Action action = persistentCookieDecisionNode.process(new TreeContext(json(object()),
-                externalRequestContext, List.of(), Optional.empty()));
+        Action action = persistentCookieDecisionNode.process(TreeContext.builder()
+                .requestContext(externalRequestContext)
+                .build());
 
         //then
         assertThat(action.outcome).isEqualTo("true");
@@ -155,8 +154,9 @@ public class PersistentCookieDecisionNodeTest {
                                                                 .build();
 
         // when
-        Action action = persistentCookieDecisionNode.process(new TreeContext(json(object()),
-                externalRequestContext, List.of(), Optional.empty()));
+        Action action = persistentCookieDecisionNode.process(TreeContext.builder()
+                .requestContext(externalRequestContext)
+                .build());
 
         // then
         assertThat(action.outcome).isEqualTo("false");
@@ -177,8 +177,9 @@ public class PersistentCookieDecisionNodeTest {
 
         // When
         persistentCookieDecisionNode.process(
-                new TreeContext(json(object()),
-                        externalRequestContext, List.of(), Optional.empty()));
+                TreeContext.builder()
+                        .requestContext(externalRequestContext)
+                        .build());
 
         // Then
         verify(secretCache).namedOrValid(any(), eq("test-kid"));

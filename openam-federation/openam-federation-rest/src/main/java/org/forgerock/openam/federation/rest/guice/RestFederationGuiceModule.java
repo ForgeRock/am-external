@@ -19,7 +19,7 @@ import java.lang.reflect.Type;
 import java.security.cert.X509Certificate;
 import java.util.function.Function;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 import javax.xml.bind.JAXBIntrospector;
 
 import org.forgerock.openam.objectenricher.ObjectEnricher;
@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
+import jakarta.inject.Singleton;
 import com.sun.identity.saml2.key.KeyUtil;
 
 /**

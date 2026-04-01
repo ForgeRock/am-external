@@ -34,7 +34,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Stream;
 
@@ -42,7 +41,6 @@ import javax.security.auth.callback.Callback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
@@ -123,8 +121,7 @@ public class EmailTemplateNodeTest {
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
         when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
 
-        Action action = emailTemplateNode.process(new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.of("universalId")));
+        Action action = emailTemplateNode.process(TreeContext.builder().universalId("universalId").build());
 
         assertThat(action.outcome).isEqualTo("EMAIL_NOT_SENT");
         verify(idmIntegrationService, times(0)).sendTemplate(any(), any(), any(), any(), any(), any());
@@ -136,8 +133,7 @@ public class EmailTemplateNodeTest {
         when(config.identityAttribute()).thenReturn(null);
         when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
 
-        Action action = emailTemplateNode.process(new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.of("universalId")));
+        Action action = emailTemplateNode.process(TreeContext.builder().universalId("universalId").build());
 
         assertThat(action.outcome).isEqualTo("EMAIL_NOT_SENT");
         verify(idmIntegrationService, times(0)).sendTemplate(any(), any(), any(), any(), any(), any());
@@ -184,8 +180,7 @@ public class EmailTemplateNodeTest {
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState,
-                new ExternalRequestContext.Builder().build(), callbacks);
+        return TreeContext.builder().sharedState(sharedState).callbacks(callbacks).build();
     }
 
     private JsonValue userObject() {

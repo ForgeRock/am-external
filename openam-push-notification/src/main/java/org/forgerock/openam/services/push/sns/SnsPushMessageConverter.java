@@ -25,7 +25,7 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.services.push.PushMessage;
 import org.forgerock.openam.services.push.PushMessageConverter;
 
-import com.google.inject.Singleton;
+import jakarta.inject.Singleton;
 
 /**
  * Converts a basic message String into a format appropriate for passing into the SNS.

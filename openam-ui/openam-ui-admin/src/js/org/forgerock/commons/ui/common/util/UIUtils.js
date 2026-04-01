@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2025 Ping Identity Corporation.
+ * Copyright 2011-2026 Ping Identity Corporation.
  */
 
 import _ from "lodash";
@@ -155,6 +155,7 @@ Handlebars.registerHelper("partial", (name, context) => {
 
 Handlebars.registerHelper("policyEditorResourceHelper", function () {
     let result = this.options.newPattern.replace("-*-", "̂");
+    result = Handlebars.escapeExpression(result);
     result = result.replace(/\*/g,
         '<input class="form-control" required type="text" value="*" placeholder="*" />');
     result = result.replace("̂",

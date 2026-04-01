@@ -11,17 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2025 Ping Identity Corporation.
+ * Copyright 2020-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.builders;
 
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.openam.auth.nodes.framework.PageNode.ChildNodeConfig.DISPLAY_NAME_FIELD;
-import static org.forgerock.openam.auth.nodes.framework.PageNode.ChildNodeConfig.ID_FIELD;
-import static org.forgerock.openam.auth.nodes.framework.PageNode.ChildNodeConfig.NODE_TYPE_FIELD;
-import static org.forgerock.openam.auth.nodes.framework.PageNode.ChildNodeConfig.NODE_VERSION_FIELD;
+import static org.forgerock.openam.auth.nodes.framework.AbstractPageNode.ChildNodeConfig.DISPLAY_NAME_FIELD;
+import static org.forgerock.openam.auth.nodes.framework.AbstractPageNode.ChildNodeConfig.ID_FIELD;
+import static org.forgerock.openam.auth.nodes.framework.AbstractPageNode.ChildNodeConfig.NODE_TYPE_FIELD;
+import static org.forgerock.openam.auth.nodes.framework.AbstractPageNode.ChildNodeConfig.NODE_VERSION_FIELD;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +33,6 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.nodes.framework.PageNode;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
 
-import com.iplanet.am.util.SystemPropertiesWrapper;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.sm.SMSException;
 
@@ -91,18 +90,16 @@ public class PageNodeBuilder extends AbstractNodeBuilder implements PageNode.Con
     /**
      * Adds nodes to the Page Node.
      *
-     * @param nodeBuilder      the builder associated with the node
-     * @param nodeType         the type of the node
-     * @param nodeVersion      the version of the node
-     * @param displayName      the display name of the node
-     * @param systemProperties the SystemPropertiesWrapper object
+     * @param nodeBuilder           the builder associated with the node
+     * @param nodeType              the type of the node
+     * @param nodeVersion           the version of the node
+     * @param displayName           the display name of the node
      * @return the page node builder
      */
-    public PageNodeBuilder addNode(NodeBuilder nodeBuilder, String nodeType, int nodeVersion, String displayName,
-                                   SystemPropertiesWrapper systemProperties) {
+    public PageNodeBuilder addNode(NodeBuilder nodeBuilder, String nodeType, int nodeVersion, String displayName) {
         JsonValue jsonNodeConfig = json(object(field(ID_FIELD, nodeBuilder.getId()), field(NODE_TYPE_FIELD, nodeType),
                 field(NODE_VERSION_FIELD, nodeVersion), field(DISPLAY_NAME_FIELD, displayName)));
-        nodeConfigs.add(PageNode.ChildNodeConfig.create(jsonNodeConfig, systemProperties).toString());
+        nodeConfigs.add(PageNode.ChildNodeConfig.create(jsonNodeConfig).toString());
         nodeBuilders.add(nodeBuilder);
         return this;
     }

@@ -11,12 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 Ping Identity Corporation.
+ * Copyright 2025-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
 import java.util.Optional;
 
+import org.forgerock.am.identity.domain.Identity;
 import org.forgerock.openam.core.realms.Realm;
 
 import com.sun.identity.idm.AMIdentity;
@@ -25,6 +26,18 @@ import com.sun.identity.idm.AMIdentity;
  * Provider for getting AMIdentity objects in a node.
  */
 public interface NodeUserIdentityProvider {
+
+    /**
+     * Gets the Identity object from the information stored in TreeContext.
+     * @param realm the realm to search for the identity in
+     * @param identity the identified identity to get the AMIdentity for
+     * @param nodeState the state data for the node calling this method.
+     * @return The AMIdentity object.
+     * @throws NodeProcessException if there is a problem getting the AMIdentity object.
+     */
+    Optional<Identity> getIdentity(Realm realm, IdentifiedIdentity identity, NodeState nodeState)
+            throws NodeProcessException;
+
     /**
      * Gets the AMIdentity object from the information stored in TreeContext.
      *
@@ -35,7 +48,10 @@ public interface NodeUserIdentityProvider {
      * @param universalId An optional universal id.
      * @param nodeState   The state data for the node calling this method.
      * @return The AMIdentity object.
+     * @deprecated use {@link #getIdentity(Realm, IdentifiedIdentity, NodeState)} instead, which avoids using
+     *   the deprecated universalId field.
      */
+    @Deprecated(since = "8.1.0", forRemoval = true)
     Optional<AMIdentity> getAMIdentity(Optional<String> universalId, NodeState nodeState);
 
     /**
@@ -47,7 +63,10 @@ public interface NodeUserIdentityProvider {
      *
      * @param nodeState The state data for the node calling this method.
      * @return An optional of the universalId if it can be found, else an empty optional.
+     * @deprecated use {@link #getIdentity(Realm, IdentifiedIdentity, NodeState)} and
+     * call {@link Identity#asUniversalId()} on the resulting Identity.
      */
+    @Deprecated(since = "8.1.0", forRemoval = true)
     Optional<String> getUniversalId(NodeState nodeState);
 
     /**
@@ -56,6 +75,9 @@ public interface NodeUserIdentityProvider {
      * @param username the username of the identity
      * @param realm the realm of the identity
      * @return An optional of the universalId if it can be found, else an empty optional.
+     * @deprecated use {@link #getIdentity(Realm, IdentifiedIdentity, NodeState)} and
+     * call {@link Identity#asUniversalId()} on the resulting Identity.
      */
+    @Deprecated(since = "8.1.0", forRemoval = true)
     Optional<String> getUniversalId(String username, Realm realm);
 }

@@ -11,15 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
+import org.forgerock.openam.auth.node.api.ScriptedLocalizedMessage;
+import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
 
 import com.google.auto.service.AutoService;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.multibindings.Multibinder;
 
 /**
@@ -31,5 +34,15 @@ public class ScriptedNodeGuiceModule extends AbstractModule {
     protected void configure() {
         Multibinder.newSetBinder(binder(), ScriptContextDetailsProvider.class)
                 .addBinding().to(AuthNodesScriptContextProvider.class);
+
+        Multibinder<GlobalScriptsProvider> globalScriptsProviderMultibinder =
+                Multibinder.newSetBinder(binder(), GlobalScriptsProvider.class);
+        globalScriptsProviderMultibinder.addBinding().to(AuthNodesGlobalScriptsProvider.class);
+        globalScriptsProviderMultibinder.addBinding().to(DeviceMatchNodeScriptContext.class);
+        globalScriptsProviderMultibinder.addBinding().to(ScriptedDecisionNodeContext.class);
+
+        install(new FactoryModuleBuilder()
+                .implement(ScriptedLocalizedMessage.class, ScriptedLocalizedMessageImpl.class)
+                .build(ScriptedLocalizedMessage.Factory.class));
     }
 }

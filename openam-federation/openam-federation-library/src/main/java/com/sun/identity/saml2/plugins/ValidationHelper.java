@@ -17,6 +17,7 @@ package com.sun.identity.saml2.plugins;
 
 import static com.sun.identity.saml2.common.SAML2SDKUtils.bundle;
 
+import com.sun.identity.saml2.assertion.Assertion;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 public class ValidationHelper {
@@ -68,4 +69,15 @@ public class ValidationHelper {
         }
     }
 
+    /**
+     * Validates that the provided assertion is not null. <br>
+     *
+     * @param assertion the assertion
+     * @throws SAML2Exception if the assertion is null
+     */
+    public void validateAssertion(Assertion assertion) throws SAML2Exception {
+        if (assertion == null) {
+            throw new SAML2Exception(bundle.getString("nullAssertion"));
+        }
+    }
 }

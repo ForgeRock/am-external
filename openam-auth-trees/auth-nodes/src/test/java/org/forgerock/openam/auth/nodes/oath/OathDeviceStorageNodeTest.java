@@ -11,12 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022-2025 Ping Identity Corporation.
+ * Copyright 2022-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
@@ -30,6 +29,7 @@ import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_DEVICE_PROFILE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_ENABLE_RECOVERY_CODE_KEY;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.anyString;
@@ -39,19 +39,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.Optional;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.core.rest.devices.DeviceJsonUtils;
+import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
+import org.forgerock.openam.core.rest.devices.oath.UserOathDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
+import org.forgerock.openam.utils.CodeException;
+import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -67,13 +71,17 @@ public class OathDeviceStorageNodeTest {
     @Mock
     private Realm realm;
     @Mock
-    private OathDeviceProfileHelper deviceProfileHelper;
+    private OathDeviceProfileHelper mockDeviceProfileHelper;
     @Mock
     private AMIdentity userIdentity;
 
     private OathDeviceStorageNode node;
     @Mock
     private NodeUserIdentityProvider identityProvider;
+    @Mock
+    UserOathDeviceProfileManager profileManager;
+    @Mock
+    RecoveryCodeGenerator recoveryCodeGenerator;
 
     @Test
     void processReturnFailureOutcomeIfDeviceDataNotPresentInSharedState() throws Exception {
@@ -96,9 +104,9 @@ public class OathDeviceStorageNodeTest {
         // Given
         initNode();
 
-        given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
+        given(mockDeviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
                 .willReturn(getDeviceSettings());
-        given(deviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
+        given(mockDeviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
                 .willReturn(Arrays.asList("z0WKEw0Wc8", "Ios4LnA2Qn"));
         doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
         doNothing().when(node).setUserToNotSkippable(any(), anyString());
@@ -118,15 +126,54 @@ public class OathDeviceStorageNodeTest {
     }
 
     @Test
+    void recoveryCodesAddedToSharedStateObjectOnSave()
+            throws NodeProcessException, IOException, DevicePersistenceException, CodeException {
+        // Given
+        DeviceJsonUtils<OathDeviceSettings> deviceJsonUtils = new DeviceJsonUtils<>(OathDeviceSettings.class);
+        OathDeviceSettings deviceSettings = getDeviceSettings();
+        when(realm.asPath()).thenReturn("root");
+        given(recoveryCodeGenerator.generateCodes(anyInt(), any(), eq(false)))
+                .willReturn(Arrays.asList("z0WKEw0Wc8", "Ios4LnA2Qn"));
+        OathDeviceProfileHelper helper = new OathDeviceProfileHelper(
+                realm, deviceJsonUtils, profileManager, recoveryCodeGenerator);
+        doNothing().when(profileManager).saveDeviceProfile(anyString(), anyString(), any());
+
+        initNode(helper);
+
+        TreeContext context = getContext(getOathDeviceProfileFromSharedState(true));
+        context.sharedState.put(OATH_DEVICE_PROFILE_KEY, helper.encodeDeviceSettings(deviceSettings));
+
+        doReturn(userIdentity).when(node).getIdentity(any());
+        when(userIdentity.getName()).thenReturn("rod");
+        doNothing().when(node).setUserToNotSkippable(any(), anyString());
+
+        // When
+        Action result = node.process(context);
+
+        // Then
+        assertThat(result.outcome).isEqualTo(SUCCESS_OUTCOME_ID);
+        assertThat(result.sharedState).isNull();
+        assertThat(result.transientState.get(RECOVERY_CODE_KEY).asList())
+                .containsExactlyInAnyOrder("z0WKEw0Wc8", "Ios4LnA2Qn");
+        assertThat(result.transientState.get(RECOVERY_CODE_DEVICE_NAME).asString())
+                .isEqualTo("Oath Device");
+        OathDeviceSettings storedSettings = helper.getDeviceProfileFromSharedState(
+                context, OATH_DEVICE_PROFILE_KEY);
+        assertThat(storedSettings).isNotNull();
+        assertThat(storedSettings.getRecoveryCodes()).hasSize(2);
+        assertThat(storedSettings.getRecoveryCodes()).allMatch(code -> !code.isEmpty());
+    }
+
+    @Test
     void processSuccessfulRegistrationWhenRecoveryCodesDisabled()
             throws NodeProcessException {
         // Given
         initNode();
 
-        when(deviceProfileHelper.isDeviceSettingsStored(any())).thenReturn(false);
-        given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
+        when(mockDeviceProfileHelper.isDeviceSettingsStored(any())).thenReturn(false);
+        given(mockDeviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
                 .willReturn(getDeviceSettings());
-        given(deviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
+        given(mockDeviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
                 .willReturn(Arrays.asList("z0WKEw0Wc8", "Ios4LnA2Qn"));
         doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
         doNothing().when(node).setUserToNotSkippable(any(), anyString());
@@ -163,28 +210,31 @@ public class OathDeviceStorageNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState) {
-        return new TreeContext(
-                sharedState, new ExternalRequestContext.Builder().build(),
-                emptyList(), Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState) {
-        return new TreeContext(
-                sharedState, transientState, new ExternalRequestContext.Builder().build(),
-                emptyList(), Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .build();
     }
 
-    private void initNode() {
+    private void initNode(OathDeviceProfileHelper helper) {
         node = spy(
                 new OathDeviceStorageNode(
                         realm,
-                        deviceProfileHelper,
+                        helper,
                         new MultiFactorNodeDelegate(mock(AuthenticatorDeviceServiceFactory.class)),
                         identityProvider
                 )
         );
+    }
+
+    private void initNode() {
+        initNode(mockDeviceProfileHelper);
     }
 
 }

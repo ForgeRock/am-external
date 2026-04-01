@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2.service;
 
@@ -84,6 +84,15 @@ public class Saml2ScriptContextProviderTest {
     @Mock
     private IDPSSOConfigElement idpssoConfigElement;
 
+    @Mock
+    private Saml2NameIdMapperContext saml2NameIdMapperContext;
+
+    @Mock
+    private Saml2AccountMapperScriptContext saml2AccountMapperScriptContext;
+
+    @Mock
+    private Saml2IdpAdapterContext saml2IdpAdapterContext;
+
     @InjectMocks
     private Saml2ScriptContextProvider provider;
 
@@ -105,7 +114,7 @@ public class Saml2ScriptContextProviderTest {
 
     @Test
     void shouldReturnAllSaml2ScriptContexts() {
-        assertThat(provider.get().size()).isEqualTo(4);
+        assertThat(provider.get().size()).isEqualTo(8);
     }
 
     @Test
@@ -191,7 +200,9 @@ public class Saml2ScriptContextProviderTest {
     }
 
     private Optional<ScriptContextDetails> getScriptContextDetails(List<ScriptContextDetails> scriptContextDetails, Saml2ScriptContext match) {
-        return scriptContextDetails.stream().filter(s -> s.name().equals(match.name())).findFirst();
+        return scriptContextDetails.stream()
+                .filter(s -> s != null && match.name().equals(s.name()))
+                .findFirst();
     }
 
     private void mockSamlEntityConfig(String scriptId) throws SAML2MetaException {

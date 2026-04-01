@@ -80,7 +80,7 @@ public class DefaultAttributeAuthorityMapper implements
         String attrAuthorityEntityID, String realm) throws SAML2Exception {
 
         AttributeQueryUtil.verifyAttrQuerySignature(attrQuery,
-            attrAuthorityEntityID, realm);;
+            attrAuthorityEntityID, realm);
     }
 
     /**

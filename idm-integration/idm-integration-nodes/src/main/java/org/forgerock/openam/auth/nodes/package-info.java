@@ -14,4 +14,7 @@
  * Copyright 2024-2025 Ping Identity Corporation.
  */
 
+/**
+ * IDM integration nodes.
+ */
 package org.forgerock.openam.auth.nodes;

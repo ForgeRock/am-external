@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2025 Ping Identity Corporation.
+ * Copyright 2015-2026 Ping Identity Corporation.
  */
 
 import $ from "jquery";
@@ -20,32 +20,38 @@ import { get as getRealm } from "org/forgerock/openam/ui/admin/services/global/R
 import createTreeNavigation from "org/forgerock/openam/ui/admin/views/common/navigation/createTreeNavigation";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 import humanizeRealmPath from "org/forgerock/openam/ui/admin/views/realms/humanizeRealmPath";
+import ServicesService from "org/forgerock/openam/ui/admin/services/realm/ServicesService";
 import RealmBreadcrumb from "org/forgerock/openam/ui/admin/views/realms/RealmBreadcrumb";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import TreeNavigation from "org/forgerock/openam/ui/common/components/TreeNavigation";
-import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
+import store from "store";
 
-const authOptions = [{
-    title: "console.navigation.authentication-settings.title",
-    icon: "fa-angle-right",
-    route: "realmsAuthenticationSettings"
-}, {
-    title: "console.navigation.authentication-trees.title",
-    icon: "fa-angle-right",
-    route: "realmsAuthenticationTrees"
-}, {
-    title: "console.navigation.authentication-webhooks.title",
-    icon: "fa-angle-right",
-    route: "realmsAuthenticationWebhooks"
-}];
+const featureFlags = store.getState().featureFlags.flags;
 
-if (Configuration.globalData.nodeDesignerXuiEnabled) {
-    authOptions.push({
+const authOptions = [
+    {
+        title: "console.navigation.authentication-settings.title",
+        icon: "fa-angle-right",
+        route: "realmsAuthenticationSettings"
+    },
+    // Only include trees in navigation if we are not in cloud
+    ...(!featureFlags.cloudOnlyFeaturesEnabled ? [{ // eslint-disable-line
+        title: "console.navigation.authentication-trees.title",
+        icon: "fa-angle-right",
+        route: "realmsAuthenticationTrees"
+    }] : []),
+    {
+        title: "console.navigation.authentication-webhooks.title",
+        icon: "fa-angle-right",
+        route: "realmsAuthenticationWebhooks"
+    },
+    // Only include node designer in navigation if it is enabled
+    ...(featureFlags.nodeDesignerXuiEnabled ? [{
         title: "console.navigation.authentication-nodes.title",
         icon: "fa-angle-right",
         route: "realmsAuthenticationNodes"
-    });
-}
+    }] : [])
+];
 
 const navData = [{
     title: "console.navigation.dashboard.title",
@@ -150,6 +156,41 @@ const navData = [{
 }];
 
 const RealmTreeNavigationView = TreeNavigation.extend({
+    initPromise: null,
+    async setAIAgentsNavigation () {
+        if (featureFlags.oauth2AIAgentsEnabled) {
+            const url = window.location.hash;
+            const realm = decodeURIComponent(url.split("/")?.[1]);
+            const aiAgentsTreeItem = navData[1].children[2].children
+                .findIndex((child) => child.route === "realmsApplicationsOAuth2AIAgents");
+            try {
+                const oauthOidcConfig = await ServicesService.instance.get(realm, "oauth-oidc",
+                    { suppressEvents: true });
+                if (oauthOidcConfig &&
+                    oauthOidcConfig.values.raw["aiAgentsConfig"]["aiAgentsEnabled"] &&
+                    aiAgentsTreeItem === -1) {
+                    // Add AI Agents to navigation if it is enabled and not already in the tree
+                    navData[1].children[2].children.push({
+                        title: "console.navigation.applications-oauth2-ai-agents.title",
+                        icon: "fa-angle-right",
+                        route: "realmsApplicationsOAuth2AIAgents"
+                    });
+                } else if (aiAgentsTreeItem !== -1) {
+                    // If AI Agents is not enabled but the tree item exists, remove it
+                    navData[1].children[2].children.splice(aiAgentsTreeItem, 1);
+                }
+            } catch (_) {
+                // Couldn't get config, so remove AI Agents from navigation just in case
+                if (aiAgentsTreeItem !== -1) {
+                    navData[1].children[2].children.splice(aiAgentsTreeItem, 1);
+                }
+            }
+        }
+    },
+    initialize () {
+        this.data = this.data || {};
+        this.initPromise = this.setAIAgentsNavigation();
+    },
     sendEvent (e) {
         e.preventDefault();
         EventManager.sendEvent($(e.currentTarget).data().event, this.data.realmPath);
@@ -158,7 +199,11 @@ const RealmTreeNavigationView = TreeNavigation.extend({
     realmExists (path) {
         return getRealm(path);
     },
-    render (args) {
+    async render (args) {
+        if (this.initPromise) {
+            // Ensures the config read call is only performed once, and not on each re-render.
+            await this.initPromise;
+        }
         this.events = {
             ...this.events,
             "click a[data-event]": "sendEvent"

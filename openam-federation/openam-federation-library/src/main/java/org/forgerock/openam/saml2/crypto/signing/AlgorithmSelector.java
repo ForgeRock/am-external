@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import javax.crypto.SecretKey;
 import javax.xml.bind.JAXBIntrospector;
 

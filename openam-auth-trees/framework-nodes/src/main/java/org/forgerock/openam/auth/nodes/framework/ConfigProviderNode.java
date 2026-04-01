@@ -11,12 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.framework;
 
 import static java.util.Collections.singleton;
-import static org.forgerock.am.trees.api.NodeRegistry.DEFAULT_VERSION;
 import static org.forgerock.openam.auth.node.api.AuthScriptUtilities.WILDCARD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.CURRENT_NODE_ID;
 import static org.forgerock.openam.auth.nodes.framework.script.ConfigProviderNodeContext.CONFIG_PROVIDER_NEXT_GEN_NAME;
@@ -32,8 +31,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
 import javax.script.ScriptException;
+
+import jakarta.inject.Inject;
 
 import org.forgerock.am.trees.api.NodeFactory;
 import org.forgerock.am.trees.api.NodeRegistry;
@@ -49,12 +49,18 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.OutputState;
+import org.forgerock.openam.auth.node.api.ScriptedLocalizedMessage;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.TreeHook;
+import org.forgerock.openam.auth.nodes.designer.domain.NodeType;
+import org.forgerock.openam.auth.nodes.designer.persistence.NodeTypeStore;
+import org.forgerock.openam.auth.nodes.designer.persistence.NodeTypeStoreFactory;
+import org.forgerock.openam.auth.nodes.designer.registry.NodeDesignerNodeTypeRegistry;
 import org.forgerock.openam.auth.nodes.framework.script.ConfigProviderNodeBindings;
 import org.forgerock.openam.auth.nodes.framework.script.ConfigProviderNodeContext;
-import org.forgerock.openam.auth.nodes.framework.typeadapters.StaticOutcomeNodeType;
+import org.forgerock.openam.auth.nodes.framework.typeadapters.ConfigProviderEnabledNodeType;
+import org.forgerock.openam.auth.nodes.validators.GreaterThanZeroValidator;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepository;
 import org.forgerock.openam.scripting.api.secrets.IScriptedSecrets;
@@ -70,7 +76,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.sso.SSOException;
 import com.sun.identity.sm.RequiredValueValidator;
+import com.sun.identity.sm.SMSException;
 
 /**
  * A node that allows execution of a node of another node type by injecting configuration through executing a script.
@@ -79,6 +87,9 @@ import com.sun.identity.sm.RequiredValueValidator;
         configClass = ConfigProviderNode.Config.class,
         tags = {"utilities"})
 public class ConfigProviderNode implements Node {
+
+    private static final String NODE_TYPE = "nodeType";
+    private static final String NODE_VERSION = "nodeVersion";
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigProviderNode.class);
     private static final String CONFIGURATION_FAILED_OUTCOME_ID = "CONFIGURATION_FAILED";
@@ -97,6 +108,9 @@ public class ConfigProviderNode implements Node {
     private Map<String, Object> scriptOutcome;
     private JsonValue auditEntryDetail;
     private final NodeRegistry nodeRegistry;
+    private final NodeTypeStore nodeTypeStore;
+    private final NodeDesignerNodeTypeRegistry nodeDesignerNodeTypeRegistry;
+    private final ScriptedLocalizedMessage.Factory scriptedLocalizedMessageFactory;
 
     /**
      * Dependency injected constructor.
@@ -113,15 +127,21 @@ public class ConfigProviderNode implements Node {
      * @param authScriptUtils           Utilities for scripted nodes.
      * @param nodeRegistry              The node registry.
      * @param configProviderNodeContext The next-gen context for the config provider node.
+     * @param nodeTypeStoreFactory      The node type store factory.
+     * @param nodeDesignerNodeTypeRegistry The node designer node type registry.
+     * @param scriptedLocalizedMessageFactory The scripted localized message factory.
      */
     @Inject
-    public ConfigProviderNode(@Assisted Config config, @Assisted Tree tree, @Assisted Realm realm,
+    ConfigProviderNode(@Assisted Config config, @Assisted Tree tree, @Assisted Realm realm,
             NodeFactory nodeFactory, ScriptEvaluatorFactory scriptEvaluatorFactory,
             ScriptIdentityRepository.Factory scriptIdentityRepoFactory,
             ScriptedIdentityRepository.Factory scriptedIdentityRepositoryFactory,
             IScriptedSecrets.Factory secretsFactory,
-            @Assisted UUID nodeId, AuthScriptUtilities authScriptUtils,  NodeRegistry nodeRegistry,
-            ConfigProviderNodeContext configProviderNodeContext) {
+            @Assisted UUID nodeId, AuthScriptUtilities authScriptUtils, NodeRegistry nodeRegistry,
+            ConfigProviderNodeContext configProviderNodeContext,
+            NodeTypeStoreFactory nodeTypeStoreFactory,
+            NodeDesignerNodeTypeRegistry nodeDesignerNodeTypeRegistry,
+            ScriptedLocalizedMessage.Factory scriptedLocalizedMessageFactory) {
         this.config = config;
         this.tree = tree;
         this.realm = realm;
@@ -132,11 +152,20 @@ public class ConfigProviderNode implements Node {
         this.scriptedIdentityRepo = scriptedIdentityRepositoryFactory.create(realm);
         this.secrets = secretsFactory.create(realm, singleton("scripted.node."));
         this.authScriptUtils = authScriptUtils;
-        this.httpClient = authScriptUtils.getLegacyHttpClient(config.script());
+        if (config.script() != null) {
+            this.httpClient = authScriptUtils.getLegacyHttpClient(config.script());
+        } else {
+            // avoid a null pointer in the constructor if no script is defined
+            // this allows the node to be created and used in places where the
+            // script is not needed
+            this.httpClient = null;
+        }
         this.auditEntryDetail = null;
         this.nodeId = nodeId;
         this.nodeRegistry = nodeRegistry;
-
+        this.nodeTypeStore = nodeTypeStoreFactory.create();
+        this.nodeDesignerNodeTypeRegistry = nodeDesignerNodeTypeRegistry;
+        this.scriptedLocalizedMessageFactory = scriptedLocalizedMessageFactory;
     }
 
     @Override
@@ -148,9 +177,8 @@ public class ConfigProviderNode implements Node {
             } else {
                 executeScript(context);
             }
-            // TODO AME-27985: upgrade config provider to understand node versioning
-            node = nodeFactory
-                    .createDynamicNode(config.nodeType(), DEFAULT_VERSION, scriptOutcome, realm, tree, true, nodeId);
+            node = nodeFactory.createDynamicNode(
+                    config.nodeType(), config.nodeVersion(), getNodeConfig(), realm, tree, true, nodeId);
         } catch (ScriptException | NodeProcessException e) {
             logger.error("Failed to configure node: {}", config.nodeType(), e);
             return Action.goTo(CONFIGURATION_FAILED_OUTCOME_ID).build();
@@ -161,6 +189,43 @@ public class ConfigProviderNode implements Node {
         }
         adaptSessionHooks(action);
         return action;
+    }
+
+    private Map<String, Object> getNodeConfig() throws NodeProcessException {
+        Map<String, Object> nodeConfig = new HashMap<>();
+        if (scriptOutcome != null && !scriptOutcome.isEmpty()) {
+            if (nodeDesignerNodeTypeRegistry.isRegistered(config.nodeType())) {
+                String nodeDesignerTypeId = nodeDesignerNodeTypeRegistry.getNodeTypeId(config.nodeType(),
+                        config.nodeVersion());
+                try {
+                    NodeType type = nodeTypeStore.get(nodeDesignerTypeId);
+                    if (type == null) {
+                        nodeConfig.putAll(scriptOutcome);
+                    } else {
+                        adaptNodeDesignerConfig(type, nodeConfig);
+                    }
+                } catch (SSOException | SMSException e) {
+                    throw new NodeProcessException("Failed to retrieve node designer type: " + nodeDesignerTypeId, e);
+                }
+            } else {
+                nodeConfig.putAll(scriptOutcome);
+            }
+        }
+        if (config.staticConfig() != null) {
+            nodeConfig.putAll(config.staticConfig().asMap());
+        }
+        return nodeConfig;
+    }
+
+    private void adaptNodeDesignerConfig(NodeType type, Map<String, Object> nodeConfig) {
+        type.attributes().forEach(attr -> {
+            String methodName = attr.methodName();
+            if (scriptOutcome.containsKey(methodName)) {
+                nodeConfig.put(methodName, scriptOutcome.get(methodName));
+            } else if (scriptOutcome.containsKey(attr.binding())) {
+                nodeConfig.put(methodName, scriptOutcome.get(attr.binding()));
+            }
+        });
     }
 
     private boolean isInnerTreeSendingCallbacks(Action action) {
@@ -185,12 +250,13 @@ public class ConfigProviderNode implements Node {
      *
      * @param action the action response from the generated node.
      */
-    private void adaptSessionHooks(Action action) {
+    private void adaptSessionHooks(Action action) throws NodeProcessException {
         if (!action.sessionHooks.isEmpty()) {
+            Map<String, Object> nodeConfig = getNodeConfig();
             action.sessionHooks.forEach(hook -> {
-                if (hook.keys().contains(TreeHook.NODE_ID_KEY)) {
+                if (nodeId.toString().equals(hook.get(TreeHook.NODE_ID_KEY).asString())) {
                     hook.remove(TreeHook.NODE_ID_KEY);
-                    hook.add(TreeHook.NODE_CONFIG_KEY, scriptOutcome);
+                    hook.add(TreeHook.NODE_CONFIG_KEY, nodeConfig);
                 }
             });
         }
@@ -199,8 +265,8 @@ public class ConfigProviderNode implements Node {
     @Override
     public JsonValue getAuditEntryDetail() {
         try {
-            Node node = nodeFactory.createDynamicNode(config.nodeType(), DEFAULT_VERSION, scriptOutcome, realm, tree,
-                    false);
+            Node node = nodeFactory.createDynamicNode(
+                    config.nodeType(), config.nodeVersion(), getNodeConfig(), realm, tree, false);
             JsonValue nodeAuditEntry = node.getAuditEntryDetail();
             if (auditEntryDetail != null && nodeAuditEntry != null) {
                 return node.getAuditEntryDetail().merge(auditEntryDetail);
@@ -223,12 +289,12 @@ public class ConfigProviderNode implements Node {
                 .map(input -> new InputState(input, false))
                 .collect(Collectors.toList());
         try {
-            Node node = nodeFactory.createDynamicNode(config.nodeType(), DEFAULT_VERSION, scriptOutcome, realm, tree,
-                    false);
+            Node node = nodeFactory.createDynamicNode(
+                    config.nodeType(), config.nodeVersion(), getNodeConfig(), realm, tree, false);
             inputs.addAll(Arrays.stream(node.getInputs())
                     .filter(inputState -> StringUtils.isNotBlank(inputState.name))
                     .collect(Collectors.toList()));
-        } catch (NodeProcessException e) {
+        } catch (NullPointerException | NodeProcessException e) {
             // There are times that getInputs is called for a node when the context is not in the expected
             // state to run the script. In these instances try to run getInputs however if getInputs
             // requires access to the configuration then it may fail or return incomplete inputs.
@@ -240,10 +306,10 @@ public class ConfigProviderNode implements Node {
     @Override
     public OutputState[] getOutputs() {
         try {
-            Node node = nodeFactory.createDynamicNode(config.nodeType(), DEFAULT_VERSION, scriptOutcome, realm, tree,
-                    false);
+            Node node = nodeFactory.createDynamicNode(
+                    config.nodeType(), config.nodeVersion(), getNodeConfig(), realm, tree, false);
             return node.getOutputs();
-        } catch (NodeProcessException e) {
+        } catch (NullPointerException | NodeProcessException e) {
             logger.debug("Failed to collect outputs of contained node: {}", config.nodeType(), e);
             return Node.super.getOutputs();
         }
@@ -254,14 +320,21 @@ public class ConfigProviderNode implements Node {
         Script script = config.script();
 
         ConfigProviderNodeBindings scriptBindings = ConfigProviderNodeBindings.builder()
-                .withNodeState(context.getStateFor(this))
                 .withIdRepo(scriptIdentityRepo)
                 .withSecrets(secrets)
-                .withHeaders(authScriptUtils.convertHeadersToModifiableObjects(context.request.headers))
                 .withHttpClient(httpClient)
+                .withNodeState(context.getStateFor(this))
+                .withCallbacks(context.getAllCallbacks())
+                .withHeaders(authScriptUtils.convertHeadersToModifiableObjects(context.request.headers))
                 .withQueryParameters(authScriptUtils.convertParametersToModifiableObjects(context.request.parameters))
-                .withExistingSession(authScriptUtils.getSessionProperties(context.request.ssoTokenId))
                 .withScriptedIdentityRepository(scriptedIdentityRepo)
+                .withResumedFromSuspend(context.hasResumedFromSuspend())
+                .withExistingSession(authScriptUtils.getSessionProperties(context.request.ssoTokenId))
+                .withRequestCookies(context.request.cookies)
+                .withTree(tree)
+                .withSamlApplication(authScriptUtils.getSAMLData(context).orElse(null))
+                .withOauthApplication(authScriptUtils.getOauthDecisionNodeApplication(context).orElse(null))
+                .withScriptedLocalizedMessage(scriptedLocalizedMessageFactory.create(realm, context))
                 .build();
 
         ScriptResult scriptResult = scriptEvaluator.evaluateScript(script, scriptBindings, realm);
@@ -284,8 +357,18 @@ public class ConfigProviderNode implements Node {
          * @return The node type.
          */
         @Attribute(order = 100, validators = {RequiredValueValidator.class})
-        @StaticOutcomeNodeType
+        @ConfigProviderEnabledNodeType
         String nodeType();
+
+        /**
+         * The version of the node type to be executed.
+         *
+         * @return the node version.
+         */
+        @Attribute(order = 150, validators = {RequiredValueValidator.class, GreaterThanZeroValidator.class})
+        default int nodeVersion() {
+            return 1;
+        }
 
         /**
          * The script that generates the configuration for this node.
@@ -308,6 +391,14 @@ public class ConfigProviderNode implements Node {
         default List<String> scriptInputs() {
             return List.of(WILDCARD);
         }
+
+
+        /**
+         * The static configuration for the node.
+         * @return The static configuration.
+         */
+        @Attribute(order = 400, hiddenFromConfigUi = true)
+        JsonValue staticConfig();
     }
 
     /**
@@ -316,6 +407,14 @@ public class ConfigProviderNode implements Node {
      */
     public String getType() {
         return config.nodeType();
+    }
+
+    /**
+     * Get the version of the underlying node type of the config provider node.
+     * @return The version of the node type.
+     */
+    public int getVersion() {
+        return config.nodeVersion();
     }
 
     /**
@@ -328,33 +427,50 @@ public class ConfigProviderNode implements Node {
 
         private final Realm realm;
         private final NodeFactory nodeFactory;
+        private final NodeRegistry nodeRegistry;
 
         @Inject
-        ConfigProviderOutcomeProvider(@Assisted Realm realm, NodeFactory nodeFactory) {
+        ConfigProviderOutcomeProvider(@Assisted Realm realm, NodeFactory nodeFactory, NodeRegistry nodeRegistry) {
             this.realm = realm;
             this.nodeFactory = nodeFactory;
+            this.nodeRegistry = nodeRegistry;
         }
 
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
-            if (nodeAttributes.isNull() || nodeAttributes.get("nodeType").isNull()) {
+            if (nodeAttributes.isNull() || nodeAttributes.get(NODE_TYPE).isNull()) {
                 return List.of(CONFIGURATION_FAILED_OUTCOME);
             }
             List<Outcome> outcomes = new ArrayList<>();
             try {
-                String nodeType = nodeAttributes.get("nodeType").asString();
-                OutcomeProvider delegateOutcomeProvider = nodeFactory.getOutcomeProvider(realm, nodeType,
-                        DEFAULT_VERSION);
-                if (delegateOutcomeProvider instanceof StaticOutcomeProvider staticOutcomes) {
-                    outcomes.addAll(staticOutcomes.getOutcomes(locales));
-                } else if (delegateOutcomeProvider instanceof BoundedOutcomeProvider boundedOutcomes) {
-                    outcomes.addAll(boundedOutcomes.getAllOutcomes(locales));
+                String nodeType = nodeAttributes.get(NODE_TYPE).asString();
+                int nodeVersion = getNodeVersion(nodeAttributes, nodeType);
+                if (nodeRegistry.isNodeService(nodeType, nodeVersion)) {
+                    OutcomeProvider delegateOutcomeProvider = nodeFactory.getOutcomeProvider(realm, nodeType,
+                            nodeVersion);
+                    if (delegateOutcomeProvider instanceof StaticOutcomeProvider staticOutcomes) {
+                        outcomes.addAll(staticOutcomes.getOutcomes(locales));
+                    } else if (delegateOutcomeProvider instanceof BoundedOutcomeProvider boundedOutcomes) {
+                        outcomes.addAll(boundedOutcomes.getAllOutcomes(locales));
+                    } else {
+                        outcomes.addAll(delegateOutcomeProvider.getOutcomes(locales,
+                                nodeAttributes.get("staticConfig")));
+                    }
                 }
-            } catch (NodeProcessException e) {
+            } catch (Exception e) {
                 logger.warn("Failed to get outcome provider for node type.", e);
             }
             outcomes.add(CONFIGURATION_FAILED_OUTCOME);
             return Collections.unmodifiableList(outcomes);
+        }
+
+        private int getNodeVersion(JsonValue nodeAttributes, String nodeType) {
+            if (nodeAttributes.isDefined(NODE_VERSION) && !nodeAttributes.get(NODE_VERSION).isNull()) {
+                return nodeAttributes.get(NODE_VERSION).asInteger();
+            } else {
+                var versions = nodeRegistry.getVersions(nodeType);
+                return versions.get(versions.size() - 1);
+            }
         }
     }
 }

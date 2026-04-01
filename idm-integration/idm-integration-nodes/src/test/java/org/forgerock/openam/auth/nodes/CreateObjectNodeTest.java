@@ -15,7 +15,6 @@
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonPointer.ptr;
 import static org.forgerock.json.JsonValue.field;
@@ -36,12 +35,10 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 
 import org.forgerock.json.JsonPatch;
 import org.forgerock.json.JsonPointer;
 import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
@@ -84,8 +81,9 @@ public class CreateObjectNodeTest {
 
         node = new CreateObjectNode(config, realm, idmIntegrationService);
 
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveSharedState(), json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(retrieveSharedState())
+                .build();
     }
 
     @Test
@@ -128,8 +126,9 @@ public class CreateObjectNodeTest {
         sharedState.add(TERMS_ACCEPTED, object(
                 field(TERMS_VERSION, "1"),
                 field(ACCEPT_DATE, "today")));
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
 
         when(idmIntegrationService.createObject(any(), any(), any(), any()))
                 .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));

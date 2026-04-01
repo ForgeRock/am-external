@@ -16,14 +16,19 @@
 
 package org.forgerock.openam.auth.nodes.push;
 
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.NUMBERS_CHALLENGE_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_NUMBER_CHALLENGE_KEY;
+import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
+
+import java.util.Set;
+
 import org.forgerock.json.jose.builders.JwtClaimsSetBuilder;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.services.push.dispatch.predicates.Predicate;
+import org.forgerock.openam.services.push.dispatch.predicates.PushNumberChallengeResponsePredicate;
 import org.forgerock.openam.utils.StringUtils;
-
-import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.NUMBERS_CHALLENGE_KEY;
-import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_NUMBER_CHALLENGE_KEY;
 
 /**
  * The supported Push types.
@@ -39,6 +44,9 @@ public enum PushType {
 
         @Override
         void updateState(TreeContext context, Node node) { }
+
+        @Override
+        void updatePredicates(Set<Predicate> predicates) { }
     },
     /**
      * Push to Challenge notification.
@@ -61,6 +69,11 @@ public enum PushType {
             context.getStateFor(node)
                     .putShared(PUSH_NUMBER_CHALLENGE_KEY, String.valueOf(pushChallenge.getAnswer()));
         }
+
+        @Override
+        void updatePredicates(Set<Predicate> predicates) {
+            predicates.add(new PushNumberChallengeResponsePredicate(String.valueOf(pushChallenge.getAnswer()), JWT));
+        }
     },
     /**
      * Push to Biometric notification.
@@ -71,6 +84,9 @@ public enum PushType {
 
         @Override
         void updateState(TreeContext context, Node node) { }
+
+        @Override
+        void updatePredicates(Set<Predicate> predicates) { }
     };
 
     private String value;
@@ -108,4 +124,11 @@ public enum PushType {
      */
     abstract void updateState(TreeContext context, Node node) throws NodeProcessException;
 
+    /**
+     * Update the predicates according to the Push Type.
+     *
+     * @param predicates a set of predicates.
+     * @throws NodeProcessException if an error occur while updating the state.
+     */
+    abstract void updatePredicates(Set<Predicate> predicates) throws NodeProcessException;
 }

@@ -35,7 +35,6 @@ import javax.security.auth.callback.Callback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -108,8 +107,11 @@ public class DeviceBindingStorageNodeTest {
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbacks,
-                Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 
 }

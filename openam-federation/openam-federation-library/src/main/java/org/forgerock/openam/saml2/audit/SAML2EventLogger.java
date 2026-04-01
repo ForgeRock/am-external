@@ -15,6 +15,8 @@
  */
 package org.forgerock.openam.saml2.audit;
 
+import static org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject.FlowInitiator;
+
 import org.forgerock.audit.AuditException;
 
 /**
@@ -109,5 +111,22 @@ public interface SAML2EventLogger {
      * @param service The service (aka tree, journey) that is configured directly on the remote SP configuration.
      */
     void setConfiguredService(String service);
+
+    /**
+     * @param flowInitiator The flow initiator (SP/IDP) for this request.
+     */
+    void setFlowInitiator(FlowInitiator flowInitiator);
+
+    /**
+     *
+     * @param nameID The nameID for this request.
+     */
+    void setNameID(String nameID);
+
+    /**
+     * Sets the user ID for this request.
+     * @param userID The user ID for this request.
+     */
+    void setUserID(String userID);
 
     }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.framework;
 
@@ -35,13 +35,13 @@ import java.util.Set;
 
 import org.forgerock.am.trees.api.NodeFactory;
 import org.forgerock.am.trees.api.NodeRegistry;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.OutcomeProvider.Outcome;
+import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
 import org.forgerock.openam.sm.ServiceConfigException;
-
-import com.iplanet.am.util.SystemPropertiesWrapper;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,15 +61,19 @@ public class PageNodeMultipleCallbacksOnlyInLastNodeTest {
     private AnnotatedServiceRegistry serviceRegistry;
     @Mock
     private Realm realm;
-    @Mock
-    private SystemPropertiesWrapper systemProperties;
 
     private PageNode.MultipleCallbacksOnlyInLastNode validator;
 
     @BeforeEach
     void setup() throws Exception {
-        validator = new PageNode.MultipleCallbacksOnlyInLastNode(serviceRegistry, nodeRegistry, nodeFactory,
-                systemProperties);
+        validator = new PageNode.MultipleCallbacksOnlyInLastNode(serviceRegistry, nodeRegistry, nodeFactory);
+        lenient().when(nodeRegistry.getNodeType("NodeType", 1)).thenReturn((Class) NodeType.class);
+        lenient().when(nodeRegistry.getNodeType("OtherType", 1)).thenReturn((Class) OtherType.class);
+        lenient().when(nodeRegistry.getNodeType("LastNodeType", 1)).thenReturn((Class) LastNodeType.class);
+        lenient().when(nodeRegistry.getNodeType("LastNodeType", 2)).thenReturn((Class) LastNodeType.class);
+        lenient().when(nodeRegistry.getNodeType("PageNode", 1)).thenReturn((Class) PageNode.class);
+        lenient().when(nodeRegistry.getNodeType("InnerTreeEvaluatorNode", 1))
+                .thenReturn((Class) InnerTreeEvaluatorNode.class);
     }
 
     @Test
@@ -81,8 +85,8 @@ public class PageNodeMultipleCallbacksOnlyInLastNodeTest {
     void shouldNotErrorIfLastNodeHasMultipleOutcomes() throws Exception {
         // Given
         Set<String> nodes = Set.of(
-                "[0]=" + new PageNode.ChildNodeConfig("id1", "OtherType", 1, "Display Name", systemProperties),
-                "[1]=" + new PageNode.ChildNodeConfig("id2", "LastNodeType", 1, "Display Name", systemProperties));
+                "[0]=" + new PageNode.ChildNodeConfig("id1", "OtherType", 1, "Display Name"),
+                "[1]=" + new PageNode.ChildNodeConfig("id2", "LastNodeType", 1, "Display Name"));
         given(nodeRegistry.getConfigType("OtherType", 1)).willReturn((Class) Map.class);
         given(nodeRegistry.getConfigType("LastNodeType", 1)).willReturn((Class) List.class);
         given(serviceRegistry.getRealmInstance(Map.class, realm, "id1")).willReturn(Optional.of(new HashMap<>()));
@@ -103,8 +107,8 @@ public class PageNodeMultipleCallbacksOnlyInLastNodeTest {
     void shouldErrorIfNonLastNodeHasMultipleOutcomes() throws Exception {
         // Given
         Set<String> nodes = Set.of(
-                "[0]=" + new PageNode.ChildNodeConfig("id1", "OtherType", 1, "Display Name", systemProperties),
-                "[1]=" + new PageNode.ChildNodeConfig("id2", "LastNodeType", 1, "Display Name", systemProperties));
+                "[0]=" + new PageNode.ChildNodeConfig("id1", "OtherType", 1, "Display Name"),
+                "[1]=" + new PageNode.ChildNodeConfig("id2", "LastNodeType", 1, "Display Name"));
         given(nodeRegistry.getConfigType("OtherType", 1)).willReturn((Class) Map.class);
         given(serviceRegistry.getRealmInstance(Map.class, realm, "id1")).willReturn(Optional.of(new HashMap<>()));
         given(nodeFactory.getNodeOutcomes(any(), eq(realm), eq("id1"), eq("OtherType"), eq(1)))
@@ -124,7 +128,7 @@ public class PageNodeMultipleCallbacksOnlyInLastNodeTest {
     void shouldErrorIfNodeHasNoOutcomes() throws Exception {
         // Given
         Set<String> nodes = Set.of(
-                "[0]=" + new PageNode.ChildNodeConfig("id1", "OtherType", 1, "Display Name", systemProperties));
+                "[0]=" + new PageNode.ChildNodeConfig("id1", "OtherType", 1, "Display Name"));
         given(nodeRegistry.getConfigType("OtherType", 1)).willReturn((Class) Map.class);
         given(serviceRegistry.getRealmInstance(Map.class, realm, "id1")).willReturn(Optional.of(new HashMap<>()));
         given(nodeFactory.getNodeOutcomes(any(), eq(realm), eq("id1"), eq("OtherType"), eq(1)))
@@ -152,8 +156,8 @@ public class PageNodeMultipleCallbacksOnlyInLastNodeTest {
     public void shouldErrorIfAnyNodeIsIllegalNodeType(String node1Type, String node2Type) throws Exception {
         // Given
         Set<String> nodes = Set.of(
-                "[0]=" + new PageNode.ChildNodeConfig("id1", node1Type, 1, "Display Name", systemProperties),
-                "[1]=" + new PageNode.ChildNodeConfig("id2", node2Type, 1, "Display Name", systemProperties));
+                "[0]=" + new PageNode.ChildNodeConfig("id1", node1Type, 1, "Display Name"),
+                "[1]=" + new PageNode.ChildNodeConfig("id2", node2Type, 1, "Display Name"));
         lenient().when(nodeRegistry.getConfigType(node1Type, 1)).thenReturn((Class) Map.class);
         lenient().when(serviceRegistry.getRealmInstance(Map.class, realm, "id1"))
                 .thenReturn(Optional.of(new HashMap<>()));
@@ -173,7 +177,7 @@ public class PageNodeMultipleCallbacksOnlyInLastNodeTest {
     void shouldErrorIfNodeDoesNotExist() throws Exception {
         // Given
         Set<String> nodes = Set.of(
-                "[0]=" + new PageNode.ChildNodeConfig("id1", "NodeType", 1, "Display Name", systemProperties));
+                "[0]=" + new PageNode.ChildNodeConfig("id1", "NodeType", 1, "Display Name"));
         given(nodeRegistry.getConfigType("NodeType", 1)).willReturn((Class) Map.class);
         given(serviceRegistry.getRealmInstance(Map.class, realm, "id1")).willReturn(Optional.empty());
 
@@ -184,5 +188,66 @@ public class PageNodeMultipleCallbacksOnlyInLastNodeTest {
 
         // Then
         // error
+    }
+
+    @Test
+    void shouldNotErrorIfVersionedLastNodeHasMultipleOutcomes() throws Exception {
+        // Given
+        Set<String> nodes = Set.of(
+                "[0]=" + new PageNode.ChildNodeConfig("id1", "OtherType", 1, "Display Name"),
+                "[1]=" + new PageNode.ChildNodeConfig("id2", "LastNodeType", 2, "Display Name"));
+        given(nodeRegistry.getConfigType("OtherType", 1)).willReturn((Class) Map.class);
+        given(nodeRegistry.getConfigType("LastNodeType", 2)).willReturn((Class) List.class);
+        given(serviceRegistry.getRealmInstance(Map.class, realm, "id1")).willReturn(Optional.of(new HashMap<>()));
+        given(serviceRegistry.getRealmInstance(List.class, realm, "id2")).willReturn(Optional.of(new ArrayList<>()));
+        given(nodeFactory.getNodeOutcomes(any(), eq(realm), eq("id1"), eq("OtherType"), eq(1)))
+                .willReturn(singletonList(new Outcome("id", "Label")));
+        given(nodeFactory.getNodeOutcomes(any(), eq(realm), eq("id2"), eq("LastNodeType"), eq(2)))
+                .willReturn(asList(new Outcome("id1", "Label"), new Outcome("id2", "Label")));
+
+        // When
+        validator.validate(realm, emptyList(), singletonMap("nodes", nodes));
+
+        // Then
+        // no error
+    }
+
+    @Node.Metadata(outcomeProvider = PageNodeV2.PageDecisionV2OutcomeProvider.class,
+            configClass = PageNodeV2.ConfigV2.class,
+            configValidator = PageNodeV2.PageNodeV2Validator.class,
+            tags = {"utilities"})
+    @Node.VersionMetadata(name = "NodeType", version = 1)
+    private class NodeType implements Node {
+
+        @Override
+        public Action process(TreeContext context) {
+            throw new IllegalStateException("This should not be called.");
+        }
+    }
+
+    @Node.Metadata(outcomeProvider = PageNodeV2.PageDecisionV2OutcomeProvider.class,
+            configClass = PageNodeV2.ConfigV2.class,
+            configValidator = PageNodeV2.PageNodeV2Validator.class,
+            tags = {"utilities"})
+    @Node.VersionMetadata(name = "OtherType", version = 1)
+    private class OtherType implements Node {
+
+        @Override
+        public Action process(TreeContext context) {
+            throw new IllegalStateException("This should not be called.");
+        }
+    }
+
+    @Node.Metadata(outcomeProvider = PageNodeV2.PageDecisionV2OutcomeProvider.class,
+            configClass = PageNodeV2.ConfigV2.class,
+            configValidator = PageNodeV2.PageNodeV2Validator.class,
+            tags = {"utilities"})
+    @Node.VersionMetadata(name = "LastNodeType", version = 1)
+    private class LastNodeType implements Node {
+
+        @Override
+        public Action process(TreeContext context) {
+            throw new IllegalStateException("This should not be called.");
+        }
     }
 }

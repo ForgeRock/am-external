@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;

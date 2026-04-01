@@ -2,9 +2,9 @@
 
 <!--
    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
-  
+
    Copyright (c) 2008 Sun Microsystems Inc. All Rights Reserved
-  
+
    The contents of this file are subject to the terms
    of the Common Development and Distribution License
    (the License). You may not use this file except in
@@ -46,11 +46,11 @@
     </servlet>
     <servlet>
         <servlet-name>fedletSloInit</servlet-name>
-        <jsp-file>/saml2/jsp/spSingleLogoutInit.jsp</jsp-file>
+        <servlet-class>com.sun.identity.saml2.servlet.FedletSPSingleLogoutInitServlet</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>fedletSloSoap</servlet-name>
-        <servlet-class>com.sun.identity.saml2.servlet.SPSingleLogoutServiceSOAP</servlet-class>
+        <servlet-class>com.sun.identity.saml2.servlet.FedletSPSingleLogoutServiceSOAP</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>fedletlogout</servlet-name>
@@ -58,11 +58,11 @@
     </servlet>
     <servlet>
         <servlet-name>fedletSloRedirect</servlet-name>
-        <jsp-file>/saml2/jsp/spSingleLogoutRedirect.jsp</jsp-file>
+        <servlet-class>com.sun.identity.saml2.servlet.SPSingleLogoutRedirectServlet</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>fedletSloPOST</servlet-name>
-        <jsp-file>/saml2/jsp/spSingleLogoutPOST.jsp</jsp-file>
+        <servlet-class>com.sun.identity.saml2.servlet.SPSingleLogoutPostServlet</servlet-class>
     </servlet>
 
     <!-- Add one servlet mapping entry like this per module -->
@@ -73,6 +73,10 @@
     <servlet-mapping>
         <servlet-name>fedletSloInit</servlet-name>
         <url-pattern>/fedletSloInit</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>fedletSloInit</servlet-name>
+        <url-pattern>/saml2/jsp/spSingleLogoutInit.jsp</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>fedletSloSoap</servlet-name>
@@ -87,8 +91,16 @@
         <url-pattern>/fedletSloPOST</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
+        <servlet-name>fedletSloPOST</servlet-name>
+        <url-pattern>/saml2/jsp/spSingleLogoutPOST.jsp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
         <servlet-name>fedletSloRedirect</servlet-name>
         <url-pattern>/fedletSloRedirect</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>fedletSloRedirect</servlet-name>
+        <url-pattern>/saml2/jsp/spSingleLogoutRedirect.jsp</url-pattern>
     </servlet-mapping>
 
     <welcome-file-list>

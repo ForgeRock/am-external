@@ -66,6 +66,11 @@ export default AbstractView.extend({
         self.$el.append(tpl);
         self.setElement(`#environment_${itemID}`);
 
+        if (itemData && itemData.type === "AuthScheme") {
+            self.el.classList.add("bg-danger");
+            self.el.querySelector(".auth-module-deprecated").classList.remove("d-none");
+        }
+
         if (itemData) {
             // Temporary fix, the name attribute is being added by the server after the policy is created.
             // TODO: Serverside solution required
@@ -134,7 +139,6 @@ export default AbstractView.extend({
 
     setListItemHtml (item, itemToDisplay) {
         const self = this;
-
         const tpl = ListItemTemplate({ data: itemToDisplay });
         item.find(".item-data").html(tpl);
         self.setElement(`#${item.attr("id")}`);

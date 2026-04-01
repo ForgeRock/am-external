@@ -106,7 +106,8 @@ public class OathHotpVerifierTest {
 
         // When / Then
         assertThatThrownBy(() -> hotpVerifier.verify("564491"))
-                .isInstanceOf(OathVerificationException.class);
+                .isInstanceOf(OathVerificationException.class)
+                .hasMessageContaining("Invalid OTP code");
     }
 
     @Test
@@ -115,7 +116,8 @@ public class OathHotpVerifierTest {
         settings.setSharedSecret("abcd");
         // When / Then
         assertThatThrownBy(() -> hotpVerifier.verify("000000"))
-                .isInstanceOf(OathVerificationException.class);
+                .isInstanceOf(OathVerificationException.class)
+                .hasMessageContaining("Invalid OTP code");
     }
 
     @Test
@@ -126,6 +128,7 @@ public class OathHotpVerifierTest {
 
         // When / Then
         assertThatThrownBy(() -> hotpVerifier.verify("301128"))
-                .isInstanceOf(OathVerificationException.class);
+                .isInstanceOf(OathVerificationException.class)
+                .hasMessageContaining("Invalid OTP code");
     }
 }

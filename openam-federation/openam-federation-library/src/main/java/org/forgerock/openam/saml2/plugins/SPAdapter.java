@@ -24,7 +24,7 @@
  *
  * $Id: SAML2ServiceProviderAdapter.java,v 1.5 2008/08/19 19:11:15 veiming Exp $
  *
- * Portions Copyrighted 2022-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2022-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.saml2.plugins;
@@ -161,7 +161,7 @@ public interface SPAdapter extends InitializablePlugin {
      * @param request servlet request
      * @param response servlet response
      * @param out the print writer for writing out presentation
-     * @param session user's session
+     * @param ssoToken the SSO token created for the user
      * @param authnRequest the original authentication request sent from SP, null if this is IDP initiated SSO
      * @param ssoResponse response from IDP
      * @param profile protocol profile used, one of the following values:
@@ -173,7 +173,7 @@ public interface SPAdapter extends InitializablePlugin {
      * @exception SAML2Exception if user want to fail the process
      */
     default boolean postSingleSignOnSuccess(String hostedEntityID, String realm, HttpServletRequest request,
-            HttpServletResponse response, PrintWriter out, Object session, AuthnRequest authnRequest,
+            HttpServletResponse response, PrintWriter out, Object ssoToken, AuthnRequest authnRequest,
             Response ssoResponse, String profile, boolean isFederation) throws SAML2Exception {
         return false;
     }

@@ -15,7 +15,6 @@
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.json;
@@ -26,7 +25,6 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.when;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.forgerock.am.identity.application.LegacyIdentityService;
@@ -169,6 +167,9 @@ public class ZeroPageLoginNodeTest {
     }
 
     private TreeContext getContext(ListMultimap<String, String> headers, JsonValue sharedState) {
-        return new TreeContext(sharedState, new Builder().headers(headers).build(), emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .requestContext(new Builder().headers(headers).build())
+                .build();
     }
 }

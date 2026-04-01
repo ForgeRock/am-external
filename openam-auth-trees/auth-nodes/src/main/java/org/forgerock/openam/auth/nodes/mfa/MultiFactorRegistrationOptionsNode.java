@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.TextOutputCallback;
@@ -317,7 +317,9 @@ public class MultiFactorRegistrationOptionsNode implements Node {
 
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
-
+            if (nodeAttributes.isNull() || nodeAttributes.size() == 0) {
+                return getAllOutcomes(locales);
+            }
             return getAllOutcomes(locales).stream()
                            .filter(outcome -> {
                                if (GET_APP_OUTCOME.equals(outcome.id)) {

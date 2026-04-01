@@ -1,0 +1,167 @@
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2026 Ping Identity Corporation.
+-->
+<div>
+    {{#if hasManualButton}}
+        <button id="webauthn-manual-trigger" class="btn btn-lg btn-block btn-uppercase btn-primary">
+            {{t "openam.webauthn.manualButton"}}
+        </button>
+    {{/if}}
+
+    <input type="submit" id="webauthn-submit" style="display:none;" />
+</div>
+<script>
+    function start (scriptContext) {
+        if (!window.PublicKeyCredential) {
+            if (scriptContext.mediation === "conditional") {
+                return;
+            }
+
+            const outcomeElement = getOutcomeElement();
+            if (outcomeElement) {
+                outcomeElement.value = "unsupported";
+            }
+            this.submitWebAuthnLogin();
+            return;
+        }
+
+        const options = {
+            publicKey: {
+                challenge: Uint8Array.from(atob(scriptContext.challenge), (c) => c.charCodeAt(0)),
+                timeout: Number(scriptContext.timeout),
+                userVerification: scriptContext.userVerification,
+                extensions: scriptContext.extensions
+            }
+        };
+
+        const relyingPartyId = scriptContext._relyingPartyId;
+        if (relyingPartyId) {
+            options.publicKey.rpId = relyingPartyId;
+        }
+
+        const allowCredentials = scriptContext._allowCredentials;
+        if (allowCredentials && allowCredentials.length > 0) {
+            options.publicKey.allowCredentials = allowCredentials.map((cred) => ({
+                ...cred,
+                id: new Int8Array(cred.id).buffer
+            }));
+        }
+        const allowRecoveryCode = scriptContext.allowRecoveryCode === "true";
+
+        options.mediation = scriptContext.mediation;
+
+        this.invokeWebAuthn(options, allowRecoveryCode);
+
+        this.setupManualButtonOnClick(options, allowRecoveryCode);
+    }
+
+    function getOutcomeElement() {
+        return document.getElementById("webAuthnOutcome");
+    }
+
+    function submitWebAuthnLogin () {
+        const submitButton = document.getElementById("webauthn-submit");
+        if (submitButton) {
+            submitButton.click();
+        }
+    }
+
+    function createAbortController () {
+        if (window.PingWebAuthnAbortController) {
+            window.PingWebAuthnAbortController.abort();
+        }
+
+        const controller = new AbortController();
+        window.PingWebAuthnAbortController = controller;
+        return controller;
+    }
+
+    /**
+     * Run the navigator.credentials.get() method to handle authentication
+     * @param {object} options webauthn options
+     */
+    function performGet (options) {
+        return navigator.credentials.get({ ...options, signal: this.createAbortController().signal })
+            .then((assertion) => {
+                const clientData = String.fromCharCode.apply(null, new Uint8Array(assertion.response.clientDataJSON));
+                const authenticatorData = new Int8Array(assertion.response.authenticatorData).toString();
+                const signature = new Int8Array(assertion.response.signature).toString();
+                const rawId = assertion.id;
+                const userHandle = String.fromCharCode.apply(null, new Uint8Array(assertion.response.userHandle));
+                const outcome = {
+                    legacyData: `${clientData}::${authenticatorData}::${signature}::${rawId}::${userHandle}`,
+                    authenticatorAttachment: assertion.authenticatorAttachment
+                };
+                const outcomeElement = getOutcomeElement();
+                if (outcomeElement) {
+                    outcomeElement.value = JSON.stringify(outcome);
+                }
+                this.submitWebAuthnLogin();
+            });
+    }
+
+    function invokeWebAuthn (options, allowRecoveryCode) {
+        this.performGet(options).catch((err) => {
+            if (options.mediation === "conditional") {
+                return;
+            }
+
+            const outcome = {
+                error: String(err)
+            };
+            const outcomeElement = getOutcomeElement();
+            if (outcomeElement) {
+                outcomeElement.value = JSON.stringify(outcome);
+            }
+
+            if (allowRecoveryCode) {
+                const loginButton = document.getElementById("loginButton_0");
+                if (loginButton) {
+                    const prev = loginButton.previousElementSibling;
+                    if (prev && prev.nodeName === "DIV") {
+                        prev.getElementsByTagName("div")[0].innerHTML =
+                            `<i class="fa fa-times-circle text-primary"> ${err}</i>`;
+                    }
+                }
+            } else {
+                this.submitWebAuthnLogin();
+            }
+        });
+    }
+
+    function invokeManualWebAuthn (options, allowRecoveryCode) {
+        const transformedOptions = { ...options, mediation: "required" };
+        this.performGet(transformedOptions).catch(() => {
+            // If using conditional mediation, we must resume the conditional operation
+            if (options.mediation === "conditional") {
+                this.invokeWebAuthn(options, allowRecoveryCode);
+            }
+        });
+    }
+
+    function setupManualButtonOnClick (options, allowRecoveryCode) {
+        const manualButtonId = "webauthn-manual-trigger";
+        const manualButton = document.getElementById(manualButtonId);
+
+        if (manualButton) {
+            manualButton.onclick = (e) => {
+                e.preventDefault();
+                this.invokeManualWebAuthn(options, allowRecoveryCode);
+            };
+        }
+    }
+
+    start({{{scriptContext}}})
+</script>

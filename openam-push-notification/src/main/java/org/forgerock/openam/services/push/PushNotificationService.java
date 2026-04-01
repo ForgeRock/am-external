@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.openam.core.realms.Realm;
@@ -40,7 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Singleton;
+import jakarta.inject.Singleton;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.sm.SMSException;
 

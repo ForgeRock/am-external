@@ -21,14 +21,11 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.forgerock.json.JsonValue.json;
-import static org.forgerock.json.JsonValue.object;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -71,8 +68,9 @@ public class RequestHeaderNodeTest {
                 "brand-color", "yellow"
         );
 
-        context = new TreeContext(json(object()), new ExternalRequestContext.Builder().headers(headers).build(),
-                emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().headers(headers).build())
+                .build();
 
         // When
         headerNode.process(context);
@@ -99,8 +97,9 @@ public class RequestHeaderNodeTest {
                 "brand-colors-delimited", "green,blue"
         );
 
-        context = new TreeContext(json(object()), new ExternalRequestContext.Builder().headers(headers).build(),
-                emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().headers(headers).build())
+                .build();
 
         // When
         headerNode.process(context);
@@ -121,8 +120,9 @@ public class RequestHeaderNodeTest {
                 "branding-color", "green"
         );
 
-        context = new TreeContext(json(object()), new ExternalRequestContext.Builder().headers(headers).build(),
-                emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().headers(headers).build())
+                .build();
 
         // When
         headerNode.process(context);
@@ -140,8 +140,9 @@ public class RequestHeaderNodeTest {
 
         ListMultimap<String, String> headers = ImmutableListMultimap.of();
 
-        context = new TreeContext(json(object()), new ExternalRequestContext.Builder().headers(headers).build(),
-                emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().headers(headers).build())
+                .build();
 
         // When
         headerNode.process(context);

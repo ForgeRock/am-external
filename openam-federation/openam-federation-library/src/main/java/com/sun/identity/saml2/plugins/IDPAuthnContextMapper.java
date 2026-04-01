@@ -24,7 +24,7 @@
  *
  * $Id: IDPAuthnContextMapper.java,v 1.6 2008/06/25 05:47:51 qcheng Exp $
  *
- * Portions Copyrighted 2019-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2019-2026 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -37,7 +37,7 @@ import com.sun.identity.saml2.assertion.AuthnContext;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 
-/** 
+/**
  * The interface <code>IDPAuthnContextMapper</code> creates an
  * <code>IDPAuthnContextInfo</code> based on the RequestAuthnContext from
  * the AuthnRequest sent by a Service Provider and the AuthnContext
@@ -45,7 +45,7 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
  * The implementation of this class will be used by the IDP to find out
  * the authentication mechanism and set the AuthnContext in the Assertion.
  *
- */ 
+ */
 @SupportedAll
 public interface IDPAuthnContextMapper extends SAMLPlugin {
 
@@ -62,16 +62,16 @@ public interface IDPAuthnContextMapper extends SAMLPlugin {
      * @return an <code>IDPAuthnContextInfo</code> object
      * @throws SAML2Exception if an error occurs.
      */
-    @Deprecated
+    @Deprecated(since = "6.5.0", forRemoval = true)
     IDPAuthnContextInfo getIDPAuthnContextInfo(AuthnRequest authnRequest,
             String idpEntityID, String realm) throws SAML2Exception;
 
-   /** 
+   /**
     * Returns an <code>IDPAuthnContextInfo</code> object.
     *
-    * @param authnRequest the <code>AuthnRequest</code> from the Service 
+    * @param authnRequest the <code>AuthnRequest</code> from the Service
     * Provider
-    * @param idpEntityID the Entity ID of the Identity Provider    
+    * @param idpEntityID the Entity ID of the Identity Provider
     * @param realm the realm to which the Identity Provider belongs
     * @param spEntityID the Entity ID of the Service Provider
     *
@@ -89,7 +89,7 @@ public interface IDPAuthnContextMapper extends SAMLPlugin {
         return getIDPAuthnContextInfo(authnRequest, idpEntityID, realm);
     }
 
-   /** 
+   /**
     * Returns true if the specified AuthnContextClassRef matches a list of
     * requested AuthnContextClassRef.
     *
@@ -97,8 +97,8 @@ public interface IDPAuthnContextMapper extends SAMLPlugin {
     * @param acClassRef AuthnContextClassRef
     * @param comparison the type of comparison
     * @param realm the realm to which the Identity Provider belongs
-    * @param idpEntityID the Entity ID of the Identity Provider    
-    * 
+    * @param idpEntityID the Entity ID of the Identity Provider
+    *
     * @return true if the specified AuthnContextClassRef matches a list of
     *     requested AuthnContextClassRef
     */

@@ -11,16 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static com.sun.identity.idm.IdType.USER;
 import static java.util.stream.Collectors.joining;
 import static org.forgerock.openam.auth.node.api.Action.send;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USER_INFO;
-import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -32,7 +32,10 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.callback.Callback;
 
+import jakarta.inject.Inject;
+
 import org.apache.http.client.utils.URIBuilder;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -45,14 +48,12 @@ import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.oauth2.OAuthUtil;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.RedirectCallback;
@@ -66,7 +67,7 @@ import com.sun.identity.sm.RequiredValueValidator;
  * {@link org.forgerock.openam.auth.nodes.SocialProviderHandlerNode} and
  * {@link org.forgerock.openam.auth.nodes.CreateObjectNode} instead.
  */
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 @Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
         configClass = ProvisionIdmAccountNode.Config.class,
         tags = {"idm", "federation"})

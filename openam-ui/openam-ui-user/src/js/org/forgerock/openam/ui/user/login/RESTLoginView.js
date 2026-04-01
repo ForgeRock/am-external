@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2025 Ping Identity Corporation.
+ * Copyright 2011-2026 Ping Identity Corporation.
  */
 
 import _ from "lodash";
@@ -65,7 +65,15 @@ function populateTemplate () {
     this.data.showForgotUserName = firstUserNamePassStage && Configuration.globalData.forgotUsername === "true";
     this.data.showForgotten = this.data.showForgotPassword || this.data.showForgotUserName;
     this.data.showSelfRegistration = firstUserNamePassStage && Configuration.globalData.selfRegistration === "true";
-    this.data.showRememberLogin = firstUserNamePassStage;
+
+    // Prevents multiple "Remember Login" checkboxes from showing
+    if (firstUserNamePassStage && this.data.reqs && this.data.reqs.callbacks) {
+        const firstConfirmationCallback = _.find(this.data.reqs.callbacks, { type: "ConfirmationCallback" });
+        if (firstConfirmationCallback) {
+            firstConfirmationCallback.showRememberLogin = true;
+        }
+    }
+
     // socialImplementations links should be shown only on the first stage of the username/password stages
     // and should not show on the upgrade session page
     this.data.showSocialLogin = firstUserNamePassStage && !Configuration.loggedUser &&
@@ -107,13 +115,21 @@ function getOutputValue (outputs, name, defaultValue) {
     return output ? output.value : defaultValue;
 }
 
+function setValueIfPresent (name, element, options) {
+    const field = element.output.find((o) => o.name === name);
+    if (field) {
+        options[name] = field.value;
+    }
+}
+
 const LoginView = AbstractView.extend({
     template: "openam/RESTLoginTemplate",
     baseTemplate: "common/LoginBaseTemplate",
     data: {},
     events: {
         "click input[type=submit]": "formSubmit",
-        "click button.js-select-idp-button": "selectIdpClick"
+        "click button.js-select-idp-button": "selectIdpClick",
+        "click button.js-same-device-verification-button": "sameDeviceVerificationClick"
     },
 
     handleExistingSession (requirements) {
@@ -185,6 +201,20 @@ const LoginView = AbstractView.extend({
             failureCallback: () => {
                 // enabled the login button if login failure
                 $("button.js-select-idp-button").prop("disabled", false);
+                this.renderLoginFailure();
+            }
+        });
+    },
+
+    sameDeviceVerificationClick (event) {
+        const submitContent = { [event.target.name]: event.target.value };
+
+        $("button.js-x-button").prop("disabled", true);
+        this.loginRequestFunction({
+            submitContent,
+            failureCallback: () => {
+                // enabled the login button if login failure
+                $("button.js-x-button").prop("disabled", false);
                 this.renderLoginFailure();
             }
         });
@@ -419,6 +449,34 @@ const LoginView = AbstractView.extend({
     lastIndexOfCallbacksOfType (callbacks, type) {
         return _.findLastIndex(callbacks, (callback) => callback.type === type);
     },
+    moveIdpToTop (requirements) {
+        const selectIdpCallbacks = requirements.callbacks.filter((cb) => cb.type === "SelectIdPCallback");
+        if (selectIdpCallbacks) {
+            const otherCallbacks = requirements.callbacks.filter((cb) => cb.type !== "SelectIdPCallback");
+            requirements.callbacks = selectIdpCallbacks.concat(otherCallbacks);
+        }
+    },
+    isWebAuthnAuthCallback (callback) {
+        return this.isMatchingCallback(callback, "MetadataCallback", "data",
+            (value) => value._action === "webauthn_authentication");
+    },
+    isWebAuthnRecoveryCode (callback) {
+        return this.isMatchingCallback(callback, "ConfirmationCallback", "name",
+            (value) => value === "webAuthnRecoveryCode");
+    },
+    isWebAuthnOutcome (callback) {
+        return this.isMatchingCallback(callback, "HiddenValueCallback", "id",
+            (value) => value === "webAuthnOutcome");
+    },
+    isMatchingCallback (callback, type, outputName, outputPredicate) {
+        return callback.type === type &&
+            Array.isArray(callback.output) &&
+            callback.output.some((o) =>
+                o.name === outputName &&
+                o.value &&
+                outputPredicate(o.value)
+            );
+    },
     renderForm (reqs, urlParams) {
         const requirements = _.clone(reqs);
         const promise = $.Deferred();
@@ -428,9 +486,13 @@ const LoginView = AbstractView.extend({
         const consentMappingOutputs = [];
 
         requirements.callbacks = [];
-
-        const onlySelectIdpCallbacks = reqs.callbacks.every((callback) => callback.type === "SelectIdPCallback");
-        const onlyDeviceProfileCallback = reqs.callbacks.every((callback) => callback.type === "DeviceProfileCallback");
+        const onlyDeviceProfileCallback = reqs.callbacks.every((callback) =>
+            callback.type === "DeviceProfileCallback");
+        const webAuthnCallbacks = reqs.callbacks.filter((callback) => this.isWebAuthnAuthCallback(callback) ||
+            this.isWebAuthnRecoveryCode(callback) || this.isWebAuthnOutcome(callback));
+        const idpCallbacks = reqs.callbacks.filter((callback) => callback.type === "SelectIdPCallback");
+        const otherCallbacks = reqs.callbacks.filter((callback) => !webAuthnCallbacks.includes(callback) &&
+            !idpCallbacks.includes(callback));
 
         _.each(reqs.callbacks, (element, index) => {
             if (element.type === "RedirectCallback") {
@@ -450,18 +512,30 @@ const LoginView = AbstractView.extend({
                     window.location.replace(redirectCallback.redirectUrl);
                 }
             } else if (element.type === "PingOneProtectInitializeCallback") {
-                const options = {
-                    envId: getOutputValue(element.output, "envId", ""),
-                    consoleLogEnabled: getOutputValue(element.output, "consoleLogEnabled", false),
-                    deviceAttributesToIgnore: getOutputValue(element.output, "deviceAttributesToIgnore", []),
-                    customHost: getOutputValue(element.output, "customHost", ""),
-                    lazyMetadata: getOutputValue(element.output, "lazyMetadata", false),
-                    behavioralDataCollection: getOutputValue(element.output, "behavioralDataCollection", true),
-                    deviceKeyRsyncIntervals: getOutputValue(element.output, "deviceKeyRsyncIntervals", 14),
-                    enableTrust: getOutputValue(element.output, "enableTrust", false),
-                    disableTags: getOutputValue(element.output, "disableTags", false),
-                    disableHub: getOutputValue(element.output, "disableHub", false)
-                };
+                const signalsInitializationOptions =
+                    getOutputValue(element.output, "signalsInitializationOptions", null);
+                let options;
+
+                if (signalsInitializationOptions) {
+                    options = {
+                        envId: getOutputValue(element.output, "envId", ""),
+                        ...signalsInitializationOptions
+                    };
+                } else {
+                    const agentIdentification = getOutputValue(element.output, "agentIdentification", false);
+                    options = {
+                        envId: getOutputValue(element.output, "envId", ""),
+                        behavioralDataCollection: getOutputValue(element.output, "behavioralDataCollection", true),
+                        universalDeviceIdentification: getOutputValue(element.output, "enableTrust", false),
+                        disableTags: getOutputValue(element.output, "disableTags", false),
+                        agentIdentification
+                    };
+
+                    if (agentIdentification) {
+                        setValueIfPresent("agentTimeout", element, options);
+                        setValueIfPresent("agentPort", element, options);
+                    }
+                }
 
                 P1Protect.start(options).then(() => {
                     processLoginRequest();
@@ -544,18 +618,25 @@ const LoginView = AbstractView.extend({
                 requirements.callbacks[index].output.index = index;
                 consentMappingOutputs.push(requirements.callbacks[index].output);
             } else if (element.type === "SelectIdPCallback") {
-                requirements.callbacks[index].onlyCallback = onlySelectIdpCallbacks;
+                requirements.callbacks[index].hasDivider = otherCallbacks.length > 0 || webAuthnCallbacks.length > 0;
+            } else if (element.type === "MetadataCallback") {
+                if (this.isWebAuthnAuthCallback(element)) {
+                    requirements.callbacks[index].hasDivider = otherCallbacks.length > 0;
+                }
             }
         });
 
-        if (!hasCallback(reqs.callbacks, "ConfirmationCallback") &&
-            !hasCallback(reqs.callbacks, "PollingWaitCallback") &&
-            !hasCallback(reqs.callbacks, "RedirectCallback") &&
-            !hasCallback(reqs.callbacks, "SuspendedTextOutputCallback") &&
-            !hasCallback(reqs.callbacks, "PingOneProtectInitializeCallback") &&
-            !hasCallback(reqs.callbacks, "PingOneProtectEvaluationCallback") &&
+        this.moveIdpToTop(requirements);
+
+        if (!hasCallback(otherCallbacks, "ConfirmationCallback") &&
+            !hasCallback(otherCallbacks, "PollingWaitCallback") &&
+            !hasCallback(otherCallbacks, "RedirectCallback") &&
+            !hasCallback(otherCallbacks, "SameDeviceVerificationCallback") &&
+            !hasCallback(otherCallbacks, "SuspendedTextOutputCallback") &&
+            !hasCallback(otherCallbacks, "PingOneProtectInitializeCallback") &&
+            !hasCallback(otherCallbacks, "PingOneProtectEvaluationCallback") &&
             !onlyDeviceProfileCallback &&
-            !onlySelectIdpCallbacks) {
+            otherCallbacks.length > 0) {
             const confirmationCallback = {
                 "input": {
                     index: requirements.callbacks.length,
@@ -568,7 +649,13 @@ const LoginView = AbstractView.extend({
                 }],
                 type: "ConfirmationCallback"
             };
-            requirements.callbacks.push(confirmationCallback);
+            // Insert the new callback as the first ConfirmationCallback before the webauthn auth callback
+            const webAuthnAuthIndex = requirements.callbacks.findIndex(this.isWebAuthnAuthCallback.bind(this));
+            if (webAuthnAuthIndex > -1) {
+                requirements.callbacks.splice(webAuthnAuthIndex, 0, confirmationCallback);
+            } else {
+                requirements.callbacks.push(confirmationCallback);
+            }
         }
         // This code is run each time a new callback is returned, so we need to check if the callbacks have changed
         const haveCallbacksChanged = (reqs.callbacks && !this.reqs) || !_.isEqual(reqs.callbacks, this.reqs.callbacks);
@@ -656,6 +743,10 @@ const LoginView = AbstractView.extend({
                     //*** Note special case for authLevel
                     Configuration.globalData.auth.additional += `&authIndexType=${
                         (param === "authlevel" ? "level" : param)}&authIndexValue=${indexValue}`;
+                    // *** Remove the original 'service' parameter to avoid duplication in the URL parameters
+                    if (param === "service") {
+                        delete params[param];
+                    }
                 }
             });
         }
@@ -828,8 +919,15 @@ Handlebars.registerHelper("callbackRender", function () {
             break;
         case "SelectIdPCallback":
             result += renderPartial("SelectIdp", {
-                providers: _.find(this.output, { name: "providers" }).value,
-                onlyCallback: this.onlyCallback
+                providers: _.find(this.output, { name: "providers" }).value
+            });
+            if (self.hasDivider) {
+                result += renderPartial("Divider");
+            }
+            break;
+        case "SameDeviceVerificationCallback":
+            result += renderPartial("SameDeviceVerification", {
+                selected: _.find(this.output, { name: "selected" }).value
             });
             break;
         case "DeviceProfileCallback": {
@@ -867,7 +965,40 @@ Handlebars.registerHelper("callbackRender", function () {
         case "PingOneProtectEvaluationCallback":
             // Render nothing.
             break;
-        default: result += renderPartial("Default", { errorMessages, type: "text" }); break;
+        case "MetadataCallback": {
+            const data = _.find(this.output, { name: "data" }).value;
+            const isWebAuthnAuthn = data._action === "webauthn_authentication";
+            const isConditionalWebAuthnAuthn = isWebAuthnAuthn && data.mediation === "conditional";
+            const isWebAuthnReg = data._action === "webauthn_registration";
+            if (isWebAuthnAuthn) {
+                if (data.manualButtonEnabled && self.hasDivider) {
+                    result += renderPartial("Divider");
+                }
+                const scriptContext = JSON.stringify(data);
+                result += renderPartial("WebAuthnAuth", {
+                    scriptContext,
+                    hasManualButton: data.conditional && data.manualButtonEnabled
+                });
+            } else if (isWebAuthnReg) {
+                result += renderPartial("WebAuthnReg", {
+                    scriptContext: JSON.stringify(data)
+                });
+            }
+            if (isWebAuthnReg || (isWebAuthnAuthn && !isConditionalWebAuthnAuthn)) {
+                result += renderPartial("WebAuthnSpinner");
+            }
+            break;
+        }
+        default: {
+            const autocompleteField = _.find(this.output, { name: "autocompleteValues" });
+            const autocompleteValues = autocompleteField ? autocompleteField.value.join(" ") : undefined;
+            result += renderPartial("Default", {
+                errorMessages,
+                type: "text",
+                autocompleteValues
+            });
+            break;
+        }
     }
 
     return new Handlebars.SafeString(result);

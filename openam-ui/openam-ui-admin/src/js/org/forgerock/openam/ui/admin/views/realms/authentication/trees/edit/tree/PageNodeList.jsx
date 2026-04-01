@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 import { Clearfix } from "react-bootstrap";
@@ -32,8 +32,11 @@ import {
     SUCCESS_NODE_ID,
     SUCCESS_NODE_TYPE
 } from "store/modules/local/config/realm/authentication/trees/current/nodes/static";
-import { NEW_NODE_TYPE, PAGE_CHILD_NODE_TYPE }
-    from "org/forgerock/openam/ui/admin/views/realms/authentication/trees/edit/nodeTypes/EditTreeDragItemTypes";
+import {
+    NEW_NODE_TYPE,
+    PAGE_CHILD_NODE_TYPE,
+    shouldValidateAsStandaloneNode
+} from "org/forgerock/openam/ui/admin/utils/treeUtils";
 import PageNodeListItem from "./PageNodeListItem";
 import { add as addNodeInPage }
     from "store/modules/local/config/realm/authentication/trees/current/nodes/pages/childnodes";
@@ -43,6 +46,9 @@ import { add as addPagePosition }
     from "store/modules/local/config/realm/authentication/trees/current/nodes/pages/positions";
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import store from "store";
+import { getNodeType } from "org/forgerock/openam/ui/admin/services/realm/authentication/NodeService";
+import withRouter from "org/forgerock/commons/ui/common/components/hoc/withRouter";
+import withRouterPropType from "org/forgerock/commons/ui/common/components/hoc/withRouterPropType";
 
 class PageNodeList extends Component {
     componentDidUpdate () {
@@ -57,19 +63,27 @@ class PageNodeList extends Component {
         store.dispatch(addPagePosition(this.props.id, position));
     }
 
-    handleAddNode (node) {
-        if (this.props.numberOutcomes > 1) {
-            Messages.addMessage({
-                message: t("console.authentication.trees.edit.nodes.pages.alreadyComplete"),
-                type: Messages.TYPE_DANGER
-            });
-        } else {
-            const id = this.props.onNewNodeCreate(node);
-            const config = cloneDeep(this.props.pageConfig);
-            config.nodes.push({ ...node, _id: id });
-            store.dispatch(setLocalNodeProperties(config));
-            store.dispatch(addNodeInPage(id, this.props.id));
-            this.props.onNodePropertiesChange(this.props.id, PAGE_NODE_TYPE, config);
+    async handleAddNode (node) {
+        try {
+            const realm = this.props.router.params[0];
+            const childNodeType = await getNodeType(realm, node.nodeType, node.version);
+            if (this.props.numberOutcomes > 1 &&
+                !shouldValidateAsStandaloneNode(childNodeType, this.props.pageConfig.version)) {
+                Messages.addMessage({
+                    message: t("console.authentication.trees.edit.nodes.pages.alreadyComplete"),
+                    type: Messages.TYPE_DANGER
+                });
+            } else {
+                const id = this.props.onNewNodeCreate(node);
+                const config = cloneDeep(this.props.pageConfig);
+                config.nodes.push({ ...node, _id: id });
+                store.dispatch(setLocalNodeProperties(config));
+                store.dispatch(addNodeInPage(id, this.props.id));
+                this.props.onNodePropertiesChange(this.props.id, PAGE_NODE_TYPE, config, config.version);
+            }
+        } catch {
+            // if the call to getNodeType above fails an error will
+            // automatically be shown via crest api middleware
         }
     }
 
@@ -85,7 +99,7 @@ class PageNodeList extends Component {
         }
         store.dispatch(addNodeInPage(nodeId, pageId));
         const config = cloneDeep(this.props.pageConfig);
-        this.props.onNodePropertiesChange(this.props.id, PAGE_NODE_TYPE, config);
+        this.props.onNodePropertiesChange(this.props.id, PAGE_NODE_TYPE, config, config.version);
     }
 
     isDraggingNodeOver (draggingNode) {
@@ -117,9 +131,9 @@ class PageNodeList extends Component {
         } = this.props;
         const isOver = (isDragAndDropOver && canDrop) || this.isDraggingNodeOver(draggingNode);
 
-        const handleNodeMouseDown = (id, nodeType) => (event) => {
+        const handleNodeMouseDown = (id, nodeType, nodeVersion) => (event) => {
             event.stopPropagation();
-            onNodeSelect(id, nodeType);
+            onNodeSelect(id, nodeType, nodeVersion);
         };
         const content = pageConfig.nodes.map((node) => {
             return (
@@ -127,7 +141,7 @@ class PageNodeList extends Component {
                     isSelected={ node._id === this.props.selectedNodeId }
                     key={ node._id }
                     node={ node }
-                    onMouseDown={ handleNodeMouseDown(node._id, node.nodeType) }
+                    onMouseDown={ handleNodeMouseDown(node._id, node.nodeType, node.version) }
                     pageId={ id }
                 />
             );
@@ -174,12 +188,17 @@ PageNodeList.propTypes = {
     pageConfig: PropTypes.shape({
         nodes: PropTypes.arrayOf(PropTypes.shape({
             _id: PropTypes.string.isRequired
-        })).isRequired
+        })).isRequired,
+        _type: PropTypes.shape({
+            version: PropTypes.string
+        }),
+        version: PropTypes.string
     }),
     pageNodeLeft: PropTypes.number.isRequired,
     pageNodeTop: PropTypes.number.isRequired,
     pageNodeX: PropTypes.number.isRequired,
     pageNodeY: PropTypes.number.isRequired,
+    router: withRouterPropType,
     selectedNodeId: PropTypes.string
 };
 
@@ -207,4 +226,6 @@ function collect (connect, monitor) {
     };
 }
 
-export default DropTarget([NEW_NODE_TYPE, PAGE_CHILD_NODE_TYPE], dropTarget, collect)(PageNodeList);
+PageNodeList = DropTarget([NEW_NODE_TYPE, PAGE_CHILD_NODE_TYPE], dropTarget, collect)(PageNodeList);
+
+export default withRouter(PageNodeList);

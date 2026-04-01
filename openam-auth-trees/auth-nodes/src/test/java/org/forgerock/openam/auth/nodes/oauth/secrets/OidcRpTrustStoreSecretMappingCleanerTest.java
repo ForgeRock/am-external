@@ -133,7 +133,7 @@ public class OidcRpTrustStoreSecretMappingCleanerTest {
         //given
         given(helper.getSecretId(REALM, CONFIG_NAME, secretStore, mappings)).willReturn(Optional.of("secretId"));
         given(secretStore.mappings()).willReturn(mappings);
-        given(mappings.idSet()).willReturn(singleton("some.secret.mapping.id"));
+        given(mappings.nameSet()).willReturn(singleton("some.secret.mapping.id"));
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
 
         //when

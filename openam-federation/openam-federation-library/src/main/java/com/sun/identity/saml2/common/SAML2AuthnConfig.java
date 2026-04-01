@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.forgerock.openam.core.realms.RealmLookupException;
 import org.forgerock.openam.core.realms.Realms;

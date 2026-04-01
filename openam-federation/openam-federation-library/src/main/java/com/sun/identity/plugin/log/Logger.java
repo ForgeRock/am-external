@@ -24,7 +24,7 @@
  *
  * $Id: Logger.java,v 1.3 2008/06/25 05:47:28 qcheng Exp $
  *
- * Portions Copyrighted 2017-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2017-2026 Ping Identity Corporation.
  */
 
 package com.sun.identity.plugin.log;
@@ -41,9 +41,9 @@ import org.forgerock.openam.annotations.SupportedAll;
  *
  */
 @SupportedAll
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 public interface Logger {
-    
+
     /**
      * Initializes the logging for the component.
      *
@@ -52,9 +52,9 @@ public interface Logger {
      *	  during initialization.
      */
     public void init(String componentName) throws LogException;
-    
+
     /**
-     * Logs message to the access logs. 
+     * Logs message to the access logs.
      *
      * @param level the log level , these are based on those
      *		defined in java.util.logging.Level, the values for
@@ -73,13 +73,13 @@ public interface Logger {
      * @param session the User's session object
      * @exception LogException if there is an error.
      */
-    
+
     public void access(Level level,
                        String messageID,
                        String data[],
                        Object session) throws LogException;
-    
-    
+
+
     /**
      * Writes access to a component into a log.
      * @param level indicating log level
@@ -95,7 +95,7 @@ public interface Logger {
         String data[],
         Object session,
         Map props) throws LogException;
- 
+
 
     /**
      * Logs error messages to the error logs.
@@ -119,7 +119,7 @@ public interface Logger {
      */
     public void error(Level level,String messageId,String data[],
                       Object session) throws LogException;
-    
+
     /**
      * Writes error occurred in a component into a log.
      * @param level indicating log level
@@ -142,7 +142,7 @@ public interface Logger {
      * @return true if logging is enabled.
      */
     public boolean isLogEnabled() ;
-    
+
     /**
      * Checks if an access message of the given level would actually be logged
      * by this logger. This check is based on the Logger's effective level.
@@ -151,7 +151,7 @@ public interface Logger {
      * @return true if the given message level is currently being logged.
      */
     public boolean isAccessLoggable(Level level);
-    
+
     /**
      * Checks if an error message of the given level would actually be logged
      * by this logger. This check is based on the Logger's effective level.
@@ -161,4 +161,3 @@ public interface Logger {
      */
     public boolean isErrorLoggable(Level level);
 }
-

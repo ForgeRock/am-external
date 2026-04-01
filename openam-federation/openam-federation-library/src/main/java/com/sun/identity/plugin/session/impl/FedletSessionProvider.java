@@ -150,13 +150,15 @@ public class FedletSessionProvider implements SessionProvider {
      * @param session the session to be invalidated
      * @param request the browser initiated HTTP request.
      * @param response the HTTP response going back to browser.
+     * @param realm the realm name.
      * @throws SessionException if an error occurred during session
-     * retrieval.     
+     * retrieval.
      */
     public void invalidateSession(
-        Object session,
-        HttpServletRequest request,   // optional input
-        HttpServletResponse response  // optional input
+            Object session,
+            HttpServletRequest request,   // optional input
+            HttpServletResponse response,  // optional input
+            String realm
     ) throws SessionException {
         debug.debug("FedletSessionProvider.invalidateSession called");
     }

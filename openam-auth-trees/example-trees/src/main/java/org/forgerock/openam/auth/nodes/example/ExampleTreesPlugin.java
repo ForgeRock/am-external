@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.example;
 
@@ -50,7 +50,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.crypto.KeyGenerator;
-import javax.inject.Inject;
+
+import jakarta.inject.Inject;
 
 import org.forgerock.am.trees.api.NodeBuilder;
 import org.forgerock.am.trees.api.TreeBuilderFactory;
@@ -257,9 +258,9 @@ public class ExampleTreesPlugin implements AmPlugin {
                 .pageHeader(Map.of(ENGLISH, "Sign In"))
                 .pageDescription(Map.of(ENGLISH, ""))
                 .addNode(usernameNode, UsernameCollectorNode.class.getSimpleName(), NODE_VERSION,
-                        UsernameCollectorBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        UsernameCollectorBuilder.DEFAULT_DISPLAY_NAME)
                 .addNode(passwordNode, PasswordCollectorNode.class.getSimpleName(), NODE_VERSION,
-                        PasswordCollectorBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        PasswordCollectorBuilder.DEFAULT_DISPLAY_NAME)
                 .uuid("6c8349cc-7260-3e62-a3b1-396831a8398a");
 
         treeBuilderFactory.builder(realm)
@@ -338,9 +339,9 @@ public class ExampleTreesPlugin implements AmPlugin {
                 .pageHeader(Map.of())
                 .pageDescription(Map.of())
                 .addNode(usernameNode, UsernameCollectorNode.class.getSimpleName(), NODE_VERSION,
-                        UsernameCollectorBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        UsernameCollectorBuilder.DEFAULT_DISPLAY_NAME)
                 .addNode(passwordNode, PasswordCollectorNode.class.getSimpleName(), NODE_VERSION,
-                        PasswordCollectorBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        PasswordCollectorBuilder.DEFAULT_DISPLAY_NAME)
                 .uuid("56e0ecc5-16d7-4cbd-abdf-8e5bf11a4b4e");
 
         treeBuilderFactory.builder(realm)
@@ -562,15 +563,15 @@ public class ExampleTreesPlugin implements AmPlugin {
                         + "<a href='#/service/PlatformLogin'>Sign In</a>"
                 ))
                 .addNode(validatedUsernameNode, ValidatedUsernameNode.class.getSimpleName(),
-                        NODE_VERSION, ValidatedUsernameBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, ValidatedUsernameBuilder.DEFAULT_DISPLAY_NAME)
                 .addNode(attributeCollectorNode, AttributeCollectorNode.class.getSimpleName(),
-                        NODE_VERSION, AttributeCollectorBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, AttributeCollectorBuilder.DEFAULT_DISPLAY_NAME)
                 .addNode(validatedPasswordNode, ValidatedPasswordNode.class.getSimpleName(),
-                        NODE_VERSION, ValidatedPasswordBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, ValidatedPasswordBuilder.DEFAULT_DISPLAY_NAME)
                 .addNode(kbaCreateNode, KbaCreateNode.class.getSimpleName(),
-                        NODE_VERSION, KbaCreateBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, KbaCreateBuilder.DEFAULT_DISPLAY_NAME)
                 .addNode(acceptTermsAndConditionsNode, AcceptTermsAndConditionsNode.class.getSimpleName(),
-                        NODE_VERSION, AcceptTermsAndConditionsBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, AcceptTermsAndConditionsBuilder.DEFAULT_DISPLAY_NAME)
                 .uuid("d67d8ab4-f4c1-3bf2-aaa3-53e27879133c");
 
         NodeBuilder createObjectNode = new CreateObjectBuilder()
@@ -613,9 +614,9 @@ public class ExampleTreesPlugin implements AmPlugin {
                                 + "<br><a href=\"#/service/PlatformForgottenUsername\">Forgot username?</a>"
                                 + "<a href=\"#/service/PlatformResetPassword\"> Forgot password?</a>"))
                 .addNode(validatedUsernameNode, ValidatedUsernameNode.class.getSimpleName(),
-                        NODE_VERSION, ValidatedUsernameBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, ValidatedUsernameBuilder.DEFAULT_DISPLAY_NAME)
                 .addNode(validatedPasswordNode, ValidatedPasswordNode.class.getSimpleName(),
-                        NODE_VERSION, ValidatedPasswordBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, ValidatedPasswordBuilder.DEFAULT_DISPLAY_NAME)
                 .uuid("f457c545-a9de-388f-98ec-ee47145a72c0");
 
         NodeBuilder dataStoreNode = new DataStoreBuilder().uuid("c0c7c76d-30bd-3dca-afc9-6f40275bdc0a");
@@ -665,7 +666,7 @@ public class ExampleTreesPlugin implements AmPlugin {
         NodeBuilder pageNode = new PageNodeBuilder().pageHeader(singletonMap(ENGLISH, "Please select your preferences"))
                 .pageDescription(emptyMap())
                 .addNode(attributeCollectorNode, AttributeCollectorNode.class.getSimpleName(),
-                        NODE_VERSION, AttributeCollectorBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, AttributeCollectorBuilder.DEFAULT_DISPLAY_NAME)
                 .uuid("6c8349cc-7260-3e62-a3b1-396831a8398f");
 
         NodeBuilder patchObjectNode = new PatchObjectBuilder()
@@ -703,7 +704,7 @@ public class ExampleTreesPlugin implements AmPlugin {
                 .pageDescription(singletonMap(ENGLISH,
                         "Enter your email address or <a href=\"#/service/PlatformLogin\">Sign in</a>"))
                 .addNode(attributeCollectorNode, AttributeCollectorNode.class.getSimpleName(),
-                        NODE_VERSION, AttributeCollectorBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, AttributeCollectorBuilder.DEFAULT_DISPLAY_NAME)
                 .uuid("a684ecee-e76f-3522-b732-86a895bc8436");
 
         NodeBuilder identifyExistingUserNode = new IdentifyExistingUserBuilder().identifier("")
@@ -749,7 +750,7 @@ public class ExampleTreesPlugin implements AmPlugin {
                 .pageDescription(singletonMap(ENGLISH,
                         "Enter your email address or <a href=\"#/service/PlatformLogin\">Sign in</a>"))
                 .addNode(attributeCollectorNode, AttributeCollectorNode.class.getSimpleName(),
-                        NODE_VERSION, AttributeCollectorBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, AttributeCollectorBuilder.DEFAULT_DISPLAY_NAME)
                 .uuid("093f65e0-80a2-35f8-876b-1c5722a46aa2");
 
         NodeBuilder identifyExistingUserNode = new IdentifyExistingUserBuilder()
@@ -771,7 +772,7 @@ public class ExampleTreesPlugin implements AmPlugin {
         NodeBuilder passwordPageNode = new PageNodeBuilder().pageHeader(singletonMap(ENGLISH, "Reset Password"))
                 .pageDescription(singletonMap(ENGLISH, "Change password"))
                 .addNode(validatedPasswordNode, ValidatedPasswordNode.class.getSimpleName(),
-                        NODE_VERSION, ValidatedPasswordBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, ValidatedPasswordBuilder.DEFAULT_DISPLAY_NAME)
                 .uuid("03afdbd6-6e79-39b1-a5f8-597834fa83a4");
 
         NodeBuilder patchObjectNode = new PatchObjectBuilder()
@@ -818,7 +819,7 @@ public class ExampleTreesPlugin implements AmPlugin {
                 .pageHeader(singletonMap(ENGLISH, "Verify Existing Password"))
                 .pageDescription(singletonMap(ENGLISH, "Enter current password"))
                 .addNode(verifyExistingValidatedPasswordNode, ValidatedPasswordNode.class.getSimpleName(),
-                        NODE_VERSION, ValidatedPasswordBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, ValidatedPasswordBuilder.DEFAULT_DISPLAY_NAME)
                 .uuid("a3f390d8-8e4c-31f2-b47b-fa2f1b5f87db");
 
         NodeBuilder dataStoreDecisionNode = new DataStoreBuilder().uuid("14bfa6bb-1487-3e45-bba0-28a21ed38046");
@@ -832,7 +833,7 @@ public class ExampleTreesPlugin implements AmPlugin {
                 .pageHeader(singletonMap(ENGLISH, "Update Password"))
                 .pageDescription(singletonMap(ENGLISH, "Enter new password"))
                 .addNode(updatePasswordValidatedPasswordNode, ValidatedPasswordNode.class.getSimpleName(),
-                        NODE_VERSION, ValidatedPasswordBuilder.DEFAULT_DISPLAY_NAME, systemProperties)
+                        NODE_VERSION, ValidatedPasswordBuilder.DEFAULT_DISPLAY_NAME)
                 .uuid("e2c420d9-28d4-3f8c-a0ff-2ec19b371514");
 
         NodeBuilder emailSuspendNode = new EmailSuspendBuilder().objectLookup(true)

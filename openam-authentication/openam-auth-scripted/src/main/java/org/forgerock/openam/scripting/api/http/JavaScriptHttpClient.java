@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2010-2025 Ping Identity Corporation.
+ * Copyright 2010-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.scripting.api.http;
@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.forgerock.http.Client;
 import org.forgerock.http.client.ChfHttpClient;
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  *
  * @deprecated Will be replaced in a later release by {@link Client}.
  */
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 public class JavaScriptHttpClient extends ChfHttpClient {
 
     private static final Logger DEBUG = LoggerFactory.getLogger(JavaScriptHttpClient.class);

@@ -49,7 +49,6 @@ import java.util.Set;
 import org.forgerock.openam.radius.common.AccessChallenge;
 import org.forgerock.openam.radius.common.AccessReject;
 import org.forgerock.openam.radius.common.AccessRequest;
-import org.forgerock.openam.radius.common.AttributeType;
 import org.forgerock.openam.radius.common.Packet;
 import org.forgerock.openam.radius.common.PacketFactory;
 import org.forgerock.openam.radius.common.RequestAuthenticator;
@@ -186,10 +185,9 @@ public class RadiusConn {
      * @throws ChallengeException       if there is a problem.
      */
     public void replyChallenge(String name, String password,
-                               ChallengeException ce) throws IOException, NoSuchAlgorithmException,
+                               Challenge ce) throws IOException, NoSuchAlgorithmException,
             RejectException, ChallengeException {
-        StateAttribute state = (StateAttribute)
-                ce.getAttributeSet().getAttributeByType(AttributeType.STATE);
+        StateAttribute state = ce.getStateAttribute();
         if (state == null) {
             throw new IOException("State not found in challenge");
         }

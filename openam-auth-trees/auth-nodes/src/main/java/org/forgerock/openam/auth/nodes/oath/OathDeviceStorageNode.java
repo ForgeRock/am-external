@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022-2025 Ping Identity Corporation.
+ * Copyright 2022-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
@@ -36,7 +36,9 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
+
+import java.io.IOException;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -104,6 +106,12 @@ public class OathDeviceStorageNode extends AbstractMultiFactorNode {
         List<String> recoveryCodes = deviceProfileHelper.saveDeviceSettings(oathDeviceSettings,
                 json(object()), userIdentity, generateRecoveryCodes);
         setUserToNotSkippable(userIdentity, realm.toString());
+        try {
+            deviceProfileHelper.updateSharedState(context.getStateFor(this),
+                    oathDeviceSettings, generateRecoveryCodes);
+        } catch (IOException e) {
+            throw new NodeProcessException(e);
+        }
 
         if (CollectionUtils.isNotEmpty(recoveryCodes)) {
             logger.debug("Completed OATH registration. Sending recovery codes.");

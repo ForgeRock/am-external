@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -36,6 +36,9 @@ import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.upgrade.NoUpgrades;
+import org.forgerock.openam.auth.node.api.upgrade.NodeVersionUpgrader;
+import org.forgerock.openam.auth.node.api.upgrade.exception.NodeUpgradeException;
 import org.forgerock.openam.auth.nodes.RecoveryCodeDisplayNode;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationFlags;
 import org.forgerock.openam.auth.nodes.webauthn.data.AuthData;
@@ -48,18 +51,20 @@ import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.authentication.spi.MetadataCallback;
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.tools.objects.MapFormat;
 
 /**
  * Abstract class for webauthn nodes, shares common features and components across the multiple webauthn-related nodes.
  */
 abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     final Logger logger = LoggerFactory.getLogger(AbstractWebAuthnNode.class);
 
     /**
@@ -171,8 +176,14 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
 
     static final String RESOURCE_LOCATION = "org/forgerock/openam/auth/nodes/webauthn/";
 
+    /**
+     * While this value is no longer required for the data transfer between the browser and AM, it is still needed
+     * for backwards compatibility in the WebAuthenticationDOMException shared state value (see AME-31129).
+     */
+    static final String WEBAUTHN_DOM_EXCEPTION_SHARED_STATE_PREFIX = "ERROR::";
+
     private static final String CHALLENGE = "web-authn-challenge";
-    private static final String OUTCOME = "webAuthnOutcome";
+    static final String OUTCOME = "webAuthnOutcome";
 
     /**
      * Common outcomes between nodes.
@@ -222,17 +233,22 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
     }
 
     Action getCallbacksForWebAuthnInteraction(boolean asScript, String script, JsonValue scriptContext,
-            TreeContext context, Callback... additionalCallbacks) throws NodeProcessException {
+            boolean withSpinner, TreeContext context, Callback... additionalCallbacks) throws NodeProcessException {
         ImmutableList.Builder<Callback> callbacks = ImmutableList.builder();
         if (asScript) {
-            script = MapFormat.format(script, scriptContext.asMap());
+            String scriptContextString;
+            try {
+                scriptContextString = OBJECT_MAPPER.writeValueAsString(scriptContext.asMap());
+            } catch (JsonProcessingException e) {
+                throw new NodeProcessException("Failed to serialize script context values to strings.", e);
+            }
+            script = script.replace("{scriptContext}", scriptContextString);
             callbacks.add(new ScriptTextOutputCallback(script));
-            String spinnerScript = clientScriptUtilities.getSpinnerScript(context.request.locales);
-            callbacks.add(new ScriptTextOutputCallback(spinnerScript));
+            if (withSpinner) {
+                String spinnerScript = clientScriptUtilities.getSpinnerScript(context.request.locales);
+                callbacks.add(new ScriptTextOutputCallback(spinnerScript));
+            }
         } else {
-            scriptContext.put("_type", "WebAuthn");
-            scriptContext.put("challenge", context.sharedState.get(CHALLENGE).asString());
-            scriptContext.put("supportsJsonResponse", true);
             callbacks.add(new MetadataCallback(scriptContext));
         }
         return send(callbacks.add(new HiddenValueCallback(OUTCOME, "false")).add(additionalCallbacks).build())
@@ -286,13 +302,6 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
         return origins;
     }
 
-    WebAuthnDomException parseError(String description) {
-        WebAuthnDomException exception = WebAuthnDomException.parse(description);
-        logger.warn("WebAuthn Dom Exception: ", exception);
-        return exception;
-    }
-
-
     void setRecoveryCodesOnDevice(boolean generateRecoveryCodes, WebAuthnDeviceSettings device,
             JsonValue transientState) throws CodeException {
         //generate recovery codes
@@ -324,7 +333,7 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
         return extensions;
     }
 
-    protected JsonValue getWebAuthnObjectInfo(AuthData authData) {
+    protected JsonValue getCommonWebAuthnObjectInfo(AuthData authData) {
         AttestationFlags attestationFlags = authData.attestationFlags;
         return json(object(
                 field(FLAGS, object(
@@ -340,5 +349,17 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
 
     protected void addAuthenticatorAttachment(JsonValue jsonValue, String authenticatorAttachment) {
         jsonValue.put(AUTHENTICATOR_ATTACHMENT, authenticatorAttachment);
+    }
+
+    /**
+     * Common upgrader for the v2 WebAuthn nodes.
+     */
+    @NodeVersionUpgrader.UpgraderMetadata(version = 2, previousUpgrader = NoUpgrades.class)
+    public static class WebAuthnV2NodeUpgrader implements NodeVersionUpgrader {
+        @Override
+        public JsonValue upgrade(JsonValue config) throws NodeUpgradeException {
+            config.remove("asScript");
+            return config;
+        }
     }
 }

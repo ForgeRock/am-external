@@ -18,7 +18,7 @@ package org.forgerock.openam.auth.nodes.webauthn.metadata;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
 

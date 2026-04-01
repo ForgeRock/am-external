@@ -22,17 +22,14 @@ import static org.forgerock.openam.authentication.service.AuthModuleGlobalScript
 import java.util.ArrayList;
 import java.util.List;
 
+import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
-import org.forgerock.openam.scripting.domain.Script;
-
-import com.google.auto.service.AutoService;
 
 /**
  * Responsible for providing Auth module global scripts.
  */
-@AutoService(GlobalScriptsProvider.class)
 public class AuthModuleGlobalScriptsProvider implements GlobalScriptsProvider {
 
     @Override

@@ -15,7 +15,6 @@
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
@@ -224,8 +223,10 @@ class UpdateJourneyTimeoutNodeTest {
     }
 
     private TreeContext getContext(JsonValue transientState, String authId) {
-        return new TreeContext(json(object()), transientState,
-                new ExternalRequestContext.Builder().authId(authId).build(), emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .transientState(transientState)
+                .requestContext(new ExternalRequestContext.Builder().authId(authId).build())
+                .build();
     }
 
 }

@@ -24,7 +24,7 @@
  *
  * $Id: SubjectConfirmationDataImpl.java,v 1.5 2008/11/10 22:57:01 veiming Exp $
  *
- * Portions Copyrighted 2018-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2018-2026 Ping Identity Corporation.
  */
 
 
@@ -470,7 +470,7 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
      * @deprecated Use {@link #toDocumentFragment(Document, boolean, boolean)} instead and then append any additional
      * content to the first child node.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     protected String getElementValue(boolean includeNSPrefix, boolean declareNS)
             throws SAML2Exception {
         StringBuffer xml = new StringBuffer();

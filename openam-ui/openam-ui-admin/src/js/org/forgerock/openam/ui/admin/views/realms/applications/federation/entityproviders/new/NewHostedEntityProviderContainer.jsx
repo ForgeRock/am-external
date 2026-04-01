@@ -175,7 +175,8 @@ class NewHostedEntityProviderContainer extends Component {
             errors.metaAliases.idp.addError(atLeastOne);
             errors.metaAliases.sp.addError(atLeastOne);
         } else if (metaAliases.idp === metaAliases.sp) {
-            errors.sp.addError(t("console.applications.federation.entityProviders.new.hosted.validation.duplicate"));
+            errors.metaAliases.sp.addError(t(
+                "console.applications.federation.entityProviders.new.hosted.validation.duplicate"));
         }
         const whitespace = /\s+/;
         if (whitespace.test(metaAliases.idp)) {

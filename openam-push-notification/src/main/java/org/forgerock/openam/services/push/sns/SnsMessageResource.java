@@ -35,7 +35,7 @@ import org.forgerock.openam.services.push.dispatch.MessageDispatcher;
 import org.forgerock.services.context.Context;
 import org.forgerock.util.promise.Promise;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 /**
  * <p>Amazon SNS implementation of a CREST endpoint for the Push Notification Service.</p>

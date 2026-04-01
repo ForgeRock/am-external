@@ -17,7 +17,7 @@ package com.sun.identity.authentication.modules.hotp;
 
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 /**
  * Lookup for instances of {@link SMSGateway}.

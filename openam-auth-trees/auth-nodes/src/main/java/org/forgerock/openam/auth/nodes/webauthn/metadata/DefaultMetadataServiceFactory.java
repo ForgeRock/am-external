@@ -29,8 +29,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.forgerock.openam.auth.nodes.webauthn.FidoCertificationLevel;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnMetadataServiceConfig;

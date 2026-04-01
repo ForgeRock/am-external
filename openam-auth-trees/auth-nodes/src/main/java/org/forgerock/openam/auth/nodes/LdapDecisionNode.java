@@ -70,7 +70,7 @@ import org.forgerock.openam.ldap.ConnectionFactoryAuditWrapper;
 import org.forgerock.openam.ldap.ConnectionFactoryAuditWrapperFactory;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
 import org.forgerock.openam.ldap.LDAPUtilException;
-import org.forgerock.openam.ldap.LDAPUtils;
+import org.forgerock.openam.ldap.LdapUtils;
 import org.forgerock.openam.ldap.ModuleState;
 import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.openam.shared.secrets.Labels;
@@ -89,7 +89,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.service.AMAccountLockoutTrees;
@@ -115,17 +115,21 @@ public class LdapDecisionNode implements Node {
     private static final Logger DEBUG = LoggerFactory.getLogger(LdapDecisionNode.class);
     private static final String BUNDLE = LdapDecisionNode.class.getName();
     private static final String USER_STATUS_ATTRIBUTE = "inetuserstatus";
-    private static final String LAST_MODULE_STATE = "lastModuleState";
+
+    /** The key in the shared state where the last module state is stored. */
+    protected static final String LAST_MODULE_STATE = "lastModuleState";
+    /** The CoreWrapper object for the Node. */
+    protected final CoreWrapper coreWrapper;
+    /** The LDAP utility class. */
+    protected LDAPAuthUtils ldapUtil;
+
     private final Logger logger = LoggerFactory.getLogger(LdapDecisionNode.class);
     private final Config config;
-    /** the CoreWrapper object for the Node. */
-    protected final CoreWrapper coreWrapper;
     private final LegacyIdentityService identityService;
     private final Realm realm;
     private final Secrets secrets;
     private final ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory;
     private ResourceBundle bundle;
-    private LDAPAuthUtils ldapUtil;
     private Set<String> additionalPwdChangeSearchAttrs;
     private AMAccountLockoutTrees.Factory accountLockoutTreesFactory;
 
@@ -558,7 +562,7 @@ public class LdapDecisionNode implements Node {
      *         false if LDAP server unwilling to authenticate
      * @throws LDAPUtilException if there is other LDAP exceptions
      */
-    private boolean authenticateUser(LDAPAuthUtils ldapUtil, String userName, String userPassword)
+    protected boolean authenticateUser(LDAPAuthUtils ldapUtil, String userName, String userPassword)
             throws LDAPUtilException {
         if (isBlank(userName) || isBlank(userPassword)) {
             throw new LDAPUtilException("CredInvalid", ResultCode.INVALID_CREDENTIALS, null);
@@ -575,7 +579,17 @@ public class LdapDecisionNode implements Node {
         }
     }
 
-    private ActionBuilder processPasswordChange(TreeContext context, String userName, String userPassword)
+    /**
+     * Handles the password change process for a user within the LDAP authentication flow.
+     *
+     * @param context      The current {@link TreeContext} of the authentication flow.
+     * @param userName     The username of the user attempting to change their password.
+     * @param userPassword The current password of the user.
+     * @return An {@link Action.ActionBuilder} representing the next step in the authentication flow.
+     * @throws LDAPUtilException     If an error occurs during LDAP operations.
+     * @throws NodeProcessException  If a configuration or processing error occurs.
+     */
+    protected ActionBuilder processPasswordChange(TreeContext context, String userName, String userPassword)
             throws LDAPUtilException, NodeProcessException {
         ActionBuilder action;
         logger.debug("In the Password Change screen.");
@@ -637,7 +651,7 @@ public class LdapDecisionNode implements Node {
      * @param context represents the context of the current authentication tree.
      * @return true if we are at the login stage,
      */
-    private boolean isLogin(TreeContext context) {
+    protected boolean isLogin(TreeContext context) {
         return !context.hasCallbacks();
     }
 
@@ -646,12 +660,25 @@ public class LdapDecisionNode implements Node {
     }
 
     /**
+     * Initialize ldap for a non-AD deployment.
+     *
+     * @param context the context
+     * @return an initialized {@link LDAPAuthUtils} instance
+     * @throws NodeProcessException the node process exception
+     */
+    protected LDAPAuthUtils initializeLDAP(TreeContext context) throws NodeProcessException {
+        return initializeLDAP(context, false);
+    }
+
+    /**
      * Initialize ldap.
      *
      * @param context the context
+     * @param isAD    true if the ldap server is active directory
+     * @return an initialized {@link LDAPAuthUtils} instance
      * @throws NodeProcessException the node process exception
      */
-    private LDAPAuthUtils initializeLDAP(TreeContext context) throws NodeProcessException {
+    protected LDAPAuthUtils initializeLDAP(TreeContext context, boolean isAD) throws NodeProcessException {
         logger.debug("LDAP initialize()");
         bundle = context.request.locales
                 .getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
@@ -662,8 +689,13 @@ public class LdapDecisionNode implements Node {
             boolean isSecure = config.ldapConnectionMode() == LDAPS || useStartTLS;
             String baseDn = config.accountSearchBaseDn().stream()
                     .collect(Collectors.joining(","));
-            ldapUtil = coreWrapper.getLDAPAuthUtils(config.primaryServers(), config.secondaryServers(),
-                    isSecure, bundle, baseDn, DEBUG);
+            if (!isAD) {
+                ldapUtil = coreWrapper.getLDAPAuthUtils(config.primaryServers(), config.secondaryServers(),
+                        isSecure, bundle, baseDn, DEBUG);
+            } else {
+                ldapUtil = coreWrapper.getLDAPAuthUtilsForAD(config.primaryServers(), config.secondaryServers(),
+                        isSecure, bundle, baseDn, DEBUG);
+            }
             ldapUtil.setScope(searchScope);
             ldapUtil.setConnectionFactoryAuditWrapperFactory(connectionFactoryAuditWrapperFactory);
             if (config.userSearchFilter().isPresent()) {
@@ -688,7 +720,7 @@ public class LdapDecisionNode implements Node {
             ldapUtil.setUserAttributes(config.userCreationAttrs());
             ldapUtil.setTrustAll(config.trustAllServerCertificates());
             ldapUtil.setUseStartTLS(useStartTLS);
-            //TODO The work for this is dependent on https://bugster.forgerock.org/jira/browse/AME-15017 being
+            //TODO The work for this is dependent on https://pingidentity.atlassian.net/browse/AME-15017 being
             // completed first, as it requires access to the user profile.
             ldapUtil.setDynamicProfileCreationEnabled(false);
             ldapUtil.setBeheraEnabled(config.beheraEnabled());
@@ -882,7 +914,21 @@ public class LdapDecisionNode implements Node {
         ACCOUNT_LOCKED
     }
 
-    private List<Callback> passwordChangeCallbacks(int messageType, String message) {
+    /**
+     * Constructs a list of callbacks to be presented to the user during the password change process.
+     * <p>
+     * The callbacks include:
+     * <ul>
+     *   <li>A {@link TextOutputCallback} displaying the provided message with the specified message type.</li>
+     *   <li>{@link PasswordCallback}s for the old password, new password, and confirmation of the new password.</li>
+     *   <li>A {@link ConfirmationCallback} with submit and cancel options.</li>
+     * </ul>
+     *
+     * @param messageType The type of message to display (e.g., INFORMATION, WARNING, ERROR).
+     * @param message     The message to display to the user.
+     * @return A list of {@link Callback} objects for the password change screen.
+     */
+    protected List<Callback> passwordChangeCallbacks(int messageType, String message) {
         return passwordChangeCallbacks(messageType,
                                        message,
                                        new ConfirmationCallback(OK_CANCEL_OPTION,
@@ -1011,7 +1057,16 @@ public class LdapDecisionNode implements Node {
         }
     }
 
-    private String getUserNameFromIdentity(String identity) {
+    /**
+     * Extracts the username from the provided identity string based on configuration.
+     * <p>
+     * If {@code config.returnUserDn()} is {@code false}, the identity is returned as-is.
+     * If {@code config.returnUserDn()} is {@code true}, the username is extracted from the LDAP DN.
+     *
+     * @param identity The identity string, which may be a username or a DN.
+     * @return The username extracted from the identity, or {@code null} if the identity is {@code null}.
+     */
+    protected String getUserNameFromIdentity(String identity) {
         if (identity == null) {
             return null;
         }
@@ -1020,10 +1075,16 @@ public class LdapDecisionNode implements Node {
             return identity;
         }
 
-        return LDAPUtils.getName(Dn.valueOf(identity));
+        return LdapUtils.getName(Dn.valueOf(identity));
     }
 
-    private ResourceBundle getBundleInPreferredLocale(TreeContext context) {
+    /**
+     * Retrieves the resource bundle in the preferred locale from the given tree context.
+     *
+     * @param context the current tree context
+     * @return the resource bundle in the preferred locale
+     */
+    protected ResourceBundle getBundleInPreferredLocale(TreeContext context) {
         return context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
     }
 

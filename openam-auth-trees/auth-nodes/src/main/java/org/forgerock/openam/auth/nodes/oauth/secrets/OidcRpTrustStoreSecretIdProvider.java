@@ -22,7 +22,7 @@ import static org.forgerock.openam.shared.secrets.Labels.OIDC_RELIANT_PARTY_CONF
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.secrets.SecretIdProvider;

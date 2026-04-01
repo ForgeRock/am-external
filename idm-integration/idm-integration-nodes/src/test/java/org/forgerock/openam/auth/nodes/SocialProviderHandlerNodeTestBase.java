@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2025 Ping Identity Corporation.
+ * Copyright 2020-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static com.sun.identity.shared.FeatureEnablementConstants.OIDC_SOCIAL_PROVIDER_SUB_CLAIM_IS_NOT_UNIQUE;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -29,10 +28,9 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.oauth.clients.oauth2.OAuth2Client.ACCESS_TOKEN;
 import static org.forgerock.oauth.clients.oauth2.OAuth2Client.REFRESH_TOKEN;
-import static org.forgerock.openam.auth.node.api.TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE;
 import static org.forgerock.openam.auth.nodes.SocialProviderHandlerNode.ALIAS_LIST;
-import static org.forgerock.openam.auth.nodes.SocialProviderHandlerNode.Config;
 import static org.forgerock.openam.auth.nodes.SocialProviderHandlerNode.SOCIAL_OAUTH_DATA;
+import static org.forgerock.openam.auth.nodes.SocialProviderHandlerNodeV2.Config;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.IDPS;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.SELECTED_IDP;
@@ -56,7 +54,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.inject.Provider;
 import javax.script.ScriptException;
 
 import org.forgerock.am.identity.application.LegacyIdentityService;
@@ -81,15 +78,17 @@ import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluator.ScriptResult;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
-import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
-import org.forgerock.openam.scripting.domain.LegacyScriptContext;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.social.idp.AppleClientConfig;
 import org.forgerock.openam.social.idp.OAuth2ClientConfig;
 import org.forgerock.openam.social.idp.OpenIDConnectClientConfig;
 import org.forgerock.openam.social.idp.RevocationOption;
+import org.forgerock.openam.social.idp.SocialIdPProfileTransformationBindings;
+import org.forgerock.openam.social.idp.SocialIdPProfileTransformationScriptContext;
 import org.forgerock.openam.social.idp.SocialIdentityProviders;
+import org.forgerock.openam.social.idp.SocialProviderHandlerNodeBindings;
+import org.forgerock.openam.social.idp.SocialProviderHandlerNodeScriptContext;
 import org.forgerock.secrets.GenericSecret;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.util.promise.Promises;
@@ -104,6 +103,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.mozilla.javascript.NativeJavaObject;
 
+import com.google.inject.Provider;
 import com.iplanet.am.util.SystemProperties;
 import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.spi.RedirectCallback;
@@ -138,7 +138,10 @@ public abstract class SocialProviderHandlerNodeTestBase {
     ScriptEvaluatorFactory scriptEvaluatorFactory;
 
     @Mock
-    protected ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
+    protected ScriptEvaluator<SocialProviderHandlerNodeBindings> nodeScriptEvaluator;
+
+    @Mock
+    protected ScriptEvaluator<SocialIdPProfileTransformationBindings> transformScriptEvaluator;
 
     @Mock
     protected Provider<SessionService> sessionServiceProvider;
@@ -154,12 +157,21 @@ public abstract class SocialProviderHandlerNodeTestBase {
     @Mock
     AuthScriptUtilities authScriptUtilities;
 
+    @Mock
+    SocialIdPProfileTransformationScriptContext transformationScriptContext;
+
+    @Mock
+    SocialProviderHandlerNodeScriptContext nodeScriptContext;
+
     protected SocialProviderHandlerNode node;
     protected Script script;
 
     @BeforeEach
     void setUp() throws Exception {
-        when(scriptEvaluatorFactory.create(any(LegacyScriptContext.class))).thenReturn(scriptEvaluator);
+        when(scriptEvaluatorFactory.create(eq(SOCIAL_IDP_PROFILE_TRANSFORMATION), eq(transformationScriptContext)))
+                .thenReturn(transformScriptEvaluator);
+        when(scriptEvaluatorFactory.create(eq(SOCIAL_IDP_PROFILE_TRANSFORMATION), eq(nodeScriptContext)))
+                .thenReturn(nodeScriptEvaluator);
         when(authModuleHelper.newOAuthClient(any(Realm.class), any(OAuth2ClientConfig.class)))
                 .thenReturn(oAuthClient);
         when(oAuthClient.getAuthRedirect(any(), any(), any()))
@@ -207,7 +219,10 @@ public abstract class SocialProviderHandlerNodeTestBase {
         when(nativeJavaObject.unwrap()).thenReturn(json(object()));
         ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(nativeJavaObject);
-        when(scriptEvaluator.evaluateScript(any(), any(LegacyScriptBindings.class), eq(realm))).thenReturn(scriptResult);
+        when(transformScriptEvaluator.evaluateScript(any(), any(SocialIdPProfileTransformationBindings.class),
+                eq(realm))).thenReturn(scriptResult);
+        when(nodeScriptEvaluator.evaluateScript(any(), any(SocialProviderHandlerNodeBindings.class), eq(realm)))
+                .thenReturn(scriptResult);
         setNodeField();
     }
 
@@ -219,14 +234,13 @@ public abstract class SocialProviderHandlerNodeTestBase {
     void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
         // Given
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(json(object(
-                field(SELECTED_IDP, PROVIDER_NAME),
-                field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
-        )),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(
+                        field(SELECTED_IDP, PROVIDER_NAME),
+                        field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
+                )))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         // When
         Action result = node.process(context);
@@ -240,9 +254,9 @@ public abstract class SocialProviderHandlerNodeTestBase {
 
     @Test
     void processWithoutCodeResultsInRedirectCallbackWithCookie() throws Exception {
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder().build(), emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .build();
 
         Action action = node.process(context);
 
@@ -258,12 +272,10 @@ public abstract class SocialProviderHandlerNodeTestBase {
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any(), any()))
                 .thenThrow(new NotFoundException());
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         Action action = node.process(context);
 
@@ -285,12 +297,10 @@ public abstract class SocialProviderHandlerNodeTestBase {
         Map<String, String[]> parameters = new HashMap<>();
         parameters.put("code", new String[]{"the_code"});
 
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         assertThatThrownBy(() -> node.process(context))
                 .isExactlyInstanceOf(NodeProcessException.class);
@@ -301,12 +311,10 @@ public abstract class SocialProviderHandlerNodeTestBase {
     void shouldThrowExceptionIfFailedToRetrieveProfile() {
         when(oAuthClient.getUserInfo(any())).thenReturn(new OAuthException("Failed").asPromise());
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         assertThatThrownBy(() -> node.process(context))
                 .isExactlyInstanceOf(NodeProcessException.class);
@@ -314,15 +322,13 @@ public abstract class SocialProviderHandlerNodeTestBase {
 
     @Test
     void shouldThrowExceptionIfScriptExecutionFailed() throws Exception {
-        when(scriptEvaluator.evaluateScript(any(), any(LegacyScriptBindings.class), eq(realm)))
+        when(nodeScriptEvaluator.evaluateScript(any(), any(SocialProviderHandlerNodeBindings.class), eq(realm)))
                 .thenThrow(new ScriptException("Failed"));
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         assertThatThrownBy(() -> node.process(context))
                 .isExactlyInstanceOf(NodeProcessException.class);
@@ -331,19 +337,18 @@ public abstract class SocialProviderHandlerNodeTestBase {
     @Test
     void shouldPopulateTransientStateWithProfileData() throws Exception {
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
         JsonValue objectData = json(object(
                 field("attribute1", "value1")
         ));
         when(nativeJavaObject.unwrap()).thenReturn(objectData);
         ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(nativeJavaObject);
-        when(scriptEvaluator.evaluateScript(any(), any(LegacyScriptBindings.class), eq(realm))).thenReturn(scriptResult);
+        when(nodeScriptEvaluator.evaluateScript(any(), any(SocialProviderHandlerNodeBindings.class), eq(realm)))
+                .thenReturn(scriptResult);
         Script script = Script.builder().setId("1")
                 .setLanguage(ScriptingLanguage.JAVASCRIPT).setName("test")
                 .setScript("return {'attribute1':'value1'};")
@@ -363,12 +368,10 @@ public abstract class SocialProviderHandlerNodeTestBase {
         // Given
         when(config.storeTokens()).thenReturn(false);
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         node.process(context);
 
@@ -381,12 +384,10 @@ public abstract class SocialProviderHandlerNodeTestBase {
         // Given
         when(config.storeTokens()).thenReturn(true);
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         node.process(context);
 
@@ -399,14 +400,13 @@ public abstract class SocialProviderHandlerNodeTestBase {
     @Test
     void shouldNotPutUserNameInTransientStateIfItExistsInContext() throws Exception {
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(json(object(
-                field(SELECTED_IDP, PROVIDER_NAME),
-                field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
-        )),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(
+                        field(SELECTED_IDP, PROVIDER_NAME),
+                        field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
+                )))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
         JsonValue objectData = json(object(
                 field("attribute1", "value1"),
                 field("userName", "newValue")
@@ -414,7 +414,8 @@ public abstract class SocialProviderHandlerNodeTestBase {
         when(nativeJavaObject.unwrap()).thenReturn(objectData);
         ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(nativeJavaObject);
-        when(scriptEvaluator.evaluateScript(any(), any(LegacyScriptBindings.class), eq(realm))).thenReturn(scriptResult);
+        when(nodeScriptEvaluator.evaluateScript(any(), any(SocialProviderHandlerNodeBindings.class), eq(realm)))
+                .thenReturn(scriptResult);
         Script script = Script.builder().setId("1")
                 .setLanguage(ScriptingLanguage.JAVASCRIPT).setName("test")
                 .setScript("return {'attribute1':'value1', 'userName':'newValue'};")
@@ -436,12 +437,14 @@ public abstract class SocialProviderHandlerNodeTestBase {
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any(), any()))
                 .thenThrow(new NotFoundException());
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                json(object(field(OBJECT_ATTRIBUTES, object(field(ALIAS_LIST, array("anotherIdp-user")))))),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .transientState(json(
+                        object(field(OBJECT_ATTRIBUTES,
+                        object(field(ALIAS_LIST, array("anotherIdp-user")))))
+                ))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         Action action = node.process(context);
 
@@ -464,12 +467,14 @@ public abstract class SocialProviderHandlerNodeTestBase {
     @Test
     void shouldMergeAllAliases() throws Exception {
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                json(object(field(OBJECT_ATTRIBUTES, object(field(ALIAS_LIST, array("anotherIdp-user")))))),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .transientState(json(
+                        object(field(OBJECT_ATTRIBUTES,
+                                object(field(ALIAS_LIST, array("anotherIdp-user")))))
+                ))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         Action action = node.process(context);
 
@@ -493,14 +498,13 @@ public abstract class SocialProviderHandlerNodeTestBase {
     @Test
     void shouldAddReturnedAliasToUsersExistingAliasList() throws Exception {
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(json(object(
-                field(SELECTED_IDP, PROVIDER_NAME),
-                field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
-        )),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(
+                        field(SELECTED_IDP, PROVIDER_NAME),
+                        field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
+                )))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         Action action = node.process(context);
 
@@ -522,14 +526,13 @@ public abstract class SocialProviderHandlerNodeTestBase {
     @Test
     void shouldThrowExceptionIfMatchedUserDiffersFromSharedState() {
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        TreeContext context = new TreeContext(json(object(
-                field(SELECTED_IDP, PROVIDER_NAME),
-                field(OBJECT_ATTRIBUTES, object(field("userName", "alice")))
-        )),
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(
+                        field(SELECTED_IDP, PROVIDER_NAME),
+                        field(OBJECT_ATTRIBUTES, object(field("userName", "alice")))
+                )))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         assertThatThrownBy(() -> node.process(context))
                 .isExactlyInstanceOf(NodeProcessException.class);
@@ -538,9 +541,9 @@ public abstract class SocialProviderHandlerNodeTestBase {
     @Test
     void processWithoutCodeResultsInIdPCallbackWithOAuth2Client() throws Exception {
         when(config.clientType()).thenReturn(ClientType.NATIVE);
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder().build(), emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .build();
 
         Action action = node.process(context);
 
@@ -566,9 +569,9 @@ public abstract class SocialProviderHandlerNodeTestBase {
         OidcTestClient oidcTestClient = new OidcTestClient();
         when(providerConfigStore.getProviders(any(Realm.class)))
                 .thenReturn(singletonMap(PROVIDER_NAME, oidcTestClient));
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder().build(), emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .build();
 
         Action action = node.process(context);
 
@@ -594,11 +597,13 @@ public abstract class SocialProviderHandlerNodeTestBase {
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any(), any()))
                 .thenReturn(json(object(field("userName", "oidc-user"),
                         field(IDPS, array("oidc-test-provider-oidc-user")))));
-        TreeContext context = new TreeContext(json(object(
-                field(SELECTED_IDP, "oidc-test-provider"),
-                field(OBJECT_ATTRIBUTES, object(field("userName", "oidc-user")))
-        )), new ExternalRequestContext.Builder().parameters(parameters).build(),
-                emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(
+                        field(SELECTED_IDP, "oidc-test-provider"),
+                        field(OBJECT_ATTRIBUTES, object(field("userName", "oidc-user")))
+                )))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
 
         // When
         Action action = node.process(context);
@@ -630,11 +635,13 @@ public abstract class SocialProviderHandlerNodeTestBase {
             when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any(), any()))
                     .thenReturn(json(object(field("userName", "oidc-user"),
                             field(IDPS, array("oidc-test-provider-oidc-user")))));
-            var context = new TreeContext(json(object(
-                    field(SELECTED_IDP, "oidc-test-provider"),
-                    field(OBJECT_ATTRIBUTES, object(field("userName", "oidc-user")))
-            )), new ExternalRequestContext.Builder().parameters(parameters).build(),
-                    emptyList(), Optional.empty());
+            var context = TreeContext.builder()
+                    .sharedState(json(object(
+                            field(SELECTED_IDP, "oidc-test-provider"),
+                            field(OBJECT_ATTRIBUTES, object(field("userName", "oidc-user")))
+                    )))
+                    .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                    .build();
 
             // When
             Action action = node.process(context);
@@ -657,9 +664,9 @@ public abstract class SocialProviderHandlerNodeTestBase {
         when(providerConfigStore.getProviders(any(Realm.class)))
                 .thenReturn(singletonMap(PROVIDER_NAME, new AppleTestClientRequestingUserInfo()));
 
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder().build(), emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .build();
 
         Action action = node.process(context);
 
@@ -673,9 +680,9 @@ public abstract class SocialProviderHandlerNodeTestBase {
         when(providerConfigStore.getProviders(any(Realm.class)))
                 .thenReturn(singletonMap(PROVIDER_NAME, new OidcTestClient()));
 
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder().build(), emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .build();
 
         Action action = node.process(context);
 
@@ -693,9 +700,9 @@ public abstract class SocialProviderHandlerNodeTestBase {
         };
         when(providerConfigStore.getProviders(any(Realm.class)))
                 .thenReturn(singletonMap(PROVIDER_NAME, oidcTestClient));
-        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
-                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
-                new ExternalRequestContext.Builder().build(), emptyList());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(field(SELECTED_IDP, PROVIDER_NAME))))
+                .build();
 
         Action action = node.process(context);
 
@@ -724,12 +731,13 @@ public abstract class SocialProviderHandlerNodeTestBase {
         callback.setTokenType("id_token");
         callback.setToken("id_token_value");
 
-        TreeContext context = new TreeContext(json(object(
-                field(SELECTED_IDP, PROVIDER_NAME),
-                field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
-        )), new ExternalRequestContext.Builder().build(),
-                Collections.singletonList(callback),
-                Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(
+                        field(SELECTED_IDP, PROVIDER_NAME),
+                        field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
+                )))
+                .callbacks(Collections.singletonList(callback))
+                .build();
 
         Action action = node.process(context);
 
@@ -762,12 +770,14 @@ public abstract class SocialProviderHandlerNodeTestBase {
         String[] values = {"dummy_auth_code"};
         parameters.put("code", values);
 
-        TreeContext context = new TreeContext(json(object(
-                field(SELECTED_IDP, PROVIDER_NAME),
-                field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
-        )), new ExternalRequestContext.Builder().parameters(parameters).build(),
-                Collections.singletonList(callback),
-                Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object(
+                        field(SELECTED_IDP, PROVIDER_NAME),
+                        field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
+                )))
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .callbacks(Collections.singletonList(callback))
+                .build();
 
         Action action = node.process(context);
 

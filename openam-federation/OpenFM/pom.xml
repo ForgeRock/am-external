@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2025 Ping Identity Corporation.
+ * Copyright 2011-2026 Ping Identity Corporation.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>8.0.2</version>
+        <version>8.1.0</version>
     </parent>
 
     <!-- Component Definition -->
@@ -124,12 +124,22 @@
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
+            <artifactId>legacy-logging-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
             <artifactId>legacy-policy-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>service-config-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>auth-node-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -145,11 +155,6 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-rest</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.forgerock.am</groupId>
-            <artifactId>openam-entitlements</artifactId>
         </dependency>
 
         <dependency>
@@ -171,6 +176,18 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-legacy-debug-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>cc.jilt</groupId>
+            <artifactId>jilt</artifactId>
+            <version>${jilt.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

@@ -32,7 +32,6 @@ import javax.security.auth.callback.TextOutputCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,12 +50,20 @@ public class DebugNodeTest {
     private DebugNode.Config config;
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(sharedState, new Builder().build(), callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState,
             JsonValue transientState, Optional<String> universalId) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbacks, universalId);
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .universalId(universalId)
+                .build();
     }
 
     private Boolean contains(String searchString, String value) {

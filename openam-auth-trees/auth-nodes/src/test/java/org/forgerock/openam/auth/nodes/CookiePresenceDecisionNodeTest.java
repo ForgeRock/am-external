@@ -15,16 +15,12 @@
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.json.JsonValue.object;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import java.util.Map;
-import java.util.Optional;
 
-import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -136,13 +132,13 @@ public class CookiePresenceDecisionNodeTest {
     }
 
     private TreeContext getContext() {
-        return new TreeContext(JsonValue.json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        return TreeContext.builder().build();
     }
 
     private TreeContext getContext(Map<String, String> cookies) {
-        return new TreeContext(JsonValue.json(object()),
-                new ExternalRequestContext.Builder().cookies(cookies).build(), emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().cookies(cookies).build())
+                .build();
     }
 
     private void whenNodeConfigHasDefaultValue() {

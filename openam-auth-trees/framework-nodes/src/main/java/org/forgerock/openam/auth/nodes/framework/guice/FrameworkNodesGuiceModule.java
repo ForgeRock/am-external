@@ -15,7 +15,9 @@
  */
 package org.forgerock.openam.auth.nodes.framework.guice;
 
+import org.forgerock.openam.auth.nodes.framework.script.FrameworkNodesGlobalScriptsProvider;
 import org.forgerock.openam.auth.nodes.framework.script.FrameworkNodesScriptContextProvider;
+import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
 
 import com.google.auto.service.AutoService;
@@ -32,5 +34,8 @@ public class FrameworkNodesGuiceModule extends AbstractModule {
     protected void configure() {
         Multibinder.newSetBinder(binder(), ScriptContextDetailsProvider.class)
                 .addBinding().to(FrameworkNodesScriptContextProvider.class);
+
+        Multibinder.newSetBinder(binder(), GlobalScriptsProvider.class)
+                .addBinding().to(FrameworkNodesGlobalScriptsProvider.class);
     }
 }

@@ -45,7 +45,6 @@ import javax.security.auth.callback.Callback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SuspendedTextOutputCallback;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -93,8 +92,7 @@ public class EmailSuspendNodeTest {
         when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
         when(idmIntegrationService.getSharedAttributesFromContext(any())).thenCallRealMethod();
 
-        Action action = emailSuspendNode.process(new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.of("universalId")));
+        Action action = emailSuspendNode.process(TreeContext.builder().universalId("universalId").build());
 
         assertThat(action.outcome).isEqualTo(null);
         assertThat(action.suspendDuration).isEmpty();
@@ -293,8 +291,10 @@ public class EmailSuspendNodeTest {
                 ))
         ));
 
-        TreeContext context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, json(object()),
-                json(object()), new ExternalRequestContext.Builder().build(), emptyList(), true, Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .resumedFromSuspend(true)
+                .build();
 
         Action action = emailSuspendNode.process(context);
 
@@ -327,8 +327,7 @@ public class EmailSuspendNodeTest {
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState,
-                new ExternalRequestContext.Builder().build(), callbacks);
+        return TreeContext.builder().sharedState(sharedState).callbacks(callbacks).build();
     }
 
     private JsonValue userObject() {

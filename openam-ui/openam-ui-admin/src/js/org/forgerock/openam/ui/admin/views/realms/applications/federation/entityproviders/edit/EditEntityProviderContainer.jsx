@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 import { bindActionCreators } from "redux";
 import PropTypes from "prop-types";
@@ -45,13 +45,14 @@ class EditEntityProviderContainer extends Component {
     async componentDidMount () {
         const [realm, location,, entityId] = this.props.router.params;
         try {
-            const [instance, schema, idpATMScriptsResponse, idpAdapterScripts, spAdapterScripts,
+            const [instance, schema, idpATMScriptsResponse, idpAdapterScripts, spAdapterScripts, spAccountMapperScripts,
                 nameIDMapperScripts, treeNames] = await Promise.all([
                 getInstance(realm, location, entityId),
                 getSchema(realm, location),
-                getAllByScriptType(realm, "SAML2_IDP_ATTRIBUTE_MAPPER"),
-                getAllByScriptType(realm, "SAML2_IDP_ADAPTER"),
-                getAllByScriptType(realm, "SAML2_SP_ADAPTER"),
+                getAllByScriptType(realm, "SAML2_IDP_ATTRIBUTE_MAPPER", "SAML2_IDP_ATTRIBUTE_MAPPER_NEXT_GEN"),
+                getAllByScriptType(realm, "SAML2_IDP_ADAPTER", "SAML2_IDP_ADAPTER_NEXTGEN"),
+                getAllByScriptType(realm, "SAML2_SP_ADAPTER", "SAML2_SP_ADAPTER_NEXTGEN"),
+                getAllByScriptType(realm, "SAML2_SP_ACCOUNT_MAPPER"),
                 getAllByScriptType(realm, "SAML2_NAMEID_MAPPER"),
                 getAllTrees(realm)
             ]);
@@ -60,6 +61,7 @@ class EditEntityProviderContainer extends Component {
             this.setState({ idpATMScripts: idpATMScriptsResponse.result });
             this.setState({ idpAdapterScripts: idpAdapterScripts.result });
             this.setState({ spAdapterScripts: spAdapterScripts.result });
+            this.setState({ spAccountMapperScripts: spAccountMapperScripts.result });
             this.setState({ nameIDMapperScripts: nameIDMapperScripts.result });
             this.setState({ treeNames: treeNames.result });
             this.props.setInstance(instance);
@@ -119,9 +121,24 @@ class EditEntityProviderContainer extends Component {
                     idpAdapterProperties.idpAdapterScript = this.createDropdownSchema(idpAdapterProperties.idpAdapterScript, this.state.idpAdapterScripts, "--- Select a script ---");
                 } else if (role === "serviceProvider") {
                     // SP Adapter Script
-                    const spAdapterProperties = schema.properties.assertionProcessing.properties.adapter.properties;
+                    const assertionProcessing = schema.properties.assertionProcessing;
+                    const spAdapterProperties = assertionProcessing.properties.adapter.properties;
                     /* eslint-disable max-len */
                     spAdapterProperties.spAdapterScript = this.createDropdownSchema(spAdapterProperties.spAdapterScript, this.state.spAdapterScripts, "--- Select a script ---");
+                    // Account Mapper Script
+                    const accountMappingProperties = assertionProcessing.properties.accountMapping.properties;
+                    /* eslint-disable max-len */
+                    accountMappingProperties.spAccountMapperScript = this.createDropdownSchema(accountMappingProperties.spAccountMapperScript, this.state.spAccountMapperScripts, "--- Select a script ---");
+                    // JTree Configuration
+                    /* eslint-disable max-len */
+                    if (assertionProcessing && assertionProcessing.properties.redirectTreeConfiguration) {
+                        const redirectTreeConfigurationProperties = assertionProcessing.properties.redirectTreeConfiguration.properties;
+                        redirectTreeConfigurationProperties.redirectTreeName = this.createDropdownSchema(
+                            redirectTreeConfigurationProperties.redirectTreeName,
+                            this.state.treeNames,
+                            "--- Select a tree ---"
+                        );
+                    }
                 }
             }
             if (location === "remote") {

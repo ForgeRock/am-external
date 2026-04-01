@@ -23,7 +23,7 @@ import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.callback.Callback;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

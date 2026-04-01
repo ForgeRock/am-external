@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2025 Ping Identity Corporation.
+ * Copyright 2019-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.builders;
 
@@ -19,8 +19,10 @@ import org.forgerock.openam.auth.nodes.ReCaptchaNode;
 
 /**
  * The ReCaptchaNode builder.
+ * @deprecated {@link org.forgerock.openam.auth.nodes.ReCaptchaNode} was deprecated in favour of
+ * {@link org.forgerock.openam.auth.nodes.CaptchaNode} since 7.2.0.  There is no replacement for this builder.
  */
-@Deprecated
+@Deprecated(since = "7.2.0", forRemoval = true)
 public class ReCaptchaNodeBuilder extends AbstractNodeBuilder implements ReCaptchaNode.Config {
 
     private String siteKey;

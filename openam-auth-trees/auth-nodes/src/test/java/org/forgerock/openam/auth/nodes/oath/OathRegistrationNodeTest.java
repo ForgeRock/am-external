@@ -54,7 +54,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
@@ -62,11 +61,10 @@ import javax.security.auth.callback.TextOutputCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationUtilities;
 import org.forgerock.openam.core.realms.Realm;
@@ -294,23 +292,25 @@ public class OathRegistrationNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState) {
-        return new TreeContext(
-                sharedState, new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(
-                sharedState, new ExternalRequestContext.Builder().build(), callbacks, Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {
-        return new TreeContext(
-                sharedState, transientState, new ExternalRequestContext.Builder().build(),
-                callbacks, Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private void whenNodeConfigHasDefaultValues() {

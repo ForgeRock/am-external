@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2025 Ping Identity Corporation.
+ * Copyright 2020-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.radius.server.config;
@@ -32,9 +32,12 @@ import org.forgerock.openam.sm.annotations.adapters.NumberRange;
 import org.forgerock.openam.sm.annotations.adapters.Password;
 import org.forgerock.openam.sm.annotations.subconfigs.Multiple;
 
+import com.google.auto.service.AutoService;
+
 /**
  * Service interface for configuring Radius Server Service.
  */
+@AutoService(ServiceComponentConfig.class)
 @Config(scope = SERVICE,
         name = "RadiusServerService",
         i18nFile = "radiusServer",
@@ -206,7 +209,8 @@ public interface RadiusServerServiceConfig
         @Attribute(
                 order = 900,
                 i18nKey = "e-handler-config-params",
-                name = "handlerConfig"
+                name = "handlerConfig",
+                validators = {RadiusHandlerConfigValidator.class}
         )
         default Set<String> handlerConfig() {
             return asSet("realm=/", "chain=ldapService");
@@ -243,4 +247,3 @@ public interface RadiusServerServiceConfig
         }
     }
 }
-

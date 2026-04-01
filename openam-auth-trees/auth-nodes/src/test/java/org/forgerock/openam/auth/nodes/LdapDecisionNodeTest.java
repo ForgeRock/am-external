@@ -17,7 +17,6 @@
 package org.forgerock.openam.auth.nodes;
 
 import static com.sun.identity.idm.IdType.USER;
-import static java.util.Collections.emptyList;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -43,7 +42,6 @@ import org.assertj.core.api.Assertions;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -235,7 +233,8 @@ public class LdapDecisionNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState) {
-        return new TreeContext(sharedState,
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
     }
 }

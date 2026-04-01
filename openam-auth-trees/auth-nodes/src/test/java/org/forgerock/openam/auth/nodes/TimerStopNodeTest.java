@@ -15,12 +15,18 @@
  */
 package org.forgerock.openam.auth.nodes;
 
+import org.forgerock.json.JsonValue;
+import org.forgerock.monitoring.api.instrument.Clock;
+import org.forgerock.monitoring.dropwizard.DropwizardMeterRegistry;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.utils.TimeTravelUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.cuppa.Cuppa.after;
-import static org.forgerock.cuppa.Cuppa.before;
-import static org.forgerock.cuppa.Cuppa.describe;
-import static org.forgerock.cuppa.Cuppa.it;
-import static org.forgerock.cuppa.Cuppa.when;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -32,18 +38,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import org.forgerock.cuppa.Test;
-import org.forgerock.json.JsonValue;
-import org.forgerock.monitoring.api.instrument.Clock;
-import org.forgerock.monitoring.api.instrument.MeterRegistry;
-import org.forgerock.monitoring.dropwizard.DropwizardMeterRegistry;
-import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.utils.TimeTravelUtil;
-import org.slf4j.Logger;
-
-@Test
-public class TimerStopNodeTest {
+/**
+ * Tests for {@link TimerStopNode}
+ */
+class TimerStopNodeTest {
 
     private static final long MOCK_START_TIME = 1000L;
     private static final long MOCK_END_TIME = 1010L;
@@ -51,91 +49,133 @@ public class TimerStopNodeTest {
     private static final String METRIC_KEY = "authentication.timer.metric";
 
     private TimerStopNode node;
-
     private Logger logger;
     private TimerStopNode.Config config;
-    private Action result;
+    private DropwizardMeterRegistry meterRegistry;
     private TreeContext context;
-    private MeterRegistry meterRegistry;
 
-    {
-        describe("TimerStopNode", () -> {
-            before(() -> {
-                TimeTravelUtil.useFixedClock(MOCK_END_TIME);
-                meterRegistry = new DropwizardMeterRegistry(Clock.SYSTEM);
-                logger = mock(Logger.class);
-            });
-            after(TimeTravelUtil::resetClock);
-            when("using default config", () -> {
-                before(() -> {
-                    config = new TimerStopNodeConfig(METRIC_KEY);
-                });
-                recordsElapsedTimeAsMetric(DEFAULT_START_TIME_PROPERTY);
-                reportsErrorIfStartTimeNotFoundInSharedState(DEFAULT_START_TIME_PROPERTY);
-            });
-            when("using custom config", () -> {
-                before(() -> {
-                    config = mock(TimerStopNode.Config.class);
-                    given(config.startTimeProperty()).willReturn(CUSTOM_START_TIME_PROPERTY);
-                    given(config.metricKey()).willReturn(METRIC_KEY);
-                });
-                recordsElapsedTimeAsMetric(CUSTOM_START_TIME_PROPERTY);
-                reportsErrorIfStartTimeNotFoundInSharedState(CUSTOM_START_TIME_PROPERTY);
-            });
-        });
+    @BeforeEach
+    void setUp() {
+        TimeTravelUtil.useFixedClock(MOCK_END_TIME);
+        meterRegistry = new DropwizardMeterRegistry(Clock.SYSTEM);
+        logger = mock(Logger.class);
     }
 
-    private void reportsErrorIfStartTimeNotFoundInSharedState(String expectedSharedStateKey) {
-        when("start time not present in shared state", () -> {
-            when("process method is called", () -> {
-                before(() -> {
-                    context = emptyTreeContext();
-                    node = new TimerStopNode(config, meterRegistry, logger);
-                    result = node.process(context);
-                });
-                it("records error to debug log and continues", () -> {
-                    verify(logger).error("{} could not find start time in {}", "TimerStopNode", expectedSharedStateKey);
-
-                });
-            });
-        });
+    @AfterEach
+    void tearDown() {
+        TimeTravelUtil.resetClock();
     }
 
-    private void recordsElapsedTimeAsMetric(String expectedSharedStateKey) {
-        when("start time present in shared state", () -> {
-            when("process method is called", () -> {
-                before(() -> {
-                    JsonValue sharedState = json(object(
-                            field(expectedSharedStateKey, MOCK_START_TIME)
-                    ));
-                    context = newTreeContext(sharedState);
-                    node = new TimerStopNode(config, meterRegistry, logger);
-                    result = node.process(context);
-                });
-                it("records elapsed time in metric " + METRIC_KEY, () -> {
-                    assertThat(meterRegistry)
-                            .timer(METRIC_KEY)
-                            .updatesFor(() -> node.process(context)).isEqualTo(1);
-                });
-                it("returns default outcome", () -> {
-                    assertThat(result.outcome).isEqualTo("outcome");
-                });
-            });
-        });
+    @Test
+    void shouldRecordElapsedTimeGivenDefaultConfigAndStartTimePresent() throws Exception {
+        // Given
+        setupDefaultConfig();
+        setupContextWithStartTime(DEFAULT_START_TIME_PROPERTY);
+
+        // When
+        Action result = processNode();
+
+        // Then
+        verifyTimerUpdated();
+        verifyDefaultOutcome(result);
     }
 
-    private class TimerStopNodeConfig implements TimerStopNode.Config {
+    @Test
+    void shouldRecordElapsedTimeGivenCustomStartTimePropertyAndStartTimePresent() throws Exception {
+        // Given
+        setupCustomConfig();
+        setupContextWithStartTime(CUSTOM_START_TIME_PROPERTY);
 
+        // When
+        Action result = processNode();
+
+        // Then
+        verifyTimerUpdated();
+        verifyDefaultOutcome(result);
+    }
+
+    @Test
+    void shouldLogErrorGivenDefaultConfigAndStartTimeMissing() {
+        // Given
+        setupDefaultConfig();
+        setupEmptyContext();
+
+        // When
+        Action result = processNode();
+
+        // Then
+        verifyErrorLogged(DEFAULT_START_TIME_PROPERTY);
+        verifyDefaultOutcome(result);
+    }
+
+    @Test
+    void shouldLogErrorGivenCustomStartTimePropertyAndStartTimeMissing() {
+        // Given
+        setupCustomConfig();
+        setupEmptyContext();
+
+        // When
+        Action result = processNode();
+
+        // Then
+        verifyErrorLogged(CUSTOM_START_TIME_PROPERTY);
+        verifyDefaultOutcome(result);
+    }
+
+    private void setupDefaultConfig() {
+        config = new TimerStopNodeConfig(METRIC_KEY);
+    }
+
+    private void setupCustomConfig() {
+        config = mock(TimerStopNode.Config.class);
+        given(config.startTimeProperty()).willReturn(CUSTOM_START_TIME_PROPERTY);
+        given(config.metricKey()).willReturn(METRIC_KEY);
+    }
+
+    private void setupContextWithStartTime(String propertyKey) {
+        JsonValue sharedState = json(object(field(propertyKey, MOCK_START_TIME)));
+        context = newTreeContext(sharedState);
+    }
+
+    private void setupEmptyContext() {
+        context = emptyTreeContext();
+    }
+
+    private Action processNode() {
+        node = new TimerStopNode(config, meterRegistry, logger);
+        return node.process(context);
+    }
+
+    private void verifyTimerUpdated() throws Exception {
+        assertThat(meterRegistry)
+                .timer(METRIC_KEY)
+                .updatesFor(() -> node.process(context)).isEqualTo(1);
+    }
+
+    private void verifyErrorLogged(String propertyKey) {
+        verify(logger).error("{} could not find start time in {}", "TimerStopNode", propertyKey);
+    }
+
+    private void verifyDefaultOutcome(Action result) {
+        assertThat(result.outcome).isEqualTo("outcome");
+    }
+
+    // Simple config implementation for default config tests
+    private static class TimerStopNodeConfig implements TimerStopNode.Config {
         private final String metricKey;
 
-        private TimerStopNodeConfig(String testMetricKey) {
-            this.metricKey = testMetricKey;
+        TimerStopNodeConfig(String metricKey) {
+            this.metricKey = metricKey;
         }
 
         @Override
         public String metricKey() {
             return metricKey;
         }
-    }
 
+        @Override
+        public String startTimeProperty() {
+            return DEFAULT_START_TIME_PROPERTY;
+        }
+    }
 }

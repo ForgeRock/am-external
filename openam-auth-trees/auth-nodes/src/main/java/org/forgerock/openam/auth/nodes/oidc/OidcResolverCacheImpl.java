@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nonnull;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.jose.exceptions.FailedToLoadJWKException;
 import org.forgerock.oauth.resolvers.OpenIdResolver;

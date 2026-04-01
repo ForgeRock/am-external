@@ -31,8 +31,8 @@ import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import com.forgerock.openam.functionaltest.sts.frmwk.common.STSPublishContext;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -210,7 +210,7 @@ public class RestSTSInstancePublisher {
         connection.setRequestProperty(SharedSTSConstants.CONTENT_TYPE, SharedSTSConstants.APPLICATION_JSON);
         /*
         Don't remove this version specification - it is necessary to avoid 'upsert' semantics on a PUT. See
-        https://bugster.forgerock.org/jira/browse/CREST-100
+        https://pingidentity.atlassian.net/browse/CREST-100
         for details.
          */
         connection.setRequestProperty(SharedSTSConstants.CREST_VERSION_HEADER_KEY, REST_STS_PUBLISH_SERVICE_VERSION);

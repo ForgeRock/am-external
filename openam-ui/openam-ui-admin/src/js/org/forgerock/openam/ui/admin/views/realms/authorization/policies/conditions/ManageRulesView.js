@@ -253,18 +253,20 @@ export default AbstractView.extend({
 
     editStop (item) {
         $("body").removeClass("editing");
-
         const editRuleView = $.extend(false, item, this.getNewRule());
         const properties = this.getProperties();
-
         editRuleView.createListItem(properties, item);
-
         item.next().remove();
         this.save();
 
         const disabledConditions = this.$el.find(".rule, .operator").not(".editing");
         disabledConditions.removeClass("editing-disabled");
         disabledConditions.find("> select").prop("disabled", false);
+
+        if (item.data().itemData.type === "AuthScheme") {
+            item[0].classList.add("bg-danger");
+            item[0].querySelector(".auth-module-deprecated").classList.remove("d-none");
+        }
     },
 
     setInactive (button, state) {

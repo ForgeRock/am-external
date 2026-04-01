@@ -24,7 +24,7 @@ import static org.forgerock.openam.services.push.PushNotificationConstants.MESSA
 import static org.forgerock.openam.services.push.PushNotificationConstants.USERNAME_JSON_POINTER;
 
 import javax.crypto.spec.SecretKeySpec;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonPointer;
 import org.forgerock.json.JsonValue;
@@ -141,6 +141,9 @@ public class PushMessageResource {
             } catch (PredicateNotMetException e) {
                 debug.warn("Unable to deliver message with messageId {} in realm {} as predicate not met.",
                         messageId, realm, e);
+                if (e.getMessage().toLowerCase().contains("number challenge")) {
+                    return RestUtils.generateBadRequestException("Number challenge predicate not met.");
+                }
                 return RestUtils.generateBadRequestException();
             } catch (PushNotificationException e) {
                 throw new NotFoundException("Cannot find Push Notification Service.");

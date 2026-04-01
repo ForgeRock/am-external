@@ -29,7 +29,7 @@ import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContextDetails;
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.iplanet.dpro.session.service.DsameAdminTokenProvider;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.sm.LdapSmsEntryUid;

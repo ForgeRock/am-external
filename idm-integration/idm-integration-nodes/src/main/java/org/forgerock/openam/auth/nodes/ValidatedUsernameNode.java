@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2025 Ping Identity Corporation.
+ * Copyright 2019-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -27,12 +27,14 @@ import static org.forgerock.openam.integration.idm.IdmIntegrationService.PROPERT
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
+
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -58,15 +60,27 @@ import com.sun.identity.sm.RequiredValueValidator;
         configClass = ValidatedUsernameNode.Config.class,
         tags = {"identity management"})
 public class ValidatedUsernameNode extends SingleOutcomeNode {
-
-    private static final String BUNDLE = ValidatedUsernameNode.class.getName();
-
     private final Logger logger = LoggerFactory.getLogger(ValidatedUsernameNode.class);
     private final Config config;
-    private final IdmIntegrationService idmIntegrationService;
-    private final Realm realm;
 
-    private Callback usernameCallback;
+    /**
+     * The IdmIntegrationService used to validate and search for the user.
+     */
+    protected final IdmIntegrationService idmIntegrationService;
+
+    /**
+     * The realm in which this node is running.
+     */
+    protected final Realm realm;
+
+    /**
+     * The callback used to collect the username.
+     * <p>
+     * This will be a {@link ValidatedUsernameCallback} if validation is enabled, otherwise it will be a
+     * {@link NameCallback}.
+     */
+    protected Callback usernameCallback;
+
 
     /**
      * Node configuration.
@@ -92,6 +106,15 @@ public class ValidatedUsernameNode extends SingleOutcomeNode {
         default String usernameAttribute() {
             return DEFAULT_IDM_IDENTITY_ATTRIBUTE;
         }
+
+        /**
+         * Used to populate the callback autocomplete attribute with these values for autocomplete.
+         * @return The values to use for autocomplete.
+         */
+        @Attribute(order = 400)
+        default List<String> autocompleteValues() {
+            return List.of();
+        }
     }
 
     /**
@@ -116,23 +139,19 @@ public class ValidatedUsernameNode extends SingleOutcomeNode {
 
         String username;
         if (config.validateInput()) {
-            Optional<ValidatedUsernameCallback> validatedContextCallback =
+            Optional<ValidatedUsernameCallback> validatedContextCallbackOptional =
                     context.getCallback(ValidatedUsernameCallback.class);
             ValidatedUsernameCallback validatedUsernameCallback = (ValidatedUsernameCallback) usernameCallback;
-            if (validatedContextCallback.isEmpty()) {
-                logger.debug("Collecting username");
+            if (validatedContextCallbackOptional.isEmpty()) {
+                logger.debug("Collecting validated username");
                 return send(validatedUsernameCallback).build();
             }
-
-            username = validatedContextCallback.get().getUsername();
-            validatedUsernameCallback.validateOnly(validatedContextCallback.get().validateOnly());
-            if (!checkUsername(context, username)) {
-                logger.debug("Re-collecting invalid username");
-                validatedUsernameCallback.setUsername(username);
-                return send(validatedUsernameCallback).build();
-            } else if (validatedContextCallback.get().validateOnly()) {
-                logger.debug("Validation passed but validateOnly is true; Returning callbacks");
-                return send(validatedContextCallback.get()).build();
+            var validatedContextCallback = validatedContextCallbackOptional.get();
+            username = validatedContextCallback.getUsername();
+            Action callBackAction = getValidationCallbackAction(context, validatedContextCallback,
+                    validatedUsernameCallback, username);
+            if (callBackAction != null) {
+                return callBackAction;
             }
         } else {
             Optional<NameCallback> contextCallback = context.getCallback(NameCallback.class);
@@ -158,7 +177,41 @@ public class ValidatedUsernameNode extends SingleOutcomeNode {
                 .build();
     }
 
-    private Callback initialiseCallbacks(TreeContext context) throws NodeProcessException {
+    /**
+     * Validates the username input and returns an action to either re-collect the username or return callbacks.
+     *
+     * @param context                   The tree context.
+     * @param validatedContextCallback  The callback from the context, if it exists.
+     * @param validatedUsernameCallback The callback to validate the username.
+     * @param username                  The username to validate.
+     * @return An action to re-collect the username or return callbacks, or null if no action is needed at this stage.
+     * @throws NodeProcessException If there is an error during processing.
+     */
+    protected Action getValidationCallbackAction(TreeContext context,
+                                                 ValidatedUsernameCallback validatedContextCallback,
+                                                 ValidatedUsernameCallback validatedUsernameCallback,
+                                                 String username) throws NodeProcessException {
+        validatedUsernameCallback.validateOnly(validatedContextCallback.validateOnly());
+        if (!checkUsername(context, username)) {
+            logger.debug("Re-collecting invalid username");
+            validatedUsernameCallback.setUsername(username);
+            return send(validatedUsernameCallback).build();
+        } else if (validatedContextCallback.validateOnly()) {
+            logger.debug("Validation passed but validateOnly is true; Returning callbacks");
+            return send(validatedContextCallback).build();
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Initialises the callbacks based on the configuration and context.
+     *
+     * @param context The tree context.
+     * @return The callback to collect the username.
+     * @throws NodeProcessException If there is an error during processing.
+     */
+    protected Callback initialiseCallbacks(TreeContext context) throws NodeProcessException {
         if (config.validateInput()) {
             String objectType = context.identityResource;
             JsonValue policies = json(object());
@@ -175,17 +228,18 @@ public class ValidatedUsernameNode extends SingleOutcomeNode {
             return new ValidatedUsernameCallback(attribute.isDefined("title")
                     ? attribute.get("title").asString()
                     : attribute.get("description").asString(),
-                    policies, false);
+                    policies, false, config.autocompleteValues());
         } else {
             ResourceBundle bundle =
-                    context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
-            return new NameCallback(bundle.getString("callback.username"));
+                    context.request.locales.getBundleInPreferredLocale(getBundle(), getClass().getClassLoader());
+            return new AutoCompleteNameCallback(bundle.getString("callback.username"),
+                    config.autocompleteValues());
         }
     }
 
     /**
      * Validates username input using IDM's policies.
-     *
+     * <p>
      * Example failed policy check:
      * <pre>
      *  {
@@ -205,13 +259,17 @@ public class ValidatedUsernameNode extends SingleOutcomeNode {
      *      ]
      *  }
      * </pre>
+     * @param context The tree context.
+     * @param username The username to validate.
+     * @return true if the username is valid, false otherwise.
+     * @throws NodeProcessException If there is an error during processing.
      */
-    private boolean checkUsername(TreeContext context, String username) throws NodeProcessException {
+    protected boolean checkUsername(TreeContext context, String username) throws NodeProcessException {
         logger.debug("Validating new username");
         JsonValue result = validateInput(idmIntegrationService, realm, context.request.locales,
                 context.identityResource,
                 IdmIntegrationService.mapContextToObject(context).put(config.usernameAttribute(), username),
-                new HashSet<>(Collections.singletonList(config.usernameAttribute())));
+                new HashSet<>(Collections.singletonList(config.usernameAttribute())), Optional.empty());
         if (!result.isDefined("result")) {
             throw new NodeProcessException("Communication failure");
         }
@@ -227,6 +285,15 @@ public class ValidatedUsernameNode extends SingleOutcomeNode {
             return callback.failedPolicies().isEmpty();
         }
         return true;
+    }
+
+    /**
+     * Returns the name of the resource bundle for this node.
+     *
+     * @return The name of the resource bundle.
+     */
+    protected String getBundle() {
+        return ValidatedUsernameNode.class.getName();
     }
 
     @Override

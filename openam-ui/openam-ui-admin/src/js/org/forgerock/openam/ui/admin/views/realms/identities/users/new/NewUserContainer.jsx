@@ -11,11 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 import { bindActionCreators } from "redux";
-import { isEmpty, map } from "lodash";
+import { includes, isEmpty, map } from "lodash";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
 
@@ -23,7 +23,6 @@ import { create, getInitialState } from "org/forgerock/openam/ui/admin/services/
 import { setSchema } from "store/modules/remote/config/realm/identities/users/schema";
 import { setTemplate } from "store/modules/remote/config/realm/identities/users/template";
 import connectWithStore from "components/redux/connectWithStore";
-import isValidId from "org/forgerock/openam/ui/admin/views/realms/common/isValidId";
 import JSONSchema from "org/forgerock/openam/ui/common/models/JSONSchema";
 import JSONValues from "org/forgerock/openam/ui/common/models/JSONValues";
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
@@ -79,16 +78,30 @@ class NewUserContainer extends Component {
         });
     };
 
+    isValidUsername = (id) => {
+        if (isEmpty(id)) {
+            return true;
+        }
+        return !(includes(id, "*") ||
+            includes(id, "(") ||
+            includes(id, ")") ||
+            includes(id, "&") ||
+            includes(id, "!") ||
+            includes(id, "{") ||
+            includes(id, "}") ||
+            includes(id, ";"));
+    };
+
     render () {
-        const validId = isValidId(this.state.id);
-        const createAllowed = validId && !isEmpty(this.state.id);
+        const validUsername = this.isValidUsername(this.state.id);
+        const createAllowed = validUsername && !isEmpty(this.state.id);
 
         return (
             <NewUser
                 id={ this.state.id }
                 isCreateAllowed={ createAllowed }
                 isFetching={ this.state.isFetching }
-                isValidId={ validId }
+                isValidUsername={ validUsername }
                 onCreate={ this.handleCreate }
                 onEmailChange={ this.handleEmailChange }
                 onIdChange={ this.handleIdChange }

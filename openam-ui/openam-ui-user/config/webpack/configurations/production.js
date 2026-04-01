@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 const { DefinePlugin } = require("webpack");
 const TerserWebpackPlugin = require("terser-webpack-plugin");
@@ -27,7 +27,6 @@ const path = require('path');
 require("dotenv").config({ path: '.env.production' });
 
 module.exports = webpackMerge(common, {
-    devtool: "nosources-source-map",
     mode: "production",
     module: {
         rules: [
@@ -76,7 +75,7 @@ module.exports = webpackMerge(common, {
         minimizer: [
             new TerserWebpackPlugin({
                 exclude: /config\/ThemeConfiguration/,
-                sourceMap: true
+                sourceMap: false
             })
         ]
     },

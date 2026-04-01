@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2025 Ping Identity Corporation.
+ * Copyright 2016-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.services.push.sns.utils;
 
@@ -29,10 +29,10 @@ import org.forgerock.secrets.Purpose;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sns.SnsClient;
 
 /**
  * Factory to generate new Amazon SNS clients for a supplied config. Helps decoupling and unit tests.
@@ -66,7 +66,7 @@ public class SnsClientFactory {
      * @param realmString A string representing the realm.
      * @return a constructed Amazon SNS client.
      */
-    public AmazonSNS produce(PushNotificationServiceConfig.Realm config, String realmString) {
+    public SnsClient produce(PushNotificationServiceConfig.Realm config, String realmString) {
         try {
             Realm realm = realmLookup.lookup(realmString);
             char[] secretPassword = null;
@@ -80,11 +80,12 @@ public class SnsClientFactory {
             }
             char[] configPassword = config.secret() != null ? config.secret() : null;
             char[] snsPassword = Objects.requireNonNullElse(secretPassword, configPassword);
-            BasicAWSCredentials credentials = new BasicAWSCredentials(config.accessKey(), String.valueOf(snsPassword));
+            AwsBasicCredentials credentials = AwsBasicCredentials.create(config.accessKey(),
+                    String.valueOf(snsPassword));
 
-            return AmazonSNSClientBuilder.standard()
-                    .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                    .withRegion(config.region())
+            return SnsClient.builder()
+                    .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                    .region(Region.of(config.region()))
                     .build();
         } catch (RealmLookupException e) {
             throw new RuntimeException(e);

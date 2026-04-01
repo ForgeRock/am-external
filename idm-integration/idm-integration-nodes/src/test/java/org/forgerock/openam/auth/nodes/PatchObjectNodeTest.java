@@ -54,7 +54,6 @@ import org.forgerock.json.JsonPointer;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.ResourceException;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -298,8 +297,7 @@ public class PatchObjectNodeTest {
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState,
-                new ExternalRequestContext.Builder().build(), callbacks);
+        return TreeContext.builder().sharedState(sharedState).callbacks(callbacks).build();
     }
 
     private JsonPointer convertAttributeNameToSchemaPointer(String attributeName) {

@@ -18,7 +18,7 @@ package org.forgerock.openam.authentication.modules.oauth2;
 
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 /**
  * Lookup for instances of {@link EmailGateway}.

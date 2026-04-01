@@ -12,13 +12,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>openam-auth-trees</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>8.0.2</version>
+        <version>8.1.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -38,6 +38,11 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>service-config-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>entitlements-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -134,8 +139,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
@@ -188,6 +194,11 @@
             <artifactId>openam-test-utils</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>legacy-logging-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-inline</artifactId>
             <version>${mockito-inline.version}</version>
@@ -202,6 +213,15 @@
             <artifactId>jsch</artifactId>
             <version>0.1.54</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>scripting-cache-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>utils</artifactId>
         </dependency>
     </dependencies>
 

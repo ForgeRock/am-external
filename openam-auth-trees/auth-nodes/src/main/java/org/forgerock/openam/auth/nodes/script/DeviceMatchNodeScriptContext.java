@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.script;
@@ -42,25 +42,26 @@ import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PSource;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import org.forgerock.json.JsonValue;
+import org.forgerock.oauth2.core.application.tree.OAuthScriptedBindingObjectImpl;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
+import org.forgerock.openam.scripting.domain.OAuthScriptedBindingObject;
+import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContext;
 import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.domain.nextgen.NextGenScriptContext;
-import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
 import org.forgerock.util.promise.NeverThrowsException;
 import org.slf4j.Logger;
-
-import com.google.auto.service.AutoService;
-import com.google.inject.Singleton;
 
 /**
  * Definition of {@link ScriptContext} for device match nodes.
  */
 @Singleton
-@AutoService({ScriptContext.class, GlobalScriptsProvider.class})
 public class DeviceMatchNodeScriptContext extends NextGenScriptContext<DeviceMatchNodeBindings> {
 
     /**
@@ -73,13 +74,20 @@ public class DeviceMatchNodeScriptContext extends NextGenScriptContext<DeviceMat
     public static final String DEVICE_MATCH_NODE_DEFAULT_SCRIPT_ID = "11e1a3c0-038b-4c16-956a-6c9d89328d00";
 
     private final Script defaultScript;
+    private final SAMLScriptedBindingObject exampleSamlObject;
+    private final OAuthScriptedBindingObject exampleOauthObject;
 
     /**
      * Constructs a new instance of the device match node context.
      * Do not call this constructor directly, use Guice to inject the Singleton instance of this class.
      */
-    public DeviceMatchNodeScriptContext() throws ScriptException {
+    @Inject
+    DeviceMatchNodeScriptContext(@SAMLScriptedBindingObject.ExampleObject SAMLScriptedBindingObject exampleSamlObject,
+            @OAuthScriptedBindingObjectImpl.ExampleObject OAuthScriptedBindingObject exampleOauthObject)
+            throws ScriptException {
         super(DeviceMatchNodeBindings.class);
+        this.exampleSamlObject = exampleSamlObject;
+        this.exampleOauthObject = exampleOauthObject;
         this.defaultScript = createDefaultScript();
     }
 
@@ -157,6 +165,10 @@ public class DeviceMatchNodeScriptContext extends NextGenScriptContext<DeviceMat
                 .withResumedFromSuspend(false)
                 .withExistingSession(null)
                 .withRequestCookies(new HashMap<>())
+                .withTree(null)
+                .withSamlApplication(exampleSamlObject)
+                .withOauthApplication(exampleOauthObject)
+                .withScriptedLocalizedMessage(null)
                 .build();
     }
 

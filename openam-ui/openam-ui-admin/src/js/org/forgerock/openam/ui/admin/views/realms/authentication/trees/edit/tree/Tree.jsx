@@ -11,10 +11,23 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 import {
-    chain, findIndex, get, includes, keys, map, mapValues, max, omit, reduce, round, size, union, values
+    chain,
+    findIndex,
+    get,
+    includes,
+    keys,
+    map,
+    mapValues,
+    max,
+    omit,
+    reduce,
+    round,
+    size,
+    union,
+    values
 } from "lodash";
 import { DropTarget } from "react-dnd";
 import classNames from "classnames";
@@ -22,10 +35,12 @@ import PropTypes from "prop-types";
 import React, { Component } from "react";
 
 import Connection from "./Connection";
-import { NEW_NODE_TYPE, PAGE_CHILD_NODE_TYPE }
-    from "org/forgerock/openam/ui/admin/views/realms/authentication/trees/edit/nodeTypes/EditTreeDragItemTypes";
 import NodeFactory from "./NodeFactory";
-import { TREE_PADDING } from "./TreePadding";
+import {
+    TREE_PADDING,
+    NEW_NODE_TYPE,
+    PAGE_CHILD_NODE_TYPE
+} from "org/forgerock/openam/ui/admin/utils/treeUtils";
 
 const INPUT_Y_OFFSET = 22;
 const SINGLE_OUTCOME_Y_OFFSET = 22;

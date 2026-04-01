@@ -11,10 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
+import static com.sun.identity.shared.Constants.UNSUPPORTED_WEB_AUTHENTICATION_CONDITIONAL_ENABLED;
 import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
@@ -24,16 +25,16 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.WEB_AUTHENTICATION_DOM_EXCEPTION;
 
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
+
+import jakarta.inject.Inject;
 
 import org.forgerock.am.identity.application.IdentityStoreFactory;
 import org.forgerock.am.identity.persistence.IdentityStore;
@@ -45,7 +46,9 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.auth.node.api.PageNodeCompatibility;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.NamedConfirmationCallback;
 import org.forgerock.openam.auth.nodes.webauthn.data.AuthData;
 import org.forgerock.openam.auth.nodes.webauthn.flows.AuthenticationFlow;
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.AuthDataDecoder;
@@ -64,15 +67,18 @@ import org.forgerock.util.i18n.PreferredLocales;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.shared.encode.Base64;
 
 /**
  * A web authentication, authentication node. Uses client side javascript to interact with the browser and negotiate
  * authentication according to the webauthn spec. If the credentials, public key encrypted challenge response and
  * other details are valid, the outcome of the node is 'true'.
  */
+@SuppressWarnings("ALL")
 @Node.Metadata(outcomeProvider = WebAuthnAuthenticationNode.OutcomeProvider.class,
         configClass = WebAuthnAuthenticationNode.Config.class,
-        tags = {"mfa", "multi-factor authentication"})
+        tags = {"mfa", "multi-factor authentication"},
+        pageNodeCompatibility = PageNodeCompatibility.STANDALONE)
 public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
 
     private static final String BUNDLE = WebAuthnAuthenticationNode.class.getName();
@@ -80,6 +86,7 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
 
     private static final String IS_RECOVERY_CODE_ALLOWED = "isRecoveryCodeAllowed";
     private static final String DETECT_SIGN_COUNT_MISMATCH = "detectSignCountMismatch";
+    private static final String MEDIATION = "mediation";
 
     /**
      * The outcome when the user's device processing has succeeded, but a sign count mismatch was detected.
@@ -199,6 +206,49 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             return false;
         }
 
+        /**
+         * If true, enables Conditional WebAuthN.
+         *
+         * @return true if Conditional WebAuthN is enabled.
+         */
+        @Attribute(order = 80, flagEnablingConfigUi = UNSUPPORTED_WEB_AUTHENTICATION_CONDITIONAL_ENABLED,
+                flagEnablingRestApi = UNSUPPORTED_WEB_AUTHENTICATION_CONDITIONAL_ENABLED)
+        default Mediation mediation() {
+            return Mediation.DEFAULT;
+        }
+
+        /**
+         * If true, allows rendering of a button to use a button to submit. This only applies if using conditional
+         * mediation.
+         *
+         * @return is the submit button shown.
+         */
+        @Attribute(order = 90, flagEnablingConfigUi = UNSUPPORTED_WEB_AUTHENTICATION_CONDITIONAL_ENABLED,
+                flagEnablingRestApi = UNSUPPORTED_WEB_AUTHENTICATION_CONDITIONAL_ENABLED)
+        default boolean conditionalManualButton() {
+            return false;
+        }
+
+        /**
+         * Mediation options for WebAuthn interactions. DEFAULT will trigger immediate WebAuthn interactions,
+         * while Conditional provides autocomplete options.
+         */
+        enum Mediation {
+            /**
+             * Don't specify mediation, using the browser's default behaviour instead.
+             */
+            DEFAULT(null),
+            /**
+             * Conditional mediation, which provides autocomplete options.
+             */
+            CONDITIONAL("conditional");
+
+            String value;
+
+            Mediation(String value) {
+                this.value = value;
+            }
+        }
     }
 
     /**
@@ -238,7 +288,6 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("WebAuthnAuthenticationNode started");
-        byte[] challengeBytes = getChallenge(context);
         List<WebAuthnDeviceSettings> devices = null;
 
         if (!config.requiresResidentKey()) {
@@ -254,11 +303,6 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             }
         }
 
-        String authScript = clientScriptUtilities.getScriptAsString(AUTH_SCRIPT);
-        JsonValue scriptContext = getScriptContext(challengeBytes, devices,
-                config.relyingPartyDomain().orElse(null),
-                getExtensions(context));
-
         if (context.getCallback(ConfirmationCallback.class)
                 .filter(callback -> callback.getSelectedIndex() == RECOVERY_PRESSED)
                 .isPresent()) {
@@ -266,14 +310,21 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             return Action.goTo(RECOVERY_CODE_OUTCOME_ID).build();
         }
 
-        Optional<String> result = context.getCallback(HiddenValueCallback.class)
+        Optional<WebAuthnOutcome> result = context.getCallback(HiddenValueCallback.class)
                 .map(HiddenValueCallback::getValue)
-                .filter(scriptOutput -> !Strings.isNullOrEmpty(scriptOutput));
+                .filter(scriptOutput -> !Strings.isNullOrEmpty(scriptOutput))
+                .map(deserializer::deserialize)
+                .filter(outcome -> outcome.isSupported() || config.mediation() != Config.Mediation.CONDITIONAL)
+                .filter(WebAuthnOutcome::isComplete);
 
         if (result.isPresent()) {
-            WebAuthnOutcome outcome = deserializer.deserialize(result.get());
+            WebAuthnOutcome outcome = result.get();
             logger.debug("processing user response");
             if (!outcome.isSupported()) {
+                if (config.mediation() == Config.Mediation.CONDITIONAL) {
+                    throw new IllegalStateException("Result handling should not take place when mediation is "
+                            + "conditional and the outcome is unsupported");
+                }
                 logger.warn("User's user agent does not support WebAuthn");
                 return Action.goTo(UNSUPPORTED_OUTCOME_ID).build();
             }
@@ -281,7 +332,8 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                 WebAuthnDomException exception = outcome.error().get();
                 logger.error("An error was reported by the DOM.");
                 return Action.goTo(ERROR_OUTCOME_ID).replaceSharedState(
-                        context.sharedState.copy().put(WEB_AUTHENTICATION_DOM_EXCEPTION, exception.toString())).build();
+                        context.sharedState.copy().put(WEB_AUTHENTICATION_DOM_EXCEPTION,
+                                WEBAUTHN_DOM_EXCEPTION_SHARED_STATE_PREFIX + exception)).build();
             }
 
             String rpId = getDomain(config.relyingPartyDomain(), context.request.headers.get("origin"),
@@ -327,7 +379,7 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
 
             logger.debug("registeredDeviceUuid: {}, credentialId: {}, deviceName: {}",
                     registeredDeviceUuid, credentialId, deviceName);
-
+            byte[] challengeBytes = getChallenge(context);
             if (authenticationFlow.accept(realm, response.getClientData(), authData,
                     response.getSignature(), challengeBytes, rpId, device,
                     getPermittedOrigins(config.origins(), context), config.userVerificationRequirement())) {
@@ -361,7 +413,7 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                 Optional<AMIdentity> identity = identityProvider.getAMIdentity(context.universalId, nodeState);
                 identity.ifPresent(actionBuilder::withIdentifiedIdentity);
 
-                JsonValue webAuthnObjectInfo = getWebAuthnObjectInfo(authData);
+                JsonValue webAuthnObjectInfo = getCommonWebAuthnObjectInfo(authData);
 
                 outcome.authenticatorAttachment().ifPresent(authenticatorAttachment ->
                         addAuthenticatorAttachment(webAuthnObjectInfo, authenticatorAttachment));
@@ -374,10 +426,15 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                 return Action.goTo(FAILURE_OUTCOME_ID).build();
             }
         } else {
+            String authScript = clientScriptUtilities.getScriptAsString(AUTH_SCRIPT);
+            byte[] challengeBytes = getChallenge(context);
+            JsonValue scriptContext = getScriptContext(challengeBytes, devices,
+                    config.relyingPartyDomain().orElse(null),
+                    getExtensions(context));
             logger.debug("sending callbacks to user for completion");
             Callback[] additionalCallbacks = getAdditionalCallbacks(context.request.locales);
-            return getCallbacksForWebAuthnInteraction(config.asScript(), authScript, scriptContext, context,
-                    additionalCallbacks);
+            return getCallbacksForWebAuthnInteraction(config.asScript(), authScript, scriptContext,
+                    config.mediation() == Config.Mediation.DEFAULT, context, additionalCallbacks);
         }
     }
 
@@ -418,12 +475,21 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             String configuredRpId, JsonValue extensions) {
         JsonValue jsonValue = json(object());
         jsonValue.put("_action", "webauthn_authentication");
-        jsonValue.put("challenge", Arrays.toString(challengeBytes));
+        jsonValue.put("_type", "WebAuthn");
+        jsonValue.put("supportsJsonResponse", true);
+        jsonValue.put("challenge", Base64.encode(challengeBytes));
         jsonValue.put("allowCredentials", getAllowCredentials(devices));
         jsonValue.put("_allowCredentials", getAllowCredentialsAsJson(devices));
         jsonValue.put("timeout", String.valueOf(config.timeout() * 1000));
         jsonValue.put("userVerification", config.userVerificationRequirement().getValue());
-        if (config.asScript() && config.isRecoveryCodeAllowed()) {
+        // conditional was used in a previous version of the SDK, so is maintained for backwards compatibility
+        jsonValue.put("conditional", config.mediation() == Config.Mediation.CONDITIONAL);
+        if (config.mediation() != Config.Mediation.DEFAULT) {
+            jsonValue.put("mediation", config.mediation().value);
+        }
+        jsonValue.put("manualButtonEnabled",
+                config.mediation() == Config.Mediation.CONDITIONAL && config.conditionalManualButton());
+        if (config.isRecoveryCodeAllowed()) {
             jsonValue.put("allowRecoveryCode", String.valueOf(config.isRecoveryCodeAllowed()));
         }
 
@@ -456,8 +522,8 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     WebAuthnAuthenticationNode.OutcomeProvider.class.getClassLoader());
 
-            ConfirmationCallback confirmationCallback =
-                    new ConfirmationCallback(ConfirmationCallback.INFORMATION,
+            NamedConfirmationCallback confirmationCallback =
+                    new NamedConfirmationCallback("webAuthnRecoveryCode", ConfirmationCallback.INFORMATION,
                             new String[]{bundle.getString("recoveryCodeButton")}, RECOVERY_PRESSED);
             confirmationCallback.setSelectedIndex(RECOVERY_NOT_PRESSED);
 
@@ -490,6 +556,10 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                         }
                         if (SIGN_COUNT_MISMATCH_OUTCOME_ID.equals(outcome.id)) {
                             return nodeAttributes.get(DETECT_SIGN_COUNT_MISMATCH).defaultTo(false).asBoolean();
+                        }
+                        if (UNSUPPORTED_OUTCOME_ID.equals(outcome.id)) {
+                            return !Config.Mediation.CONDITIONAL.name()
+                                    .equals(nodeAttributes.get(MEDIATION).asString());
                         }
                         return true;
                     }).toList();

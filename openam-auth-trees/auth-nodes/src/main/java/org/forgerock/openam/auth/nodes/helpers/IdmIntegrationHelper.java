@@ -269,41 +269,25 @@ public final class IdmIntegrationHelper {
      * Validate a set of inputs using IDM's policy engine according to the object schema in IDM.
      *
      * @param idmIntegrationService the IdmIntegrationService
-     * @param realm The realm of the requesting tree
-     * @param preferredLocales the preferred locales
-     * @param identityResource The identity resource for which validation is requested
-     * @param inputFields The object containing the inputs to be validated
+     * @param realm                 The realm of the requesting tree
+     * @param preferredLocales      the preferred locales
+     * @param identityResource      The identity resource for which validation is requested
+     * @param inputFields           The object containing the inputs to be validated
+     * @param properties            A list of the properties within inputFields that should be validated
+     * @param knownIdmUserId        The IDM ID of the user if known
      * @return The result of the validation request
      * @throws NodeProcessException on failure to interact with the IDM policy service
      */
-    public static JsonValue validateInput(IdmIntegrationService idmIntegrationService, Realm realm,
-            PreferredLocales preferredLocales, String identityResource, JsonValue inputFields)
-            throws NodeProcessException {
-        try {
-            return idmIntegrationService.validateInput(realm, preferredLocales, identityResource, inputFields);
-        } catch (ResourceException e) {
-            throw new NodeProcessException(e);
-        }
-    }
-
-    /**
-     * Validate a set of inputs using IDM's policy engine according to the object schema in IDM.
-     *
-     * @param idmIntegrationService the IdmIntegrationService
-     * @param realm The realm of the requesting tree
-     * @param preferredLocales the preferred locales
-     * @param identityResource The identity resource for which validation is requested
-     * @param inputFields The object containing the inputs to be validated
-     * @param properties A list of the properties within inputFields that should be validated
-     * @return The result of the validation request
-     * @throws NodeProcessException on failure to interact with the IDM policy service
-     */
-    public static JsonValue validateInput(IdmIntegrationService idmIntegrationService, Realm realm,
-            PreferredLocales preferredLocales, String identityResource, JsonValue inputFields, Set<String> properties)
-            throws NodeProcessException {
+    public static JsonValue validateInput(IdmIntegrationService idmIntegrationService,
+                                          Realm realm,
+                                          PreferredLocales preferredLocales,
+                                          String identityResource,
+                                          JsonValue inputFields,
+                                          Set<String> properties,
+                                          Optional<String> knownIdmUserId) throws NodeProcessException {
         try {
             return idmIntegrationService.validateInput(realm, preferredLocales, identityResource, inputFields,
-                    properties);
+                    properties, knownIdmUserId);
         } catch (ResourceException e) {
             throw new NodeProcessException(e);
         }

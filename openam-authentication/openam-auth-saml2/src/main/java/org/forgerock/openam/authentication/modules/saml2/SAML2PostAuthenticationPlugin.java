@@ -23,11 +23,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.identity.saml2.common.SAMLDataAccessor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.forgerock.am.saml2.impl.Saml2ResponseData;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
+import org.forgerock.openam.saml2.SAMLData;
 import org.forgerock.openam.utils.StringUtils;
 import org.owasp.esapi.ESAPI;
 import org.owasp.esapi.errors.EncodingException;
@@ -105,14 +106,19 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
             final String realm =
                     DNMapper.orgNameToRealmName(ssoToken.getProperty(com.sun.identity.shared.Constants.ORGANIZATION));
 
-            Saml2ResponseData data = (Saml2ResponseData) SPCache.samlResponseDataHash.get(cacheKey);
+            SAMLData data = null;
+            try {
+                data = SAMLDataAccessor.getSAMLData(cacheKey);
+            } catch (SAML2TokenRepositoryException e) {
+                DEBUG.error("Error retrieving SAMLData for cacheKey: {}", cacheKey, e);
+            }
 
             if (data == null) {
                 throw new SAML2Exception("Unable to retrieve response map from data cache.");
             }
 
             configurePostSSO(spEntityId, realm, request, response, ssoToken, sessionProvider, data, cacheKey);
-            SPCache.samlResponseDataHash.remove(cacheKey);
+            SPCache.samlDataHash.remove(cacheKey);
         } catch (SAML2Exception | SessionException | SSOException e) {
             //debug warning and fall through
             DEBUG.warn("Error saving SAML assertion information in memory. SLO not configured for this session.", e);
@@ -121,11 +127,11 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
 
     private void configurePostSSO(String spEntityId, String realm, HttpServletRequest request,
                                   HttpServletResponse response, SSOToken session, SessionProvider sessionProvider,
-                                  Saml2ResponseData responseData, String cacheKey)
+                                  SAMLData responseData, String cacheKey)
             throws SAML2Exception {
 
-        ResponseInfo responseInfo = responseData.getResponseInfo();
-        AuthnRequest authnRequest = responseData.getAuthnRequest();
+        ResponseInfo responseInfo = responseData.getRawResponseInfo();
+        AuthnRequest authnRequest = responseData.getRawAuthnRequest();
         boolean writeFedInfo = Boolean.parseBoolean((String) SPCache.fedAccountHash.get(cacheKey));
 
         final SPAdapter adapter = SAML2Utils.getSPAdapter(spEntityId, realm);

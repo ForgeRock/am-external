@@ -15,19 +15,6 @@
  */
 package org.forgerock.am.saml2.impl;
 
-import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-
-import org.forgerock.am.saml2.profile.Saml2SsoResult;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
-import org.forgerock.openam.utils.StringUtils;
-
 import com.sun.identity.saml2.assertion.Assertion;
 import com.sun.identity.saml2.assertion.Attribute;
 import com.sun.identity.saml2.assertion.Subject;
@@ -35,12 +22,24 @@ import com.sun.identity.saml2.common.AccountUtils;
 import com.sun.identity.saml2.common.NameIDInfo;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.common.SAMLDataAccessor;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.plugins.SPAttributeMapper;
 import com.sun.identity.saml2.profile.SPACSUtils;
+import jakarta.inject.Inject;
+import org.forgerock.am.saml2.profile.Saml2SsoResult;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
+import org.forgerock.openam.saml2.SAMLData;
+import org.forgerock.openam.utils.StringUtils;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
 
 /**
  * Utility methods for working with SAML2 SSO responses.
@@ -61,31 +60,19 @@ public class Saml2SsoResponseUtils {
         this.metaManager = metaManager;
     }
 
-    /**
-     * Reads the SAML2 response data from the SAML SFO.
-     *
-     * @param storageKey The storage key used for the lookup.
-     * @return The SAML2 response data. May be null, if the response data could not be found.
-     * @throws SAML2TokenRepositoryException If there was an issue while retrieving the object from SAML SFO.
-     */
-    public Saml2ResponseData readSaml2ResponseData(String storageKey) throws SAML2TokenRepositoryException {
-        Saml2ResponseData data = null;
-        if (!StringUtils.isBlank(storageKey)) {
-            data = (Saml2ResponseData) SAML2FailoverUtils.retrieveSAML2Token(storageKey);
-        }
-        return data;
-    }
 
     /**
-     * Removes the data associated with the specified key from the SAML Failover store.
-     *
+     * Reads the SAML data from the SAML SFO.
      * @param storageKey The storage key used for the lookup.
-     * @throws SAML2TokenRepositoryException If there was an issue in deleting the object from the store.
+     * @return The SAML data. May be null, if the data could not be found.
+     * @throws SAML2TokenRepositoryException If there was an issue while retrieving the object.
      */
-    public void removeSaml2ResponseData(String storageKey) throws SAML2TokenRepositoryException {
-        if (StringUtils.isNotEmpty(storageKey)) {
-            SAML2FailoverUtils.deleteSAML2Token(storageKey);
+    public SAMLData readSAMLData(String storageKey) throws SAML2TokenRepositoryException {
+        SAMLData data = null;
+        if (!StringUtils.isBlank(storageKey)) {
+            data = SAMLDataAccessor.getSAMLData(storageKey);
         }
+        return data;
     }
 
     /**

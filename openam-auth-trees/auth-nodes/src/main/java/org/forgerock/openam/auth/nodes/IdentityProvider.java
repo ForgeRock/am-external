@@ -15,8 +15,8 @@
  */
 package org.forgerock.openam.auth.nodes;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.openam.core.CoreWrapper;

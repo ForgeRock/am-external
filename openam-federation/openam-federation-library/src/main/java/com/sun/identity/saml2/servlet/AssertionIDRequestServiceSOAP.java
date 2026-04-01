@@ -32,7 +32,8 @@ package com.sun.identity.saml2.servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -61,14 +62,20 @@ import com.sun.identity.saml2.protocol.Response;
  * This class <code>AssertionIDRequestServiceSOAP</code> receives and processes
  * assertion ID request using SOAP binding.
  */
+@Singleton
 public class AssertionIDRequestServiceSOAP extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(AssertionIDRequestServiceSOAP.class);
 
-    private SOAPCommunicator soapCommunicator;
+    private final SOAPCommunicator soapCommunicator;
+
+    @Inject
+    AssertionIDRequestServiceSOAP(SOAPCommunicator soapCommunicator) {
+        this.soapCommunicator = soapCommunicator;
+    }
 
     public void init() throws ServletException {
-        soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        logger.debug("AssertionIDRequestServiceSOAP initialized");
     }
 
     public void doGet(HttpServletRequest req, HttpServletResponse resp)

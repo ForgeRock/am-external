@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -86,7 +86,7 @@ public final class SharedStateConstants {
      * The container for user object attribute data. This should never be imported by a Node.
      * @deprecated use {@link org.forgerock.openam.integration.idm.IdmIntegrationService#OBJECT_ATTRIBUTES} instead.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public static final String OBJECT_ATTRIBUTES = "objectAttributes";
 
     /** User info payload key. */

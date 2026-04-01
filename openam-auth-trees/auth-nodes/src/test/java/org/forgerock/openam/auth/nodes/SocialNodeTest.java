@@ -15,7 +15,6 @@
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -116,8 +115,9 @@ public class SocialNodeTest {
         //GIVEN
         String redirectURI = config.redirectURI();
         when(client.getAuthRedirect(any(), any(), any())).thenReturn(newResultPromise(new URI(redirectURI)));
-        TreeContext context = new TreeContext(JsonValue.json(object(1)),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(JsonValue.json(object(1)))
+                .build();
         SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
@@ -349,10 +349,9 @@ public class SocialNodeTest {
     private TreeContext getTreeContext(Map<String, String[]> parameters) {
         JsonValue sharedState = JsonValue.json(object(field(
                 "redirectRequestSentForNode-" + nodeId, true)));
-        return new TreeContext(sharedState,
-                new ExternalRequestContext.Builder()
-                        .parameters(parameters)
-                        .build(),
-                emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .requestContext(new ExternalRequestContext.Builder().parameters(parameters).build())
+                .build();
     }
 }

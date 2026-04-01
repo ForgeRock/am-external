@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -40,10 +40,9 @@ import javax.security.auth.callback.Callback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.DeviceBindingCallback;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingManager;
@@ -108,6 +107,7 @@ public class DeviceBindingNodeTest {
         given(config.description()).willReturn(Map.of(Locale.ENGLISH, "description"));
         given(config.maxSavedDevices()).willReturn(2);
         given(config.timeout()).willReturn(60);
+        given(config.skewAllowance()).willReturn(DeviceBinding.SKEW_ALLOWANCE);
         when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
     }
 
@@ -135,7 +135,7 @@ public class DeviceBindingNodeTest {
     }
 
     @Test
-    void testUserNotActive() throws NodeProcessException, IdRepoException, SSOException {
+    void testUserNotActive() throws IdRepoException, SSOException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
         given(amIdentity.isActive()).willReturn(false);
@@ -144,6 +144,8 @@ public class DeviceBindingNodeTest {
         assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
                 .isInstanceOf(NodeProcessException.class)
                 .hasMessage("Failed to lookup user");
+        assertThat(node.getAuditEntryDetail().get("failureReason").asString())
+                .isEqualTo("User does not exist or inactive");
     }
 
     @Test
@@ -185,10 +187,27 @@ public class DeviceBindingNodeTest {
         assertThat(result.callbacks).isEmpty();
     }
 
+    @Test
+    void testErrorOutcome() throws NodeProcessException, DevicePersistenceException {
+        //Given
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
+        JsonValue transientState = json(object());
+        given(deviceBindingManager.getDeviceProfiles(any(), any())).willThrow(new DevicePersistenceException("f"));
+
+        //When
+        node.process(getContext(sharedState, transientState, List.of()));
+
+        //Then
+        assertThat(node.getAuditEntryDetail().get("failureReason").asString()).isEqualTo("f");
+    }
+
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
                                    List<? extends Callback> callbacks) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbacks,
-                Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 
 }

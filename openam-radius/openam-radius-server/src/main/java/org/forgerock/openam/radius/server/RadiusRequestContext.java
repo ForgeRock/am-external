@@ -16,12 +16,9 @@
  */
 package org.forgerock.openam.radius.server;
 
-import static org.forgerock.openam.radius.common.AttributeType.MESSAGE_AUTHENTICATOR;
 import static org.forgerock.openam.radius.common.PacketType.ACCESS_ACCEPT;
 import static org.forgerock.openam.radius.common.PacketType.ACCESS_CHALLENGE;
 import static org.forgerock.openam.radius.common.PacketType.ACCESS_REJECT;
-import static org.forgerock.openam.radius.common.packet.MessageAuthenticatorAttribute.ATTRIBUTE_LENGTH;
-import static org.forgerock.openam.radius.common.packet.MessageAuthenticatorAttribute.VALUE_LENGTH;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -31,14 +28,13 @@ import java.nio.channels.DatagramChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Optional;
 
 import org.forgerock.openam.radius.common.AccessReject;
 import org.forgerock.openam.radius.common.Authenticator;
+import org.forgerock.openam.radius.common.MessageAuthenticatorCalculator;
 import org.forgerock.openam.radius.common.Packet;
 import org.forgerock.openam.radius.common.ResponseAuthenticator;
 import org.forgerock.openam.radius.common.Utils;
-import org.forgerock.openam.radius.common.packet.MessageAuthenticatorAttribute;
 import org.forgerock.openam.radius.server.config.ClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,7 +138,7 @@ public class RadiusRequestContext {
 
         if (clientConfig.isMessageAuthenticatorRequired()
                 && Arrays.asList(ACCESS_ACCEPT, ACCESS_REJECT, ACCESS_CHALLENGE).contains(response.getType())) {
-            addMessageAuthenticator(response);
+            messageAuthenticatorCalculator.addMessageAuthenticator(response, getClientSecret());
         }
 
         injectResponseAuthenticator(response);
@@ -158,29 +154,6 @@ public class RadiusRequestContext {
         } catch (final IOException e) {
             LOG.error("Unable to send response to " + clientConfig.getName() + ".", e);
         }
-    }
-
-    private void addMessageAuthenticator(Packet response) {
-        MessageAuthenticatorAttribute emptyMessageAuthenticator =
-                createMessageAuthenticatorAttribute(ByteBuffer.wrap(new byte[VALUE_LENGTH]));
-        response.getAttributeSet().addAttribute(emptyMessageAuthenticator, true);
-
-        Optional<ByteBuffer> calculatedValue = messageAuthenticatorCalculator
-                .computeFromPayloadIfPresent(ByteBuffer.wrap(response.getOctets()), clientConfig.getSecret());
-        if (calculatedValue.isPresent()) {
-            MessageAuthenticatorAttribute calculatedMessageAuthenticator =
-                    createMessageAuthenticatorAttribute(calculatedValue.get());
-            response.getAttributeSet().replaceAttribute(emptyMessageAuthenticator, calculatedMessageAuthenticator,
-                    true);
-        }
-    }
-
-    private MessageAuthenticatorAttribute createMessageAuthenticatorAttribute(ByteBuffer messageAuthenticatorValue) {
-        ByteBuffer messageAuthenticator = ByteBuffer.allocate(ATTRIBUTE_LENGTH);
-        messageAuthenticator.put((byte) MESSAGE_AUTHENTICATOR.getTypeCode());
-        messageAuthenticator.put((byte) ATTRIBUTE_LENGTH);
-        messageAuthenticator.put(messageAuthenticatorValue);
-        return new MessageAuthenticatorAttribute(messageAuthenticator.array());
     }
 
     /**

@@ -42,7 +42,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import javax.security.auth.callback.Callback;
@@ -50,18 +49,17 @@ import javax.security.auth.callback.Callback;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import com.sun.identity.authentication.spi.AuthLoginException;
 
@@ -241,7 +239,11 @@ public class ProvisionDynamicAccountNodeTest {
     }
 
     private TreeContext getContext(List<Callback> callbacks) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private JsonValue getUserInfo() {

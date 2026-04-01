@@ -11,14 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2025 Ping Identity Corporation.
+ * Copyright 2014-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.scripting.idrepo;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.openam.core.realms.Realm;
@@ -32,7 +32,7 @@ import com.google.inject.assistedinject.Assisted;
  *
  * @deprecated Use {@link ScriptedIdentityRepository} instead.
  */
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 public class ScriptIdentityRepository extends ScriptedIdentityRepository {
     /**
      * Constructor for <code>ScriptIdentityRepository</code> object
@@ -114,7 +114,7 @@ public class ScriptIdentityRepository extends ScriptedIdentityRepository {
     public interface Factory {
         /**
          * Construct a new ScriptIdentityRepository.
-         * 
+         *
          * @param realm the realm in which this repository accessor will operate.
          * @return the new repository accessor.
          */

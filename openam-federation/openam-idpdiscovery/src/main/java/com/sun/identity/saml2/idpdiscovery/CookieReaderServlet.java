@@ -31,19 +31,18 @@ package com.sun.identity.saml2.idpdiscovery;
 
 import static org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator.GlobalService.GLOBAL_SERVICE;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
 
 /**
  * The Reader Service is used by the service provider. The service provider
@@ -57,9 +56,17 @@ import com.google.inject.TypeLiteral;
  * look for information specific to the application (such as classes or JARs).
  * The default URI is amcommon.
  */
+@Singleton
 public class CookieReaderServlet extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(CookieReaderServlet.class);
+
+    private final Provider<RedirectUrlValidator<RedirectUrlValidator.GlobalService>> validatorProvider;
+
+    @Inject
+    CookieReaderServlet(Provider<RedirectUrlValidator<RedirectUrlValidator.GlobalService>> validatorProvider) {
+        this.validatorProvider = validatorProvider;
+    }
 
     /**
      * Gets handle to CookieUtils.debug.
@@ -122,10 +129,7 @@ public class CookieReaderServlet extends HttpServlet {
         }
 
         try {
-            RedirectUrlValidator<RedirectUrlValidator.GlobalService> validator =
-                    InjectorHolder.getInstance(Key.get(
-                            new TypeLiteral<RedirectUrlValidator<RedirectUrlValidator.GlobalService>>() { }));
-
+            RedirectUrlValidator<RedirectUrlValidator.GlobalService> validator = validatorProvider.get();
             String returnURL = request.getParameter(IDPDiscoveryConstants.LRURL);
 
             boolean isValidReturn = validator != null

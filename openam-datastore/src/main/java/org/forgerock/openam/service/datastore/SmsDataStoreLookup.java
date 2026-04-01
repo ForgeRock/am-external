@@ -24,8 +24,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookupException;
@@ -71,7 +71,6 @@ final class SmsDataStoreLookup implements DataStoreLookup {
     static final String SERVICE_VERSION = "1.0";
     static final String CONTAINER_CONFIG_NAME = "dataStoreContainer";
     static final String DATA_STORE_ENABLED = "dataStoreEnabled";
-    static final String IDENTITY_STORE = "identityStore";
     private static final DataStoreIds CONFIG_IDS = new DataStoreIds(new DataStoreIdsBuilder());
     static final String POLICY_DATASTORE_ATTR_NAME = "policy-datastore-id";
     static final String APPLICATION_DATASTORE_ATTR_NAME = "application-datastore-id";
@@ -136,7 +135,7 @@ final class SmsDataStoreLookup implements DataStoreLookup {
     }
 
     @Override
-    public DataStoreId lookupGlobalId(String serviceName) {
+    public DataStoreId lookupDefaultRealmId(String serviceName) {
         Reject.ifNull(serviceName);
 
         if (!serviceDataStoreIdAttributes.containsKey(serviceName)) {
@@ -213,8 +212,7 @@ final class SmsDataStoreLookup implements DataStoreLookup {
     }
 
     private boolean isEnabledConfigDataStore(ConfigurationAttributes attributes) {
-        return !getBooleanMapAttr(attributes, IDENTITY_STORE, false)
-                && getBooleanMapAttr(attributes, DATA_STORE_ENABLED, true);
+        return getBooleanMapAttr(attributes, DATA_STORE_ENABLED, true);
     }
 
     private static DataStoreException dataStoreException(Exception e) {

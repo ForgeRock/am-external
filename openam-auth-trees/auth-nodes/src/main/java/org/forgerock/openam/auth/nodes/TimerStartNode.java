@@ -18,7 +18,7 @@ package org.forgerock.openam.auth.nodes;
 import static org.forgerock.openam.utils.StringUtils.isEmpty;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 /**
@@ -25,3 +25,4 @@ export const REMOTE_CONSENT_AGENT = "RemoteConsentAgent";
 export const SOFTWARE_PUBLISHER = "SoftwarePublisher";
 export const WEB_AGENT = "WebAgent";
 export const TRUSTED_JWT_ISSUER = "TrustedJwtIssuer";
+export const AI_AGENT = "AIAgent";

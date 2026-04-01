@@ -34,6 +34,9 @@ import static org.forgerock.openam.shared.security.whitelist.RedirectUrlValidato
 import java.io.IOException;
 import java.util.StringTokenizer;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -41,13 +44,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
 import com.sun.identity.shared.encode.Base64;
 
 /**
@@ -63,15 +63,21 @@ import com.sun.identity.shared.encode.Base64;
  * look for information specific to the application (such as classes or JARs).
  * The default URI is amcommon.
  */
+@Singleton
 public class CookieWriterServlet extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(CookieWriterServlet.class);
-    private static String INTRODUCTION_COOKIE_TYPE =
-            SystemProperties.get(IDPDiscoveryConstants.IDPDISCOVERY_COOKIE_TYPE);
-    private static String INTRODUCTION_URL_SCHEME =
-        SystemProperties.get(IDPDiscoveryConstants.IDPDISCOVERY_URL_SCHEME);
-    private static String INTRODUCTION_COOKIE_DOMAIN =
-        SystemProperties.get(IDPDiscoveryConstants.IDPDISCOVERY_COOKIE_DOMAIN);
+
+    private final Provider<RedirectUrlValidator<RedirectUrlValidator.GlobalService>> validatorProvider;
+
+    private String introductionCookieType;
+    private String introductionUrlScheme;
+    private String introductionCookieDomain;
+
+    @Inject
+    CookieWriterServlet(Provider<RedirectUrlValidator<RedirectUrlValidator.GlobalService>> validatorProvider) {
+        this.validatorProvider = validatorProvider;
+    }
 
     /**
      * Gets handle to debug.
@@ -85,6 +91,9 @@ public class CookieWriterServlet extends HttpServlet {
         if (logger.isDebugEnabled()) {
             logger.debug("CookieWriterServlet Initializing...");
         }
+        introductionCookieType = SystemProperties.get(IDPDiscoveryConstants.IDPDISCOVERY_COOKIE_TYPE);
+        introductionUrlScheme = SystemProperties.get(IDPDiscoveryConstants.IDPDISCOVERY_URL_SCHEME);
+        introductionCookieDomain = SystemProperties.get(IDPDiscoveryConstants.IDPDISCOVERY_COOKIE_DOMAIN);
     }
     
     /**
@@ -138,23 +147,21 @@ public class CookieWriterServlet extends HttpServlet {
             logger.debug(classMethod + "Preferred Cookie Name is " + preferred_cookie_name);
         }
         try {
-            if (INTRODUCTION_COOKIE_TYPE == null || INTRODUCTION_COOKIE_TYPE.trim().length() <= 0) {
+            if (introductionCookieType == null || introductionCookieType.trim().length() <= 0) {
                 if (logger.isDebugEnabled()) {
                     logger.debug(classMethod + "Cookie type is null, set to persistent.");
                 }
-                INTRODUCTION_COOKIE_TYPE = IDPDiscoveryConstants.PERSISTENT_COOKIE;
+                introductionCookieType = IDPDiscoveryConstants.PERSISTENT_COOKIE;
             }  
-            if (INTRODUCTION_URL_SCHEME == null || 
-                INTRODUCTION_URL_SCHEME.trim().length() <= 0) {
+            if (introductionUrlScheme == null ||
+                introductionUrlScheme.trim().length() <= 0) {
                 if (logger.isDebugEnabled()) {
                     logger.debug(classMethod + "URL Scheme is null, set to https.");
                 }
-                INTRODUCTION_URL_SCHEME = IDPDiscoveryConstants.HTTPS;
+                introductionUrlScheme = IDPDiscoveryConstants.HTTPS;
             }
 
-            RedirectUrlValidator<RedirectUrlValidator.GlobalService> validator =
-                    InjectorHolder.getInstance(Key.get(
-                            new TypeLiteral<RedirectUrlValidator<RedirectUrlValidator.GlobalService>>() { }));
+            RedirectUrlValidator<RedirectUrlValidator.GlobalService> validator = validatorProvider.get();
 
             String returnURL = request.getParameter(IDPDiscoveryConstants.LRURL);
 
@@ -186,16 +193,16 @@ public class CookieWriterServlet extends HttpServlet {
                 cookieValue = resetPreferredIDPCookie(cookieValue, providerId);
             }
             if (logger.isDebugEnabled()) {
-                logger.debug(classMethod + "Cookie Type is " + INTRODUCTION_COOKIE_TYPE);
+                logger.debug(classMethod + "Cookie Type is " + introductionCookieType);
                 logger.debug(classMethod + "Cookie value is " + cookieValue);
                 logger.debug(classMethod + "Preferred Cookie Name " + preferred_cookie_name);
             }
             int maxAge;
             String domain = null;
-            if (!(INTRODUCTION_COOKIE_DOMAIN == null || INTRODUCTION_COOKIE_DOMAIN.length() < 1)) {
-                domain = INTRODUCTION_COOKIE_DOMAIN;
+            if (!(introductionCookieDomain == null || introductionCookieDomain.length() < 1)) {
+                domain = introductionCookieDomain;
             } 
-            if (INTRODUCTION_COOKIE_TYPE.equalsIgnoreCase(IDPDiscoveryConstants.SESSION_COOKIE)) {
+            if (introductionCookieType.equalsIgnoreCase(IDPDiscoveryConstants.SESSION_COOKIE)) {
                 maxAge = IDPDiscoveryConstants.SESSION_COOKIE_AGE;
             } else {
                 maxAge = IDPDiscoveryConstants.PERSISTENT_COOKIE_AGE;

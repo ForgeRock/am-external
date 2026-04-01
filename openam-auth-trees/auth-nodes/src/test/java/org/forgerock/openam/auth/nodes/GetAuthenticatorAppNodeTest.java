@@ -32,14 +32,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -225,15 +223,16 @@ public class GetAuthenticatorAppNodeTest {
     }
 
     private TreeContext getContext() {
-        return new TreeContext(JsonValue.json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        return TreeContext.builder().build();
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {
-        return new TreeContext(
-                sharedState, transientState, new ExternalRequestContext.Builder().build(), callbacks, Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private void whenNodeConfigHasDefaultValues() {

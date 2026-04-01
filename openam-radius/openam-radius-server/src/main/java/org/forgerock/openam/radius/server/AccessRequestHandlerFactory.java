@@ -11,12 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2025 Ping Identity Corporation.
+ * Copyright 2015-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.radius.server.spi.AccessRequestHandler;
+import org.forgerock.openam.radius.server.spi.handlers.RejectAllHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +64,10 @@ public class AccessRequestHandlerFactory {
 
         try {
             accessRequestHandler.init(reqCtx.getClientConfig().getHandlerConfig());
+        } catch (InvalidRadiusClientConfigurationException e) {
+            LOG.error("Invalid RADIUS client authentication configuration for handler '{}'. "
+                    + "Using RejectAllHandler.", accessRequestHandlerClass.getName(), e);
+            accessRequestHandler = new RejectAllHandler();
         } catch (final Exception e) {
             final StringBuilder sb = new StringBuilder("Unable to initialize declared handler class '")
                     .append(accessRequestHandlerClass.getName()).append("' for RADIUS client '")
@@ -73,5 +78,4 @@ public class AccessRequestHandlerFactory {
         LOG.debug("Leaving RadiusRequestHandler.getAccessRequestHandler()");
         return accessRequestHandler;
     }
-
 }

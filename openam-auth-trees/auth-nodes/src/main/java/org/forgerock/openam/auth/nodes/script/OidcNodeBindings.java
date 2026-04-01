@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -24,20 +24,22 @@ import java.util.Map;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.NodeStateScriptWrapper;
 import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
+import org.forgerock.openam.scripting.domain.NextGenScriptBindings;
 
 /**
  * Script bindings for the OidcNode script.
  */
-public final class OidcNodeBindings implements LegacyScriptBindings {
+public final class OidcNodeBindings implements LegacyScriptBindings, NextGenScriptBindings {
 
     private static final String JWT_CLAIMS = "jwtClaims";
 
     private final JsonValue jwtClaims;
     private final NodeState nodeState;
     private final Map<String, List<String>> headers;
-    private final Object existingSession;
+    private final Map<String, String> existingSession;
 
     /**
      * Constructor for OidcNodeBindings.
@@ -66,6 +68,16 @@ public final class OidcNodeBindings implements LegacyScriptBindings {
         bindings.put(JWT_CLAIMS, jwtClaims);
         bindings.put(HEADERS_IDENTIFIER, headers);
         bindings.put(STATE_IDENTIFIER, nodeState);
+        bindings.putIfDefined(EXISTING_SESSION, existingSession);
+        return bindings;
+    }
+
+    @Override
+    public BindingsMap nextGenBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(JWT_CLAIMS, jwtClaims.asMap());
+        bindings.put(HEADERS_IDENTIFIER, headers);
+        bindings.put(STATE_IDENTIFIER, new NodeStateScriptWrapper(nodeState));
         bindings.putIfDefined(EXISTING_SESSION, existingSession);
         return bindings;
     }

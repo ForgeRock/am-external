@@ -11,11 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.x509;
 
-import static java.util.Collections.emptyList;
 import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,11 +34,13 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.x500.X500Principal;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.codec.binary.Base64;
@@ -53,10 +54,14 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.feature.Features;
 import org.forgerock.openam.security.X509Decoder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -74,6 +79,9 @@ public class CertificateCollectorNodeTest {
 
     @Mock
     private X509Decoder certificateDecoder;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private Features features;
 
     @InjectMocks
     private CertificateCollectorNode certificateCollectorNode;
@@ -211,10 +219,12 @@ public class CertificateCollectorNodeTest {
         assertThat(collectedCertificateJson.get(0).getObject()).isEqualTo(certificate);
     }
 
-    @Test
-    void shouldCollectIfCollectionMethodHeaderAndDerHeaderChainProvided()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldCollectIfCollectionMethodHeaderAndDerHeaderChainProvided(boolean featureFlagEnabled)
             throws NodeProcessException, CertificateException {
         // Given
+        given(features.validateEntireCertificateChain().isEnabled()).willReturn(featureFlagEnabled);
         given(config.certificateCollectionMethod())
                 .willReturn(CertificateCollectorNode.CertificateCollectionMethod.HEADER);
         given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of(HEADER_NAME));
@@ -227,8 +237,7 @@ public class CertificateCollectorNodeTest {
                 encodeBase64String(rootCertificate.getEncoded()));
         ListMultimap<String, String> headers = ImmutableListMultimap.of(HEADER_NAME, derEncodedCertificateChain);
         TreeContext treeContext = getContext(json(object()), headers);
-        given(certificateDecoder.decodeCertificate(derEncodedCertificateChain)).willReturn(userCertificate);
-
+        mockDecodeCertificates(featureFlagEnabled, derEncodedCertificateChain, userCertificate);
 
         // When
         Action action = certificateCollectorNode.process(treeContext);
@@ -323,13 +332,24 @@ public class CertificateCollectorNodeTest {
                 .isInstanceOf(IllegalStateException.class);
     }
 
+    private void mockDecodeCertificates(boolean featureFlagEnabled, String encodedCert, X509Certificate cert)
+            throws CertificateException {
+        if (featureFlagEnabled) {
+            given(certificateDecoder.decodeCertificateChain(encodedCert)).willReturn(List.of(cert));
+        } else {
+            given(certificateDecoder.decodeCertificate(encodedCert)).willReturn(cert);
+        }
+    }
+
     private TreeContext getContext(JsonValue transientState, ListMultimap<String, String> headers) {
-        return new TreeContext(json(object()), transientState, new ExternalRequestContext.Builder()
-                .clientIp("trustedHost")
-                .servletRequest(request)
-                .headers(headers)
-                .build(),
-                emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .transientState(transientState)
+                .requestContext(new ExternalRequestContext.Builder()
+                        .clientIp("trustedHost")
+                        .servletRequest(request)
+                        .headers(headers)
+                        .build())
+                .build();
     }
 
     private static X509Certificate generateCASignedCertificate(String principalName) {

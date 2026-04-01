@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 import { bindActionCreators } from "redux";
 import { forEach, map, values } from "lodash";
@@ -90,7 +90,6 @@ class ListNodesContainer extends Component {
 
     handleImport = () => {
         const realm = this.props.router.params[0];
-        console.log(map([realm], encodeURIComponent));
         Router.routeTo(Router.configuration.routes.realmsAuthenticationNodesImport, {
             args: [encodeURIComponent(realm)],
             trigger: true

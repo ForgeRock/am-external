@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2025 Ping Identity Corporation.
+ * Copyright 2020-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -40,6 +40,7 @@ import static org.forgerock.openam.oauth2.OAuth2Constants.Params.REQUEST_URI;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.STATE;
 import static org.forgerock.openam.social.idp.SocialIdPScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
 import static org.forgerock.openam.social.idp.SocialIdPScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME;
+import static org.forgerock.openam.social.idp.SocialProviderHandlerNodeScriptContext.SOCIAL_PROVIDER_HANDLER_NODE_NAME;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -52,8 +53,9 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
+
+import jakarta.inject.Inject;
 
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.am.identity.persistence.IdentityStore;
@@ -69,12 +71,12 @@ import org.forgerock.oauth.clients.twitter.TwitterClient;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.AuthScriptUtilities;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutputState;
-import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper;
 import org.forgerock.openam.auth.nodes.oauth.SharedStateAdaptor;
@@ -86,14 +88,15 @@ import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluator.ScriptResult;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
-import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
 import org.forgerock.openam.social.idp.OAuthClientConfig;
 import org.forgerock.openam.social.idp.OpenIDConnectClientConfig;
+import org.forgerock.openam.social.idp.SocialIdPProfileTransformationBindings;
+import org.forgerock.openam.social.idp.SocialIdPProfileTransformationScriptContext;
 import org.forgerock.openam.social.idp.SocialIdentityProviders;
 import org.forgerock.openam.social.idp.SocialProviderHandlerNodeBindings;
+import org.forgerock.openam.social.idp.SocialProviderHandlerNodeScriptContext;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.mozilla.javascript.NativeJavaObject;
 import org.slf4j.Logger;
@@ -115,11 +118,12 @@ import com.sun.identity.sm.RequiredValueValidator;
 /**
  * Redirects user to a social identity provider, handles post-auth, fetches and normalizes social userInfo and
  * determines whether this user has an existing AM account.
+ * @deprecated Use {@link org.forgerock.openam.auth.nodes.SocialProviderHandlerNodeV2} instead.
  */
 @Node.Metadata(outcomeProvider = SocialProviderHandlerNode.SocialAuthOutcomeProvider.class,
         configClass = SocialProviderHandlerNode.Config.class,
         tags = {"social", "federation", "platform", "deprecated"})
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 public class SocialProviderHandlerNode implements Node {
     static final String SOCIAL_OAUTH_DATA = "socialOAuthData";
     static final String ALIAS_LIST = "aliasList";
@@ -138,7 +142,8 @@ public class SocialProviderHandlerNode implements Node {
     private final SocialIdentityProviders providerConfigStore;
     private final LegacyIdentityService identityService;
     private final Realm realm;
-    private final ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
+    private final ScriptEvaluator<SocialProviderHandlerNodeBindings> nodeScriptEvaluator;
+    private final ScriptEvaluator<SocialIdPProfileTransformationBindings> transformScriptEvaluator;
     private final Config config;
     private final IdmIntegrationService idmIntegrationService;
     private final AuthScriptUtilities authScriptUtils;
@@ -154,6 +159,8 @@ public class SocialProviderHandlerNode implements Node {
      * @param scriptEvaluatorFactory factory for ScriptEvaluators
      * @param idmIntegrationService  service that provides connectivity to IDM
      * @param authScriptUtils        utilities for scripted nodes
+     * @param transformationContext  the profile transformation script context
+     * @param nodeContext            the node script context
      */
     @Inject
     public SocialProviderHandlerNode(@Assisted Config config,
@@ -163,14 +170,18 @@ public class SocialProviderHandlerNode implements Node {
             @Assisted Realm realm,
             ScriptEvaluatorFactory scriptEvaluatorFactory,
             IdmIntegrationService idmIntegrationService,
-            AuthScriptUtilities authScriptUtils
+            AuthScriptUtilities authScriptUtils,
+            SocialIdPProfileTransformationScriptContext transformationContext,
+            SocialProviderHandlerNodeScriptContext nodeContext
     ) {
         this.config = config;
         this.authModuleHelper = authModuleHelper;
         this.providerConfigStore = providerConfigStore;
         this.identityService = identityService;
         this.realm = realm;
-        this.scriptEvaluator = scriptEvaluatorFactory.create(SOCIAL_IDP_PROFILE_TRANSFORMATION);
+        this.nodeScriptEvaluator = scriptEvaluatorFactory.create(SOCIAL_IDP_PROFILE_TRANSFORMATION, nodeContext);
+        this.transformScriptEvaluator =
+                scriptEvaluatorFactory.create(SOCIAL_IDP_PROFILE_TRANSFORMATION, transformationContext);
         this.idmIntegrationService = idmIntegrationService;
         this.authScriptUtils = authScriptUtils;
     }
@@ -355,16 +366,16 @@ public class SocialProviderHandlerNode implements Node {
     }
 
     private Action handleUser(TreeContext context, OAuthClient client,
-            OAuthClientConfig idpConfig, String selectedIdp,
-            DataStore dataStore) throws NodeProcessException, OAuthException {
+                              OAuthClientConfig idpConfig, String selectedIdp,
+                              DataStore dataStore) throws NodeProcessException, OAuthException {
         // Fetch the social profile from the IdP
         UserInfo profile = getUserInfo(client, dataStore);
 
         // Normalize the social profile using the normalizer transform from the client's config
-        JsonValue normalized = evaluateScript(context, idpConfig.transform(), false, profile.getRawProfile());
+        JsonValue normalized = evaluateTransformScript(context, idpConfig.transform(), profile.getRawProfile());
 
         // Transform the normalized profile to object data using the configured script
-        JsonValue objectData = evaluateScript(context, config.script(), true, normalized);
+        JsonValue objectData = evaluateNodeScript(context, config.script(), normalized);
 
         // Store the profile in OBJECT_ATTRIBUTES
         for (Map.Entry<String, Object> entry : objectData.asMap().entrySet()) {
@@ -446,7 +457,7 @@ public class SocialProviderHandlerNode implements Node {
             IdentityStore identityStore = AuthD.getAuth().getIdentityRepository(realm.asDN());
             AMIdentity amIdentity = new DefaultAccountProvider().searchUser(
                     identityStore,
-                    singletonMap(AM_USER_ALIAS_LIST_ATTRIBUTE_NAME, singleton(identity)));
+                    singletonMap(config.subjectAttribute(), singleton(identity)));
             return Optional.ofNullable(amIdentity)
                     .map(id -> json(object(field(config.usernameAttribute(), id.getName()))));
         }
@@ -502,11 +513,11 @@ public class SocialProviderHandlerNode implements Node {
         return callback;
     }
 
-    private JsonValue evaluateScript(TreeContext context, Script script,
-            boolean normalized, JsonValue inputData) throws NodeProcessException {
-        SocialProviderHandlerNodeBindings scriptBindings = SocialProviderHandlerNodeBindings.builder()
+    private JsonValue evaluateTransformScript(TreeContext context, Script script, JsonValue rawProfile)
+            throws NodeProcessException {
+        SocialIdPProfileTransformationBindings scriptBindings = SocialIdPProfileTransformationBindings.builder()
                 .withSelectedIDP(context.sharedState.get(SELECTED_IDP).asString())
-                .withInputData(inputData, normalized)
+                .withRawProfile(rawProfile)
                 .withCallbacks(context.getAllCallbacks())
                 .withQueryParameters(authScriptUtils.convertParametersToModifiableObjects(context.request.parameters))
                 .withNodeState(context.getStateFor(this))
@@ -517,13 +528,33 @@ public class SocialProviderHandlerNode implements Node {
                 .build();
 
         try {
-            ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script,
-                    scriptBindings, realm);
+            ScriptResult<Object> scriptResult = transformScriptEvaluator.evaluateScript(script, scriptBindings, realm);
             logger.debug("script {} \n binding {}", script, scriptResult.getBindings());
+            return extractScriptResult(scriptResult);
+        } catch (javax.script.ScriptException e) {
+            logger.warn("Error evaluating the script", e);
+            throw new NodeProcessException(e);
+        }
+    }
 
-            return (JsonValue) (script.getLanguage().equals(ScriptingLanguage.JAVASCRIPT)
-                    ? ((NativeJavaObject) scriptResult.getScriptReturnValue()).unwrap()
-                    : scriptResult.getScriptReturnValue());
+    private JsonValue evaluateNodeScript(TreeContext context, Script script, JsonValue normalizedProfile)
+            throws NodeProcessException {
+        SocialProviderHandlerNodeBindings scriptBindings = SocialProviderHandlerNodeBindings.builder()
+                .withSelectedIDP(context.sharedState.get(SELECTED_IDP).asString())
+                .withNormalizedProfile(normalizedProfile)
+                .withCallbacks(context.getAllCallbacks())
+                .withQueryParameters(authScriptUtils.convertParametersToModifiableObjects(context.request.parameters))
+                .withNodeState(context.getStateFor(this))
+                .withHeaders(authScriptUtils.convertHeadersToModifiableObjects(context.request.headers))
+                .withExistingSession(authScriptUtils.getSessionProperties(context.request.ssoTokenId))
+                .withSharedState(context.sharedState.getObject())
+                .withTransientState(context.transientState.getObject())
+                .build();
+
+        try {
+            ScriptResult<Object> scriptResult = nodeScriptEvaluator.evaluateScript(script, scriptBindings, realm);
+            logger.debug("script {} \n binding {}", script, scriptResult.getBindings());
+            return extractScriptResult(scriptResult);
         } catch (javax.script.ScriptException e) {
             logger.warn("Error evaluating the script", e);
             throw new NodeProcessException(e);
@@ -547,6 +578,21 @@ public class SocialProviderHandlerNode implements Node {
                     .orElse(Collections.emptyList()));
         }
         return new ArrayList<>(aliasList);
+    }
+
+    private JsonValue extractScriptResult(ScriptResult<Object> scriptResult) throws NodeProcessException {
+        Object result = scriptResult.getScriptReturnValue();
+        if (scriptResult.getScriptReturnValue() instanceof NativeJavaObject njo) {
+            result = njo.unwrap();
+        }
+
+        if (result instanceof Map) {
+            return new JsonValue(result);
+        } else if (result instanceof JsonValue jsonValue) {
+            return jsonValue;
+        } else {
+            throw new NodeProcessException("Script result is not a valid JSON object");
+        }
     }
 
     @Override
@@ -595,7 +641,8 @@ public class SocialProviderHandlerNode implements Node {
          * @return The script configuration
          */
         @Attribute(order = 100, validators = {RequiredValueValidator.class})
-        @ScriptContext(legacyContext = SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME)
+        @ScriptContext(legacyContext = SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME,
+                nextGenContext = SOCIAL_PROVIDER_HANDLER_NODE_NAME)
         Script script();
 
         /**
@@ -629,14 +676,32 @@ public class SocialProviderHandlerNode implements Node {
         default boolean storeTokens() {
             return false;
         }
+
+        /**
+         * The LDAP attribute in which the identity ({@code <selectedIdp>-<subject>}) value will be retrieved from
+         * if the IDM integration service is disabled.
+         *
+         * @return the subject attribute
+         */
+        @Attribute(order = 700)
+        default String subjectAttribute() {
+            return AM_USER_ALIAS_LIST_ATTRIBUTE_NAME;
+        }
     }
 
     /**
      * Defines the possible outcomes from this node.
      */
-    public static class SocialAuthOutcomeProvider implements StaticOutcomeProvider {
+    public static class SocialAuthOutcomeProvider implements BoundedOutcomeProvider {
+
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales) {
+        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes)
+                throws NodeProcessException {
+            return getAllOutcomes(locales);
+        }
+
+        @Override
+        public List<Outcome> getAllOutcomes(PreferredLocales locales) throws NodeProcessException {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     SocialAuthOutcomeProvider.class.getClassLoader());
             return ImmutableList.of(

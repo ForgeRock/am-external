@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 import { Form, Panel } from "react-bootstrap";
@@ -58,10 +58,10 @@ class NewUser extends Component {
             content = (
                 <Form horizontal>
                     <FormGroupInput
-                        isValid={ this.props.isValidId }
+                        isValid={ this.props.isValidUsername }
                         label={ t("console.identities.users.new.userId") }
                         onChange={ this.props.onIdChange }
-                        validationMessage={ t("console.common.validation.invalidCharacters") }
+                        validationMessage={ t("console.identities.users.validation.invalidCharacters") }
                         value={ this.props.id }
                     />
                     <div ref={ this.setRef } />
@@ -95,7 +95,7 @@ NewUser.propTypes = {
     id: PropTypes.string.isRequired,
     isCreateAllowed: PropTypes.bool.isRequired,
     isFetching: PropTypes.bool.isRequired,
-    isValidId: PropTypes.bool.isRequired,
+    isValidUsername: PropTypes.bool.isRequired,
     onCreate: PropTypes.func.isRequired,
     onEmailChange: PropTypes.func.isRequired,
     onIdChange: PropTypes.func.isRequired,

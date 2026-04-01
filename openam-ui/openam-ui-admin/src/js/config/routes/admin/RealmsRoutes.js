@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2025 Ping Identity Corporation.
+ * Copyright 2015-2026 Ping Identity Corporation.
  */
 /* eslint-disable max-len */
 
@@ -485,6 +485,53 @@ const RealmsRoutes = {
         page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/oauth2/trusted-jwt-issuer/groups/edit/EditTrustedJwtIssuerAgentGroup.js"),
         url: scopedByRealm("applications-oauth2-trustedJwtIssuer/groups/edit/([^/]*)"),
         pattern: "realms/?/applications-oauth2-trustedJwtIssuer/groups/edit/?",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+
+    // Applications => OAuth 2.0 => AI Agents
+    "realmsApplicationsOAuth2AIAgents" : {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/oauth2/ai-agents/AIAgents.jsx"),
+        url: scopedByRealm("applications-oauth2-ai-agents"),
+        pattern: "realms/?/applications-oauth2-ai-agents",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsOAuth2AIAgentsAgentNew" : {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/oauth2/ai-agents/agents/new/NewAIAgentContainer.jsx"),
+        url: scopedByRealm("applications-oauth2-ai-agents/agents/new"),
+        pattern: "realms/?/applications-oauth2-ai-agents/agents/new",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsOAuth2AIAgentsAgentEdit" : {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/oauth2/ai-agents/agents/edit/EditAIAgent.js"),
+        url: scopedByRealm("applications-oauth2-ai-agents/agents/edit/([^/]*)"),
+        pattern: "realms/?/applications-oauth2-ai-agents/agents/edit/?",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsOAuth2AIAgentGroupsEdit": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/oauth2/ai-agents/groups/edit/EditAIAgentGroup.js"),
+        url: scopedByRealm("applications-oauth2-ai-agents/groups/edit/([^/]*)"),
+        pattern: "realms/?/applications-oauth2-ai-agents/groups/edit/?",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsOAuth2AIAgentGroupsNew": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/oauth2/ai-agents/groups/new/NewAIAgentGroupContainer.jsx"),
+        url: scopedByRealm("applications-oauth2-ai-agents/groups/new"),
+        pattern: "realms/?/applications-oauth2-ai-agents/groups/new",
         role: "ui-realm-admin",
         navGroup: "admin",
         forceUpdate: true

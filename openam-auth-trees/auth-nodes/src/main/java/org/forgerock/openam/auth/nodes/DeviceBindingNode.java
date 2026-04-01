@@ -11,12 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptySet;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getLocalisedMessage;
 import static org.forgerock.openam.utils.CollectionUtils.getFirstItem;
@@ -34,7 +38,7 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.commons.lang3.StringUtils;
 import org.forgerock.json.JsonValue;
@@ -43,22 +47,23 @@ import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.json.jose.jws.SignedJwt;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.ConfigProviderEnabled;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.nodes.x509.CertificateUtils;
 import org.forgerock.openam.authentication.callbacks.DeviceBindingCallback;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
-import org.forgerock.openam.core.rest.devices.DeviceSettings;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingJsonUtils;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingManager;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingSettings;
 import org.forgerock.openam.core.rest.devices.services.binding.AndroidKeyAttestationService;
 import org.forgerock.openam.core.rest.devices.services.binding.attestation.KeyAttestationException;
+import org.forgerock.openam.sm.annotations.adapters.TimeUnit;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +82,7 @@ import com.sun.identity.sm.RequiredValueValidator;
 @Node.Metadata(outcomeProvider = DeviceBindingNode.OutcomeProvider.class,
         configClass = DeviceBindingNode.Config.class,
         tags = {"mfa", "multi-factor authentication"})
+@ConfigProviderEnabled
 public class DeviceBindingNode implements Node, DeviceBinding {
 
     private static final String BUNDLE = DeviceBindingNode.class.getName();
@@ -91,6 +97,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
     static final String CLIENT_ERROR_OUTCOMES = "clientErrorOutcomes";
     static final String PLATFORM = "platform";
     static final String IOS = "ios";
+    static final String AUDIT_FAILURE_REASON = "failureReason";
     private final Config config;
     private final NodeUserIdentityProvider identityProvider;
     private final DeviceBindingManager deviceBindingManager;
@@ -100,6 +107,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
     private final Realm realm;
 
     private static final List<String> DEFAULT_CLIENT_ERROR_OUTCOMES = List.of("Unsupported", "Abort", "Timeout");
+    private String auditFailure;
 
     /**
      * Configuration for the node.
@@ -163,6 +171,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
          * @return the maximum stored Device quantity
          */
         @Attribute(order = 500, requiredValue = true, validators = {PositiveIntegerValidator.class})
+        @ConfigProviderEnabled.StaticConfig
         default int maxSavedDevices() {
             return 0;
         }
@@ -205,8 +214,20 @@ public class DeviceBindingNode implements Node, DeviceBinding {
          * @return The client error outcomes
          */
         @Attribute(order = 700)
+        @ConfigProviderEnabled.StaticConfig
         default List<String> clientErrorOutcomes() {
             return DEFAULT_CLIENT_ERROR_OUTCOMES;
+        }
+
+        /**
+         * Skew Allowance.
+         *
+         * @return The skew allowance in seconds
+         */
+        @Attribute(order = 800, requiredValue = true)
+        @TimeUnit(SECONDS)
+        default java.time.Duration skewAllowance() {
+            return SKEW_ALLOWANCE;
         }
     }
 
@@ -255,6 +276,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
                 throw new NodeProcessException("User does not exist or inactive");
             }
         } catch (Exception e) {
+            auditFailure = e.getMessage();
             throw new NodeProcessException("Failed to lookup user", e);
         }
 
@@ -269,6 +291,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
                 }
             } catch (DevicePersistenceException e) {
                 logger.error("An error occurred while retrieving user's device", e);
+                auditFailure = e.getMessage();
                 return Action.goTo(FAILURE_OUTCOME_ID).build();
             }
         }
@@ -288,6 +311,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
                 persist(context, nodeState, deviceBindingCallback.get(), username, userRealm, jwk);
             } catch (Exception e) {
                 logger.warn("Device Binding failed:", e);
+                auditFailure = e.getMessage();
                 return Action.goTo(FAILURE_OUTCOME_ID).build();
             }
 
@@ -302,7 +326,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
         }
     }
 
-    private DeviceSettings persist(TreeContext context, NodeState nodeState,
+    private void persist(TreeContext context, NodeState nodeState,
             DeviceBindingCallback deviceBindingCallback, String username,
             String realm, JWK jwk) throws DevicePersistenceException, IOException {
         //Get device name, if empty use default
@@ -324,13 +348,12 @@ public class DeviceBindingNode implements Node, DeviceBinding {
             //persist to storage
             deviceBindingManager.saveDeviceProfile(username, realm, device);
         }
-        return device;
     }
 
     private void validateClaim(NodeState nodeState, SignedJwt signedJwt) throws NodeProcessException {
         //Validate Claim
         String challenge = getContextValue(nodeState, CHALLENGE);
-        validateClaim(signedJwt, challenge, config.applicationIds());
+        validateClaim(signedJwt, challenge, config.applicationIds(), config.skewAllowance());
     }
 
     private void validateKeyAttestation(NodeState nodeState, SignedJwt signedJwt) throws NodeProcessException,
@@ -429,5 +452,13 @@ public class DeviceBindingNode implements Node, DeviceBinding {
         return new OutputState[]{
             new OutputState(DEVICE, Map.of(SUCCESS_OUTCOME_ID, false))
         };
+    }
+
+    @Override
+    public JsonValue getAuditEntryDetail() {
+        if (StringUtils.isNotEmpty(auditFailure)) {
+            return json(object(field(AUDIT_FAILURE_REASON, auditFailure)));
+        }
+        return Node.super.getAuditEntryDetail();
     }
 }

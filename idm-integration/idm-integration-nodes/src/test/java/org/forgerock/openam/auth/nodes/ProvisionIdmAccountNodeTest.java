@@ -39,7 +39,6 @@ import javax.security.auth.callback.Callback;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
@@ -47,15 +46,14 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import com.sun.identity.authentication.spi.RedirectCallback;
-
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 public class ProvisionIdmAccountNodeTest {
 
@@ -90,7 +88,11 @@ public class ProvisionIdmAccountNodeTest {
     private JsonValue transientSharedState = json(object());
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, List<Callback> callbacks) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private JsonValue getUserInfo() {

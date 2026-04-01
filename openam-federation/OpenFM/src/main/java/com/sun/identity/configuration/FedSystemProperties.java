@@ -101,7 +101,7 @@ public class FedSystemProperties extends FedLibSystemProperties {
             try {
                 OrganizationConfigManager orgMgr = new OrganizationConfigManager(
                         AdminTokenAction.getInstance().run(), realm);
-                Map<String, Set<String>> svcAttrs = orgMgr.getServiceAttributes("sunFAMSAML2Configuration");
+                Map<String, Set<String>> svcAttrs = orgMgr.getServiceAttributes("sunFAMSAML2Configuration", "1.0");
                 return CollectionHelper.getMapAttr(svcAttrs, attribute);
             } catch (SMSException smse) {
                 LoggerFactory.getLogger("libSAML2").error("Unable to retrieve " + attribute + " from realm: " + realm, smse);

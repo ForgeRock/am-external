@@ -23,11 +23,8 @@ import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,12 +40,7 @@ class SetStateNodeTest {
 
     @BeforeEach
     void setUp() {
-        treeContext = new TreeContext(
-                json(object()),
-                new ExternalRequestContext.Builder().build(),
-                Collections.emptyList(),
-                Optional.empty());
-
+        treeContext = TreeContext.builder().build();
     }
 
     @Test
@@ -68,13 +60,11 @@ class SetStateNodeTest {
     @Test
     void overwritesExistingAttributesInSharedStateAndRemovesFromTransientAndSecureState() {
         // Given
-        treeContext = new TreeContext(
-                json(object(field("testKey", "oldValue"))),
-                json(object(field("testKey", "oldValue"))),
-                json(object(field("testKey", "oldValue"))),
-                new ExternalRequestContext.Builder().build(),
-                Collections.emptyList(),
-                Optional.empty());
+        treeContext = TreeContext.builder()
+                .sharedState(json(object(field("testKey", "oldValue"))))
+                .transientState(json(object(field("testKey", "oldValue"))))
+                .secureState(json(object(field("testKey", "oldValue"))))
+                .build();
         node = new SetStateNode(new TestConfig(Map.of("testKey", "newValue")));
 
         // When

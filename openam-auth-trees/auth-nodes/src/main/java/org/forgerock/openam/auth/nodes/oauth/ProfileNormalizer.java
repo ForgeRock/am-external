@@ -30,7 +30,7 @@ import org.forgerock.openam.authentication.modules.common.mapping.AccountProvide
 import org.forgerock.openam.authentication.modules.common.mapping.AttributeMapper;
 import org.forgerock.openam.authentication.modules.oauth2.OAuthUtil;
 
-import com.google.inject.Singleton;
+import jakarta.inject.Singleton;
 import com.sun.identity.authentication.spi.AuthLoginException;
 
 /**

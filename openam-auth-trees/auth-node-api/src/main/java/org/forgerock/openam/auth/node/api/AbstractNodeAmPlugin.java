@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -20,7 +20,7 @@ import static java.util.Collections.singletonMap;
 
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.annotations.SupportedAll;
 import org.forgerock.openam.plugins.AmPlugin;
@@ -162,7 +162,7 @@ public abstract class AbstractNodeAmPlugin implements AmPlugin {
      * @return The list of node classes.
      * @throws UnsupportedOperationException if called as this method is now deprecated.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     protected Iterable<? extends Class<? extends Node>> getNodes() throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }

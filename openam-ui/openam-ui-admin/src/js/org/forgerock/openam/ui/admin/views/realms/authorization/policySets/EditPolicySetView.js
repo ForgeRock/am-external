@@ -170,6 +170,9 @@ export default AbstractView.extend({
 
     processConditions (data, envConditions, subjConditions) {
         if (!data.entityId) {
+            // don't populate new policy sets with deprecated AuthScheme condition
+            envConditions = envConditions.filter((condition) => condition.title !== "AuthScheme");
+
             data.entity.conditions = this.populateConditions(envConditions, envConditions);
             data.entity.subjects = this.populateConditions(subjConditions, subjConditions);
         }

@@ -12,12 +12,13 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyright 2019-2025 Ping Identity Corporation.
+ * Portions Copyright 2019-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server.spi;
 
 import java.util.Properties;
 
+import org.forgerock.openam.radius.server.InvalidRadiusClientConfigurationException;
 import org.forgerock.openam.radius.server.RadiusProcessingException;
 import org.forgerock.openam.radius.server.RadiusRequest;
 import org.forgerock.openam.radius.server.RadiusRequestContext;
@@ -44,7 +45,7 @@ public interface AccessRequestHandler {
      * @param config
      *            - the handler configuration parameters.
      */
-    void init(Properties config);
+    void init(Properties config) throws InvalidRadiusClientConfigurationException;
 
     /**
      * Determines how the passed-in request should be handled and calls the send method in the context passing the

@@ -15,16 +15,17 @@
  */
 package org.forgerock.openam.saml2;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static com.sun.identity.saml2.common.SAML2Constants.HTTP_POST;
 import static com.sun.identity.saml2.common.SAML2Constants.HTTP_REDIRECT;
 import static com.sun.identity.saml2.common.SAML2Constants.SAML2_REQUEST_JWT_TYPE;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.json.JsonValue.fieldIfNotNull;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.scripting.domain.DecisionNodeApplicationConstants.SAML_OBJECT_KEY_PARAM;
+import static org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject.FlowInitiator;
 import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
 
 import java.io.ByteArrayInputStream;
@@ -35,14 +36,9 @@ import java.net.URLEncoder;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPMessage;
 
 import org.forgerock.guice.core.InjectorHolder;
@@ -52,13 +48,11 @@ import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.json.jose.utils.StringOrURI;
 import org.forgerock.openam.jwt.JwtEncryptionHandler;
 import org.forgerock.openam.jwt.JwtEncryptionOptions;
-import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 import org.forgerock.openam.shared.secrets.Labels;
 import org.forgerock.openam.transactions.core.TransactionConstants;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.StringUtils;
-import org.forgerock.openam.utils.Time;
 import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.keys.DataEncryptionKey;
@@ -102,6 +96,10 @@ import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.xml.XMLUtils;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * An implementation of A SAMLAuthenticator that uses the Util classes to make the federation connection.
@@ -428,7 +426,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
         try {
             IDPSSOUtil.sendResponseToACS(request, response, out, data.getSession(), data.getAuthnRequest(),
                     data.getSpEntityID(), data.getIdpEntityID(), data.getIdpMetaAlias(), data.getRealm(),
-                    nameIDFormat, data.getRelayState(), data.getMatchingAuthnContext());
+                    nameIDFormat, data.getRelayState(), data.getMatchingAuthnContext(), data.getEventAuditor());
         } catch (SAML2Exception se) {
             logger.error(classMethod + "Unable to do sso or federation.", se);
             throw new ServerFaultException(data.getIdpAdapter(), SSO_OR_FEDERATION_ERROR, se.getMessage());
@@ -629,7 +627,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             }
         }
 
-        Optional<String> ctsKey;
+        String ctsKey = null;
         try {
             var samlAuthenticatorLoginUrl = new SamlAuthenticatorLoginUrl(authService);
             samlAuthenticatorLoginUrl
@@ -641,10 +639,13 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             } else {
                 samlAuthenticatorLoginUrl.addForceAuth(isSessionUpgrade).addParams(authnParams);
             }
-
+            
             try {
-                ctsKey = IDPSSOUtil.addDecisionNodeObjectToCTS(realm, idpEntityID, spEntityID, authnRequest,
-                        SAMLScriptedBindingObject.FlowInitiator.SP, samlAuthenticatorLoginUrl);
+                if (IDPSSOUtil.isScriptedBindingObjectRequired(realm, spEntityID, idpEntityID)) {
+                    ctsKey = IDPSSOUtil.addScriptedBindingObjectToCts(realm, idpEntityID, spEntityID, authnRequest,
+                            FlowInitiator.SP);
+                    samlAuthenticatorLoginUrl.addParam(SAML_OBJECT_KEY_PARAM, ctsKey);
+                }
             } catch (SAML2Exception e) {
                 logger.error("Failed to add decision node object to CTS", e);
                 throw new ServerFaultException("Failed to add decision node object to CTS");
@@ -682,8 +683,13 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             .append(urlEncodeQueryParameterNameOrValue(authnRequest.getIssuer().getValue())).append('&')
             .append(BINDING).append('=')
             .append(urlEncodeQueryParameterNameOrValue(authnRequest.getProtocolBinding()));
-        ctsKey.ifPresent(key -> secondVisitUrl.append('&').append(SAML_OBJECT_KEY_PARAM).append('=').
-                append(urlEncodeQueryParameterNameOrValue(key)));
+       if (ctsKey != null) {
+           secondVisitUrl
+                   .append('&')
+                   .append(SAML_OBJECT_KEY_PARAM)
+                   .append('=')
+                   .append(urlEncodeQueryParameterNameOrValue(ctsKey));
+       }
 
         if (transactionId != null) {
             String transactionParam = "&" + TransactionConstants.TRANSACTION_ID + "=" + transactionId;
@@ -730,8 +736,6 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
         ));
         JwtClaimsSet claimsSet = new JwtClaimsSet(requestData.asMap());
         claimsSet.setIssuer(encodeStringURI(data.getIdpEntityID()));
-        claimsSet.setExpirationTime(Time.newDate(Time.currentTimeMillis()
-                + TimeUnit.SECONDS.toMillis(SPCache.interval)));
         claimsSet.setType(SAML2_REQUEST_JWT_TYPE);
         return new JwtEncryptionHandler(localStorageJwtEncryptionOptions)
                 .encryptJwt(claimsSet, SAML_2_LOCAL_STORAGE_JWT_ENCRYPTION).build();

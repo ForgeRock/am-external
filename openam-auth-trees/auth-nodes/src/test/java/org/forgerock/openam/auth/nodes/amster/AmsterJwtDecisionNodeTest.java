@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.security.auth.callback.Callback;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -218,8 +219,11 @@ public class AmsterJwtDecisionNodeTest {
     }
 
     private TreeContext getContext(JsonValue transientState, List<? extends Callback> callbacks) {
-        return new TreeContext(json(object()), transientState, json(object()),
-                new ExternalRequestContext.Builder().servletRequest(request).build(), callbacks, false,
-                Optional.of("bob"));
+        return TreeContext.builder()
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .requestContext(new ExternalRequestContext.Builder().servletRequest(request).build())
+                .universalId("bob")
+                .build();
     }
 }

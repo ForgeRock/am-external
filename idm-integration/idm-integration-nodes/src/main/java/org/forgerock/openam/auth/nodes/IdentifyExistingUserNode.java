@@ -47,7 +47,7 @@ import org.forgerock.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.am.util.SystemPropertiesWrapper;
 import com.sun.identity.idm.IdType;

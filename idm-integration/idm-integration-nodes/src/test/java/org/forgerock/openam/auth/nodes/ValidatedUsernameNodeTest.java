@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2025 Ping Identity Corporation.
+ * Copyright 2019-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -27,13 +27,13 @@ import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.stream.Stream;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
@@ -49,6 +49,8 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -93,16 +95,26 @@ public class ValidatedUsernameNodeTest {
         when(config.validateInput()).thenReturn(false);
     }
 
-    @Test
-    void processWithoutCallbackShouldReturnCallback() throws Exception {
+    private static Stream<List<String>> autocompleteValuesProvider() {
+        return Stream.of(
+                List.of(),
+                List.of("user1", "user2", "user3")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("autocompleteValuesProvider")
+    void processWithoutCallbackShouldReturnCallback(List<String> autocompleteValues) throws Exception {
         // Given
+        given(config.autocompleteValues()).willReturn(autocompleteValues);
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
                 ))
         ));
         JsonValue transientState = json(object());
-        ResourceBundle resourceBundle = new ValidatedUsernameNodeTest.MockResourceBundle("User Name");
+        ResourceBundle resourceBundle = mock(ResourceBundle.class);
+        given(resourceBundle.getString("callback.username")).willReturn("User Name");
         given(preferredLocales.getBundleInPreferredLocale(any(), any())).willReturn(resourceBundle);
 
         // When
@@ -110,8 +122,41 @@ public class ValidatedUsernameNodeTest {
 
         // Then
         assertThat(action.callbacks).hasSize(1);
-        assertThat(action.callbacks.get(0)).isInstanceOf(NameCallback.class);
+        assertThat(action.callbacks.get(0)).isInstanceOf(AutoCompleteNameCallback.class);
         assertThat(((NameCallback) action.callbacks.get(0)).getPrompt()).isEqualTo("User Name");
+        assertThat(((AutoCompleteNameCallback) action.callbacks.get(0))
+                .getAutocompleteValues()).containsExactlyElementsOf(autocompleteValues);
+        assertThat((Object) action.sharedState).isNull();
+        assertThat((Object) action.transientState).isNull();
+    }
+
+    @ParameterizedTest
+    @MethodSource("autocompleteValuesProvider")
+    void processWithoutCallbackShouldReturnValidatedCallback(List<String> autocompleteValues) throws Exception {
+        // Given
+        when(config.usernameAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+        given(config.autocompleteValues()).willReturn(autocompleteValues);
+        given(config.validateInput()).willReturn(true);
+        JsonValue sharedState = json(object(
+                field(OBJECT_ATTRIBUTES, object(
+                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+                ))
+        ));
+        JsonValue transientState = json(object());
+        when(idmIntegrationService.getValidationRequirements(any(), any(), any()))
+                .thenReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedUsernameNodeTest.class.getResource(
+                        "/ValidatedUsernameNode/idmPolicyRead.json"), Map.class)));
+        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(new JsonValue(OBJECT_MAPPER.readValue(
+                ValidatedUsernameNodeTest.class.getResource("/ValidatedUsernameNode/idmSchema.json"), Map.class)));
+        // When
+        Action action = node.process(getContext(emptyList(), sharedState, transientState));
+
+        // Then
+        assertThat(action.callbacks).hasSize(1);
+        assertThat(action.callbacks.get(0)).isInstanceOf(ValidatedUsernameCallback.class);
+        assertThat(((ValidatedUsernameCallback) action.callbacks.get(0)).getPrompt()).isEqualTo("Username");
+        assertThat(((ValidatedUsernameCallback) action.callbacks.get(0))
+                .getAutocompleteValues()).containsExactlyElementsOf(autocompleteValues);
         assertThat((Object) action.sharedState).isNull();
         assertThat((Object) action.transientState).isNull();
     }
@@ -125,7 +170,8 @@ public class ValidatedUsernameNodeTest {
                 ))
         ));
         JsonValue transientState = json(object());
-        ResourceBundle resourceBundle = new ValidatedUsernameNodeTest.MockResourceBundle("User Name");
+        ResourceBundle resourceBundle = mock(ResourceBundle.class);
+        given(resourceBundle.getString("callback.username")).willReturn("Username");
         given(preferredLocales.getBundleInPreferredLocale(any(), any())).willReturn(resourceBundle);
 
         // When
@@ -153,7 +199,8 @@ public class ValidatedUsernameNodeTest {
                 ))
         ));
         JsonValue transientState = json(object());
-        ResourceBundle resourceBundle = new ValidatedUsernameNodeTest.MockResourceBundle("User Name");
+        ResourceBundle resourceBundle = mock(ResourceBundle.class);
+        given(resourceBundle.getString("callback.username")).willReturn("Username");
         given(preferredLocales.getBundleInPreferredLocale(any(), any())).willReturn(resourceBundle);
 
         // When
@@ -187,23 +234,24 @@ public class ValidatedUsernameNodeTest {
         when(idmIntegrationService.getValidationRequirements(any(), any(), any()))
                 .thenReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedUsernameNodeTest.class.getResource(
                         "/ValidatedUsernameNode/idmPolicyRead.json"), Map.class)));
-        when(idmIntegrationService.validateInput(any(), any(), any(), any(), any())).thenReturn(json(object(
-                field("result", false),
-                field("failedPolicyRequirements", array(
-                        object(
-                                field("policyRequirements", array(
-                                        object(
-                                                field("params", object(
-                                                        field("minLength", 8)
-                                                )),
-                                                field("policyRequirement", "MIN_LENGTH")
-                                        )
-                                )),
-                                field("property", DEFAULT_IDM_IDENTITY_ATTRIBUTE)
-                        )
-                ))
-        )));
-        ValidatedUsernameCallback callback = new ValidatedUsernameCallback("Username", json(array()), false);
+        when(idmIntegrationService.validateInput(any(), any(), any(), any(), any(), any()))
+                .thenReturn(json(object(
+                        field("result", false),
+                        field("failedPolicyRequirements", array(
+                                object(
+                                        field("policyRequirements", array(
+                                                object(
+                                                        field("params", object(
+                                                                field("minLength", 8)
+                                                        )),
+                                                        field("policyRequirement", "MIN_LENGTH")
+                                                )
+                                        )),
+                                        field("property", DEFAULT_IDM_IDENTITY_ATTRIBUTE)
+                                )
+                        ))
+                )));
+        ValidatedUsernameCallback callback = new ValidatedUsernameCallback("Username", json(array()), false, List.of());
         callback.setUsername("badusername");
         Action action = node.process(getContext(singletonList(callback), sharedState, transientState));
 
@@ -218,25 +266,11 @@ public class ValidatedUsernameNodeTest {
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState,
             JsonValue transientState) {
-        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, transientState,
-                new ExternalRequestContext.Builder().locales(preferredLocales).build(), callbacks, Optional.empty());
-    }
-
-    static class MockResourceBundle extends ResourceBundle {
-        private final String value;
-
-        MockResourceBundle(String value) {
-            this.value = value;
-        }
-
-        @Override
-        protected Object handleGetObject(String key) {
-            return value;
-        }
-
-        @Override
-        public Enumeration<String> getKeys() {
-            return null;
-        }
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .requestContext(new ExternalRequestContext.Builder().locales(preferredLocales).build())
+                .callbacks(callbacks)
+                .build();
     }
 }

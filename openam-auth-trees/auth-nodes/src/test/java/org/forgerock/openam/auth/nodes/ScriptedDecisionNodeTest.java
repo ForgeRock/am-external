@@ -11,11 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
@@ -33,8 +32,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.UUID;
 
 import javax.script.Bindings;
 import javax.script.ScriptException;
@@ -42,13 +42,14 @@ import javax.script.SimpleBindings;
 
 import org.forgerock.am.cts.CTSPersistentStore;
 import org.forgerock.am.cts.api.tokens.Token;
+import org.forgerock.am.trees.api.Tree;
 import org.forgerock.guice.core.GuiceTestCase;
 import org.forgerock.json.JsonValue;
 import org.forgerock.oauth2.core.application.tree.OAuthScriptedBindingObjectAdapter;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.ScriptedLocalizedMessage;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper;
 import org.forgerock.openam.auth.nodes.script.ScriptedDecisionNodeBindings;
@@ -60,6 +61,7 @@ import org.forgerock.openam.scripting.api.secrets.IScriptedSecrets;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluator.ScriptResult;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.cache.service.CacheManagerService;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.LegacyScriptContext;
@@ -140,16 +142,28 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @Mock
     private Token token;
 
+    @Mock
+    private Tree tree;
+
+    @Mock
+    private CacheManagerService.Factory cacheManagerServiceFactory;
+    @Mock
+    private ScriptedLocalizedMessage.Factory scriptedLocalizedMessageFactory;
+
+    private UUID nodeId;
+
     ScriptedDecisionNode node;
 
     @BeforeEach
     void setup() throws Exception {
+        nodeId = UUID.randomUUID();
         given(script.getName()).willReturn("mock-script-name");
         given(script.getScript()).willReturn("mock-script-body");
         given(script.getLanguage()).willReturn(ScriptingLanguage.JAVASCRIPT);
         given(script.getEvaluatorVersion()).willReturn(EvaluatorVersion.defaultVersion());
         given(serviceConfig.script()).willReturn(script);
         given(serviceConfig.outcomes()).willReturn(ImmutableList.of("a", "b"));
+        given(tree.getNodes()).willReturn(List.of());
 
         IScriptedSecrets.Factory secretsFactory = mock(IScriptedSecrets.Factory.class);
         given(secretsFactory.create(any(), any())).willReturn(secrets);
@@ -157,8 +171,9 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
                 .willReturn(scriptEvaluator);
         var authScriptUtilities = new ScriptedNodeHelper(httpClientFactory, () -> sessionService, cts, adapter);
         node = new ScriptedDecisionNode(scriptEvaluatorFactory, serviceConfig,
-                mockRealm, scriptIdentityRepositoryFactory,
-                scriptedIdentityRepositoryFactory, secretsFactory, authScriptUtilities, scriptedDecisionNodeContext);
+                mockRealm, nodeId, tree, scriptIdentityRepositoryFactory,
+                scriptedIdentityRepositoryFactory, secretsFactory, authScriptUtilities, scriptedDecisionNodeContext,
+                cacheManagerServiceFactory, scriptedLocalizedMessageFactory);
     }
 
     @Test
@@ -411,45 +426,65 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .build();
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, ExternalRequestContext request) {
-        return new TreeContext(sharedState, transientState, request, emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .requestContext(request)
+                .build();
     }
 
     private TreeContext getContext(Map<String, String[]> appBindings) {
-        return new TreeContext(JsonValue.json(object()),
-                new ExternalRequestContext.Builder().parameters(appBindings).build(), emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().parameters(appBindings).build())
+                .build();
     }
 
     private static Answer<Object> answerWithOutcome(Object outcome) {
         return invocationOnMock -> {
-            Bindings bindings = new SimpleBindings();
-            bindings.put("outcome", outcome);
+            ScriptedDecisionNodeBindings bindingsIn = invocationOnMock.getArgument(1);
+            Bindings bindingsOut = new SimpleBindings();
+            bindingsOut.put("outcome", outcome);
+            bindingsOut.put("sharedState", bindingsIn.legacyBindings().get("sharedState"));
+            bindingsOut.put("transientState", bindingsIn.legacyBindings().get("transientState"));
+
             ScriptResult scriptResult = mock(ScriptResult.class);
-            given(scriptResult.getBindings()).willReturn(bindings);
+            given(scriptResult.getBindings()).willReturn(bindingsOut);
             return scriptResult;
         };
     }
 
     private static Answer<Object> answerWithAction(Object action) {
         return invocationOnMock -> {
-            Bindings bindings = new SimpleBindings();
-            bindings.put("action", action);
+            ScriptedDecisionNodeBindings bindingsIn = invocationOnMock.getArgument(1);
+            Bindings bindingsOut = new SimpleBindings();
+            bindingsOut.put("action", action);
+            bindingsOut.put("sharedState", bindingsIn.legacyBindings().get("sharedState"));
+            bindingsOut.put("transientState", bindingsIn.legacyBindings().get("transientState"));
+
             ScriptResult scriptResult = mock(ScriptResult.class);
-            given(scriptResult.getBindings()).willReturn(bindings);
+            given(scriptResult.getBindings()).willReturn(bindingsOut);
             return scriptResult;
         };
     }
 
     private static Answer<Object> answerWithActionAndOutcome(Object outcome, Object action) {
         return invocationOnMock -> {
-            Bindings bindings = new SimpleBindings();
-            bindings.put("action", action);
-            bindings.put("outcome", outcome);
+            ScriptedDecisionNodeBindings bindingsIn = invocationOnMock.getArgument(1);
+            Bindings bindingsOut = new SimpleBindings();
+            bindingsOut.put("action", action);
+            bindingsOut.put("outcome", outcome);
+            bindingsOut.put("sharedState", bindingsIn.legacyBindings().get("sharedState"));
+            bindingsOut.put("transientState", bindingsIn.legacyBindings().get("transientState"));
+
             ScriptResult scriptResult = mock(ScriptResult.class);
-            given(scriptResult.getBindings()).willReturn(bindings);
+            given(scriptResult.getBindings()).willReturn(bindingsOut);
             return scriptResult;
         };
     }
@@ -457,15 +492,16 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     private static Answer<Object> answerWithOutcomeAndOutput(Object outcome, String... outputs) {
         return invocationOnMock -> {
             LegacyScriptBindings bindingsIn = invocationOnMock.getArgument(1);
-            Bindings bindings = new SimpleBindings();
-            bindings.put("outcome", outcome);
-            bindings.put("sharedState", bindingsIn.legacyBindings().get("sharedState"));
+            Bindings bindingsOut = new SimpleBindings();
+            bindingsOut.put("outcome", outcome);
+            bindingsOut.put("sharedState", bindingsIn.legacyBindings().get("sharedState"));
+            bindingsOut.put("transientState", bindingsIn.legacyBindings().get("transientState"));
             for (String output : outputs) {
                 String[] parts = output.split(":");
-                ((Map<String, Object>) bindings.get("sharedState")).put(parts[0], parts[1]);
+                ((Map<String, Object>) bindingsOut.get("sharedState")).put(parts[0], parts[1]);
             }
             ScriptResult scriptResult = mock(ScriptResult.class);
-            given(scriptResult.getBindings()).willReturn(bindings);
+            given(scriptResult.getBindings()).willReturn(bindingsOut);
             return scriptResult;
         };
     }
@@ -473,11 +509,15 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     private static Answer<Object> answerWithOutcomeAndAuditEntryDetail(Object outcome,
             Map<String, Object> auditEntryDetail) {
         return invocationOnMock -> {
-            Bindings bindings = new SimpleBindings();
-            bindings.put("outcome", outcome);
-            bindings.put("auditEntryDetail", auditEntryDetail);
+            ScriptedDecisionNodeBindings bindingsIn = invocationOnMock.getArgument(1);
+            Bindings bindingsOut = new SimpleBindings();
+            bindingsOut.put("outcome", outcome);
+            bindingsOut.put("auditEntryDetail", auditEntryDetail);
+            bindingsOut.put("sharedState", bindingsIn.legacyBindings().get("sharedState"));
+            bindingsOut.put("transientState", bindingsIn.legacyBindings().get("transientState"));
+
             ScriptResult scriptResult = mock(ScriptResult.class);
-            given(scriptResult.getBindings()).willReturn(bindings);
+            given(scriptResult.getBindings()).willReturn(bindingsOut);
             return scriptResult;
         };
     }

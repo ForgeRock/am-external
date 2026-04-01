@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.treehook;
 
@@ -19,7 +19,7 @@ import static org.forgerock.json.JsonValue.json;
 
 import java.io.IOException;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.http.protocol.Response;
 import org.forgerock.json.JsonValue;
@@ -28,6 +28,7 @@ import org.forgerock.openam.auth.node.api.TreeHookException;
 import org.forgerock.openam.auth.nodes.SetSuccessDetailsNode;
 
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.am.util.SystemPropertiesWrapper;
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 
@@ -43,7 +44,8 @@ public class SuccessDetailsTreeHook extends DetailsTreeHook {
 
     @Inject
     SuccessDetailsTreeHook(@Assisted SetSuccessDetailsNode.Config config, @Assisted SSOToken ssoToken,
-            @Assisted Response response) {
+            @Assisted Response response, SystemPropertiesWrapper systemProperties) {
+        super(systemProperties);
         this.config = config;
         this.ssoToken = ssoToken;
         this.response = response;
@@ -51,6 +53,10 @@ public class SuccessDetailsTreeHook extends DetailsTreeHook {
 
     @Override
     public void accept() throws TreeHookException {
+        config.headerControl().keySet().stream()
+                .filter(key -> RESERVED_HEADERS.stream().noneMatch(key::equalsIgnoreCase))
+                .filter(key -> notReservedCookie(key, config.headerControl().get(key)))
+                .forEach(key -> response.getHeaders().putIfAbsent(key, config.headerControl().get(key)));
         JsonValue responseBody;
         try {
             responseBody = json(response.getEntity().getJson());

@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verify;
 import java.util.Collections;
 import java.util.Set;
 
-import javax.inject.Provider;
+import com.google.inject.Provider;
 
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.ldap.ConnectionConfig;

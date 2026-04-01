@@ -24,7 +24,7 @@ import org.forgerock.openam.core.rest.devices.services.DeviceService;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
 import org.forgerock.openam.core.rest.devices.services.TwoFactorEncryptedDeviceStorage;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;

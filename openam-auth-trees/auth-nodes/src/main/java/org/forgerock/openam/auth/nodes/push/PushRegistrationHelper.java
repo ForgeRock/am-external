@@ -44,7 +44,7 @@ import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.REG_QR_CODE
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.SHARED_SECRET_QR_CODE_KEY;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.TextOutputCallback;
 import java.io.IOException;

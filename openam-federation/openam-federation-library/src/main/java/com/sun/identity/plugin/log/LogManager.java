@@ -41,10 +41,10 @@ import com.sun.identity.common.SystemConfigurationUtil;
  *
  * @deprecated since 14.0.0, use Common Audit Service
  */
-@Deprecated
+@Deprecated(since = "14.0.0")
 public final class LogManager {
-    
-    public static final String LOG_PROVIDER_NAME = 
+
+    public static final String LOG_PROVIDER_NAME =
             "com.sun.identity.plugin.log.class";
     private static final org.slf4j.Logger debug = LoggerFactory.getLogger(LogManager.class);
 

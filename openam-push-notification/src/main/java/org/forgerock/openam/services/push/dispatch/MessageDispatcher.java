@@ -36,6 +36,7 @@ import org.forgerock.openam.services.push.dispatch.predicates.Predicate;
 import org.forgerock.openam.services.push.dispatch.predicates.PredicateNotMetException;
 import org.forgerock.am.cts.api.tokens.CoreTokenField;
 import org.forgerock.am.cts.api.tokens.TokenType;
+import org.forgerock.openam.services.push.dispatch.predicates.PushNumberChallengeResponsePredicate;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.utils.Time;
@@ -66,7 +67,7 @@ import com.google.common.cache.Cache;
  *
  * <ul>
  *  <li>If it does not, the promise will be completed and <code>#handle()</code> will return without error,</li>
- *  <li>If it does, then all the predicates will be run - one at a time, and if any of them return <code>false</code
+ *  <li>If it does, then all the predicates will be run - one at a time, and if any of them return <code>false</code>
  *          then the {@link MessagePromise} will NOT be completed, and the MessageDispatcher will continue to await
  *          a valid message in response to that messageId.</li>
  * </ul>
@@ -214,6 +215,11 @@ public class MessageDispatcher {
         getAuditRequestContext().addTrackingId(messagePromise.getAuditTrackingId());
         for (Predicate p : messagePromise.getPredicates()) {
             if (!p.perform(content)) {
+                if (p instanceof PushNumberChallengeResponsePredicate) {
+                    messagePromise.getPromise().tryHandleResult(content);
+                    forget(messageId);
+                    throw new PredicateNotMetException("Number challenge predicate was not matched. Message denied.");
+                }
                 throw new PredicateNotMetException("Predicate was not matched. Message invalid.");
             }
         }
@@ -248,6 +254,10 @@ public class MessageDispatcher {
             Predicate pred = jsonSerialisation.deserialise((String) entry.getValue(),
                             Class.forName(className).asSubclass(Predicate.class));
             if (!pred.perform(content)) {
+                if (pred instanceof PushNumberChallengeResponsePredicate) {
+                    messageHandler.update(coreToken, content);
+                    throw new PredicateNotMetException("Number challenge predicate was not matched. Message denied.");
+                }
                 throw new PredicateNotMetException("Predicate was not matched. Message invalid.");
             }
         }

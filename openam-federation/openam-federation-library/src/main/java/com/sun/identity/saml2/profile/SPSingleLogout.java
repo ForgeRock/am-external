@@ -314,7 +314,7 @@ public class SPSingleLogout {
                 // termination case, do local logout only and send to
                 // relay state if any
                 debug.warn("SPSingleLogout.initiateLogoutRequest : Unable to get infoKeyString from session.");
-                sessionProvider.invalidateSession(session, request, response);
+                sessionProvider.invalidateSession(session, request, response, realm);
                 if ((relayState != null) && !relayState.equals("")) {
                     try {
                         response.sendRedirect(relayState);
@@ -360,7 +360,7 @@ public class SPSingleLogout {
             // local log out for SOAP. For HTTP case, session will be destroyed
             // when SAML Response reached the SP side.
             if (binding.equals(SAML2Constants.SOAP) || (requestID == null)) {
-                sessionProvider.invalidateSession(session, request, response);
+                sessionProvider.invalidateSession(session, request, response, realm);
             }
         } catch (SAML2MetaException sme) {
             debug.error("Error retreiving metadata",sme);
@@ -688,7 +688,7 @@ public class SPSingleLogout {
         try {
             Object session = sessionProvider.getSession(request);
             if ((session != null) && sessionProvider.isValid(session)) {
-                sessionProvider.invalidateSession(session, request, response);
+                sessionProvider.invalidateSession(session, request, response, realm);
             }
         } catch (SessionException se) {
             debug.debug("SPSingleLogout.processLogoutResponse() : Unable to invalidate session: " + se.getMessage());
@@ -1243,7 +1243,7 @@ public class SPSingleLogout {
                         }
                         if (destroySession) {
                             sessionProvider.invalidateSession(token, request,
-                                    response);
+                                    response, realm);
                         }
                     }
                     if (foundPeer) {
@@ -1320,7 +1320,7 @@ public class SPSingleLogout {
                                 }
                                 if (destroySession) {
                                     sessionProvider.invalidateSession(
-                                            token, request, response);
+                                            token, request, response, realm);
                                 }
                             } catch (SessionException se) {
                                 debug.error(method + "Could not create " +

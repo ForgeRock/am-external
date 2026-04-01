@@ -16,18 +16,15 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
 import java.util.Collections;
-import java.util.Optional;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,8 +51,9 @@ public class SocialOAuthIgnoreProfileNodeTest {
                 ))
         ));
 
-        TreeContext context = new TreeContext(sharedState,
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
         SocialOAuthIgnoreProfileNode node = new SocialOAuthIgnoreProfileNode(config);
 
         //WHEN
@@ -76,8 +74,9 @@ public class SocialOAuthIgnoreProfileNodeTest {
                 ))
         ));
 
-        TreeContext context = new TreeContext(sharedState,
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
         SocialOAuthIgnoreProfileNode node = new SocialOAuthIgnoreProfileNode(config);
 
         //WHEN

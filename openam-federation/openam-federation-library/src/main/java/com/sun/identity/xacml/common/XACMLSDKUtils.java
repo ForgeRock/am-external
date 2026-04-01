@@ -127,7 +127,7 @@ public class XACMLSDKUtils extends SAML2SDKUtils {
          attr = factory.getInstance().createAttribute();
          attr.setAttributeId(attributeId);
          attr.setDataType(dataType);
-         attr.setAttributeValues(values);;
+         attr.setAttributeValues(values);
          attr.setIssuer(issuer);
          return attr;
     }

@@ -27,12 +27,9 @@ import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
 
-import com.google.auto.service.AutoService;
-
 /**
  * Responsible for providing Authentication Nodes global scripts.
  */
-@AutoService(GlobalScriptsProvider.class)
 public class AuthNodesGlobalScriptsProvider implements GlobalScriptsProvider {
 
     @Override

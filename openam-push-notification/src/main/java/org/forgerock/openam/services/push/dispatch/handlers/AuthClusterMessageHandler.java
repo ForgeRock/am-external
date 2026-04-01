@@ -23,7 +23,7 @@ import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT_CHALLENGE_RESPONSE_KEY;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT_DENY_CLAIM_KEY;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.common.JwtReconstruction;

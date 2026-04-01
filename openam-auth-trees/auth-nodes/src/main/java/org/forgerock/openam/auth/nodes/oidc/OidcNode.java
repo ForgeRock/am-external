@@ -11,21 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oidc;
 
 import static java.util.Collections.singletonList;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.WILDCARD;
+import static org.forgerock.openam.auth.nodes.script.OidcNodeScriptContext.OIDC_NODE_NAME;
 import static org.forgerock.openam.social.idp.SocialIdPScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
 import static org.forgerock.openam.social.idp.SocialIdPScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME;
 import static org.forgerock.openam.utils.StringUtils.isBlank;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.json.JsonValue;
@@ -41,14 +44,13 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.script.OidcNodeBindings;
+import org.forgerock.openam.auth.nodes.script.OidcNodeScriptContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.oauth2.OAuth2Constants;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluator.ScriptResult;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
-import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
 import org.forgerock.openam.secrets.cache.SecretReferenceCache;
 import org.forgerock.openam.sm.annotations.adapters.ExampleValue;
@@ -60,7 +62,6 @@ import org.mozilla.javascript.NativeJavaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -81,7 +82,7 @@ public class OidcNode extends AbstractDecisionNode {
     private final OidcIdTokenJwtHandler jwtHandler;
     private final OidcNode.Config config;
     private final Realm realm;
-    private final ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
+    private final ScriptEvaluator<OidcNodeBindings> scriptEvaluator;
     private final AuthScriptUtilities authScriptUtils;
 
 
@@ -94,6 +95,7 @@ public class OidcNode extends AbstractDecisionNode {
      * @param scriptEvaluatorFactory       Factory for the scriptEvaluator
      * @param secretReferenceCache         The secret reference cache
      * @param authScriptUtils              Utilities for scripted nodes
+     * @param nextGenContext               The next gen context
      * @throws NodeProcessException when an error occurs while processing the node
      */
     @Inject
@@ -101,7 +103,9 @@ public class OidcNode extends AbstractDecisionNode {
             @Assisted Realm realm,
             OidcIdTokenJwtHandlerFactory oidcIdTokenJwtHandlerFactory,
             ScriptEvaluatorFactory scriptEvaluatorFactory,
-            SecretReferenceCache secretReferenceCache, AuthScriptUtilities authScriptUtils)
+            SecretReferenceCache secretReferenceCache,
+            AuthScriptUtilities authScriptUtils,
+            OidcNodeScriptContext nextGenContext)
             throws NodeProcessException {
         this.config = config;
         this.realm = realm;
@@ -112,7 +116,7 @@ public class OidcNode extends AbstractDecisionNode {
                     .orElseThrow(() -> new NodeProcessException("Client Secret Id is empty in node configuration")));
         }
         this.jwtHandler = oidcIdTokenJwtHandlerFactory.createOidcIdTokenJwtHandler(config, Optional.ofNullable(secret));
-        this.scriptEvaluator = scriptEvaluatorFactory.create(SOCIAL_IDP_PROFILE_TRANSFORMATION);
+        this.scriptEvaluator = scriptEvaluatorFactory.create(SOCIAL_IDP_PROFILE_TRANSFORMATION, nextGenContext);
         this.authScriptUtils = authScriptUtils;
     }
 
@@ -177,12 +181,25 @@ public class OidcNode extends AbstractDecisionNode {
             ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script, scriptBindings, realm);
             logger.debug("script {} \n binding {}", script, scriptResult.getBindings());
 
-            return (JsonValue) (script.getLanguage().equals(ScriptingLanguage.JAVASCRIPT)
-                    ? ((NativeJavaObject) scriptResult.getScriptReturnValue()).unwrap()
-                    : scriptResult.getScriptReturnValue());
+            return extractScriptResult(scriptResult);
         } catch (javax.script.ScriptException e) {
             logger.warn("Error evaluating the script", e);
             throw new NodeProcessException(e);
+        }
+    }
+
+    private JsonValue extractScriptResult(ScriptResult<Object> scriptResult) {
+        Object result = scriptResult.getScriptReturnValue();
+        if (scriptResult.getScriptReturnValue() instanceof NativeJavaObject njo) {
+            result = njo.unwrap();
+        }
+
+        if (result instanceof Map) {
+            return new JsonValue(result);
+        } else if (result instanceof JsonValue jsonValue) {
+            return jsonValue;
+        } else {
+            throw new IllegalArgumentException("Script result is not a valid JSON object");
         }
     }
 
@@ -290,7 +307,8 @@ public class OidcNode extends AbstractDecisionNode {
          * @return The script configuration
          */
         @Attribute(order = 800, validators = {RequiredValueValidator.class})
-        @ScriptContext(legacyContext = SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME)
+        @ScriptContext(legacyContext = SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME,
+                nextGenContext = OIDC_NODE_NAME)
         Script script();
 
         /**

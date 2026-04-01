@@ -23,7 +23,7 @@ import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getAc
 import java.time.ZoneOffset;
 import java.util.Optional;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;

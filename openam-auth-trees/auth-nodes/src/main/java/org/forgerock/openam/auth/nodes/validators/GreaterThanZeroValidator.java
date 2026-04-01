@@ -16,14 +16,21 @@
 
 package org.forgerock.openam.auth.nodes.validators;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
-import com.sun.identity.sm.ServiceAttributeValidator;
+import com.sun.identity.sm.DescriptiveServiceAttributeValidator;
 
 /**
  * Validator for session property map.
+ *
+ * @deprecated Use {@link org.forgerock.openam.sm.validation.GreaterThanZeroValidator} instead.
  */
-public class GreaterThanZeroValidator implements ServiceAttributeValidator {
+@Deprecated(since = "8.1.0")
+public class GreaterThanZeroValidator implements DescriptiveServiceAttributeValidator {
+
+    private List<String> validationMessages;
 
     @Override
     public boolean validate(Set<String> values) {
@@ -31,9 +38,20 @@ public class GreaterThanZeroValidator implements ServiceAttributeValidator {
         for (String value : values) {
             if (Integer.parseInt(value) <= 0) {
                 isValid = false;
+                validationMessages = List.of("value-must-be-greater-than-zero");
                 break;
             }
         }
         return isValid;
+    }
+
+    @Override
+    public List<String> validationMessages() {
+        return validationMessages;
+    }
+
+    @Override
+    public Optional<String> i18nFile() {
+        return Optional.of(GreaterThanZeroValidator.class.getSimpleName());
     }
 }

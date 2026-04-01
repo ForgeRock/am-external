@@ -24,13 +24,16 @@
  *
  * $Id: IDPAttributeMapper.java,v 1.3 2008/06/25 05:47:51 qcheng Exp $
  *
- * Portions Copyrighted 2019-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2019-2026 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
+
+import java.util.List;
 
 import org.forgerock.openam.annotations.SupportedAll;
 import org.forgerock.openam.saml2.plugins.SAMLPlugin;
 
+import com.sun.identity.saml2.assertion.Attribute;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
@@ -56,7 +59,7 @@ public interface IDPAttributeMapper extends SAMLPlugin {
      * @return list of <code>Attributes</code>s of an authenticated user. 
      * @exception SAML2Exception if any failure.
      */
-    java.util.List getAttributes(
+    List<Attribute> getAttributes(
         Object session,
         java.lang.String hostEntityID,
         java.lang.String remoteEntityID, 

@@ -43,7 +43,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import javax.security.auth.callback.Callback;
@@ -51,12 +50,11 @@ import javax.security.auth.callback.Callback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.LocaleSelector;
-import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.core.rest.devices.push.UserPushDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
@@ -260,10 +258,11 @@ public class PushAuthenticationSenderNodeTest {
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
                                    List<? extends Callback> callbacks) {
-        return new TreeContext(
-                sharedState, transientState, new ExternalRequestContext.Builder().build(),
-                callbacks, Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private void whenNodeConfigHasDefaultValues() {

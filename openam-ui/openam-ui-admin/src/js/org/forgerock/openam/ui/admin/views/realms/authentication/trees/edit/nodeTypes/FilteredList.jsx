@@ -11,19 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2025 Ping Identity Corporation.
+ * Copyright 2019-2026 Ping Identity Corporation.
  */
 
 import { isEmpty, map } from "lodash";
 import { t } from "i18next";
 import PropTypes from "prop-types";
-import React, { useEffect, useState } from "react";
+import React, {
+    useEffect,
+    useState
+} from "react";
 
-import connectWithStore from "components/redux/connectWithStore";
-import filterNodesByTag from "./filterNodesByTag";
+import { filterNodesByTag } from "org/forgerock/openam/ui/admin/utils/treeUtils";
 import NodeTypeItem from "./NodeTypeItem";
 
-let FilteredList = ({ filter, nodeTypes }) => {
+export default function FilteredList ({ filter, nodeTypes }) {
     const [filteredNodeTypes, setFilteredNodeTypes] = useState(nodeTypes);
 
     useEffect(() => {
@@ -33,7 +35,7 @@ let FilteredList = ({ filter, nodeTypes }) => {
 
     return isEmpty(filteredNodeTypes)
         ? <div className="text-muted text-center">{ t("console.common.noResults") }</div>
-        : map(filteredNodeTypes, ({ _id, icon, name, tags }) => (
+        : map(filteredNodeTypes, ({ _id, icon, name, tags, version }) => (
             <NodeTypeItem
                 displayName={ name }
                 filter={ filter }
@@ -41,9 +43,10 @@ let FilteredList = ({ filter, nodeTypes }) => {
                 key={ _id }
                 nodeType={ _id }
                 tags={ tags }
+                version={ version }
             />
         ));
-};
+}
 
 FilteredList.propTypes = {
     filter: PropTypes.string.isRequired,
@@ -54,9 +57,3 @@ FilteredList.propTypes = {
         tags: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired
     })).isRequired
 };
-
-FilteredList = connectWithStore(FilteredList, (state) => ({
-    nodeTypes: state.local.config.realm.authentication.trees.nodeTypes.list
-}));
-
-export default FilteredList;

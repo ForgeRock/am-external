@@ -36,7 +36,7 @@ import org.forgerock.util.Reject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.google.inject.name.Named;
 import com.iplanet.dpro.session.service.SessionService;
 import com.iplanet.dpro.session.watchers.listeners.SessionDeletionListener;

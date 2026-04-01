@@ -16,16 +16,13 @@
 package org.forgerock.openam.auth.nodes;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.json.JsonValue.json;
-import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.am.trees.api.NodeRegistry.DEFAULT_VERSION;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.TreeHook;
@@ -65,8 +62,7 @@ public class SetPersistentCookieNodeTest {
     void testSessionHookWrittenWithNodeId() throws NodeProcessException {
 
         // when
-        Action action = setPersistentCookieNode.process(new TreeContext(json(object()), json(object()),
-                new ExternalRequestContext.Builder().build(), List.of(), Optional.empty()));
+        Action action = setPersistentCookieNode.process(TreeContext.builder().build());
 
         // then
         assertThat(action.outcome).isEqualTo("outcome");
@@ -76,6 +72,7 @@ public class SetPersistentCookieNodeTest {
         assertThat(action.sessionHooks.get(0).asMap()).containsExactlyInAnyOrderEntriesOf(
                 Map.of(TreeHook.SESSION_HOOK_CLASS_KEY, CreatePersistentCookieTreeHook.class.getName(),
                         TreeHook.NODE_ID_KEY, nodeId.toString(),
-                        TreeHook.NODE_TYPE_KEY, SetPersistentCookieNode.class.getSimpleName()));
+                        TreeHook.NODE_TYPE_KEY, SetPersistentCookieNode.class.getSimpleName(),
+                        TreeHook.NODE_VERSION_KEY, DEFAULT_VERSION));
     }
 }

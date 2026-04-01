@@ -81,6 +81,7 @@
                 "resetPassword" : "Forgot Password?",
                 "forgotUsername" : "Forgot Username?",
                 "onMobileDevice": "On a mobile device?",
+                "continueOnDevice": "Continue on this device?",
                 "newHere": "New here?",
                 "createAccount": "Create an account"
             },
@@ -142,7 +143,7 @@
             "complete" : "Complete",
             "confirm": "Confirm",
             "continue" : "Continue",
-            "copyright" : "Copyright &copy; 2010-2025 Ping Identity Corporation. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2026 Ping Identity Corporation. All rights reserved.",
             "create" : "Create",
             "createdAt" : "Created at",
             "createNew": "Create New",
@@ -493,6 +494,10 @@
             "common": {
                  "noAuth": "This setting cannot be changed because you did not authenticate with your device: <b>__deviceName__</b>"
             }
+        },
+        "webauthn": {
+            "spinnerText": "Waiting for local device...",
+            "manualButton": "Sign in with Passkey"
         }
     },
     "uma": {

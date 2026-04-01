@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "version": {
+        "type": "string",
+        "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#versionInfo.response.version.title",
+        "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#versionInfo.response.version.description"
+      },
+      "changelog": {
+        "type": "string",
+        "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#versionInfo.response.changelog.title",
+        "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#versionInfo.response.changelog.description"
+      }
+    }
+  }
+}

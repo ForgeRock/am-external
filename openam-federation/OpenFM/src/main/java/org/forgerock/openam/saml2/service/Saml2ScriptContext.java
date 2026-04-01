@@ -17,6 +17,7 @@ package org.forgerock.openam.saml2.service;
 
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ADAPTER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ATTRIBUTE_MAPPER_SCRIPT;
+import static com.sun.identity.saml2.common.SAML2Constants.SP_ACCOUNT_MAPPER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ADAPTER_SCRIPT;
 
 import org.forgerock.openam.scripting.domain.LegacyScriptContext;
@@ -39,7 +40,12 @@ public enum Saml2ScriptContext implements LegacyScriptContext {
     /**
      * The default SAML2 SP adapter script context.
      */
-    SAML2_SP_ADAPTER(SP_ADAPTER_SCRIPT);
+    SAML2_SP_ADAPTER(SP_ADAPTER_SCRIPT),
+
+    /**
+     * The default SAML2 SP account mapper script context.
+     */
+    SAML2_SP_ACCOUNT_MAPPER(SP_ACCOUNT_MAPPER_SCRIPT);
 
     private final String attribute;
 

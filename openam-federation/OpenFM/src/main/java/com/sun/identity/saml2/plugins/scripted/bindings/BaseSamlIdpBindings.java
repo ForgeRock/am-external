@@ -17,6 +17,7 @@
 package com.sun.identity.saml2.plugins.scripted.bindings;
 
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.HOSTED_ENTITYID;
+import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.HTTP_CLIENT;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.IDP_ADAPTER_SCRIPT_HELPER;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +25,7 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 
+import org.forgerock.http.Client;
 import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 
@@ -36,6 +38,7 @@ abstract class BaseSamlIdpBindings implements LegacyScriptBindings {
 
     protected final String hostedEntityId;
     protected final IdpAdapterScriptHelper idpAdapterScriptHelper;
+    protected final Client client;
 
     /**
      * Constructor for SamlIdpAdapterBindings.
@@ -45,12 +48,14 @@ abstract class BaseSamlIdpBindings implements LegacyScriptBindings {
     protected BaseSamlIdpBindings(Builder<?> builder) {
         this.hostedEntityId = builder.hostedEntityId;
         this.idpAdapterScriptHelper = builder.idpAdapterScriptHelper;
+        this.client = builder.client;
     }
 
     protected BindingsMap legacyCommonBindings() {
         BindingsMap bindings = new BindingsMap();
         bindings.put(HOSTED_ENTITYID, hostedEntityId);
         bindings.put(IDP_ADAPTER_SCRIPT_HELPER, idpAdapterScriptHelper);
+        bindings.put(HTTP_CLIENT, client);
         return bindings;
     }
 
@@ -65,7 +70,14 @@ abstract class BaseSamlIdpBindings implements LegacyScriptBindings {
      * Interface utilised by the fluent builder to define step 3 in generating the SamlIdpAdapterCommonBindings.
      */
     public interface SamlIdpAdapterCommonBindingsStep2<T> {
-        SamlIdpAdapterCommonBindingsFinalStep<T> withIdpAdapterScriptHelper(IdpAdapterScriptHelper idpAdapterScriptHelper);
+        SamlIdpAdapterCommonBindingsStep3<T> withIdpAdapterScriptHelper(IdpAdapterScriptHelper idpAdapterScriptHelper);
+    }
+
+    /**
+     * Interface utilised by the fluent builder to define step 3 in generating the SamlIdpAdapterCommonBindings.
+     */
+    public interface SamlIdpAdapterCommonBindingsStep3<T> {
+        SamlIdpAdapterCommonBindingsFinalStep<T> withHttpClient(Client client);
     }
 
     /**
@@ -88,9 +100,10 @@ abstract class BaseSamlIdpBindings implements LegacyScriptBindings {
      */
     protected abstract static class Builder<T extends BaseSamlIdpBindings> implements
             SamlIdpAdapterCommonBindingsStep1<T>, SamlIdpAdapterCommonBindingsStep2<T>,
-            SamlIdpAdapterCommonBindingsFinalStep<T> {
+            SamlIdpAdapterCommonBindingsStep3<T>, SamlIdpAdapterCommonBindingsFinalStep<T> {
         protected String hostedEntityId;
         protected IdpAdapterScriptHelper idpAdapterScriptHelper;
+        protected Client client;
 
         /**
          * Set the hostedEntityId for the builder.
@@ -109,8 +122,19 @@ abstract class BaseSamlIdpBindings implements LegacyScriptBindings {
          * @param idpAdapterScriptHelper The {@link IdpAdapterScriptHelper}.
          * @return The next step of the builder.
          */
-        public SamlIdpAdapterCommonBindingsFinalStep<T> withIdpAdapterScriptHelper(IdpAdapterScriptHelper idpAdapterScriptHelper) {
+        public SamlIdpAdapterCommonBindingsStep3<T> withIdpAdapterScriptHelper(IdpAdapterScriptHelper idpAdapterScriptHelper) {
             this.idpAdapterScriptHelper = idpAdapterScriptHelper;
+            return this;
+        }
+
+        /**
+         * Set the client for the builder.
+         *
+         * @param client The {@link Client}.
+         * @return The next step of the builder.
+         */
+        public SamlIdpAdapterCommonBindingsFinalStep<T> withHttpClient(Client client) {
+            this.client = client;
             return this;
         }
 

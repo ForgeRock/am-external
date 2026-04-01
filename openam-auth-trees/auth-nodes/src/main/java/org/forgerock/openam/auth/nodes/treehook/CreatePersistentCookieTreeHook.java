@@ -19,9 +19,10 @@ import static org.forgerock.openam.auth.nodes.HmacSigningKeyConfig.DEPRECATED_ST
 
 import java.util.Date;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
+import javax.annotation.Nullable;
+
+import jakarta.inject.Inject;
 
 import org.forgerock.http.protocol.Request;
 import org.forgerock.http.protocol.Response;
@@ -44,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.sso.NonExistentSsoToken;
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.util.ISAuthConstants;
@@ -71,7 +73,7 @@ public class CreatePersistentCookieTreeHook implements TreeHook {
      * @param ssoToken                        the sso token.
      * @param response                        the response.
      * @param config                          the config for creating a jwt.
-     * @param request                         the request.
+     * @param request                         the request, can be {@code null}.
      * @param realm                           the realm.
      * @param persistentJwtStringSupplier     reference to a class which creates and updates jwts.
      * @param persistentCookieResponseHandler reference to a class which sets a persistent cookie on a Response.
@@ -79,14 +81,15 @@ public class CreatePersistentCookieTreeHook implements TreeHook {
      * @param secretReferenceCache            the secret reference cache.
      */
     @Inject
-    CreatePersistentCookieTreeHook(@Assisted SSOToken ssoToken, @Assisted Response response,
-            @Assisted SetPersistentCookieNode.Config config, @Assisted Request request,
+    CreatePersistentCookieTreeHook(@Assisted @Nullable SSOToken ssoToken, @Assisted Response response,
+            @Assisted SetPersistentCookieNode.Config config, @Assisted @Nullable Request request,
             @Assisted Realm realm,
             PersistentJwtStringSupplier persistentJwtStringSupplier,
             PersistentCookieResponseHandler persistentCookieResponseHandler,
             PersistentJwtClaimsHandler persistentJwtClaimsHandler,
             SecretReferenceCache secretReferenceCache) {
-        Reject.ifNull(ssoToken);
+        Reject.rejectStateIfTrue(ssoToken == null || ssoToken instanceof NonExistentSsoToken,
+                "Unable to create persistent cookie: SSO token not available");
         this.ssoToken = ssoToken;
         this.response = response;
         this.config = config;
@@ -126,9 +129,10 @@ public class CreatePersistentCookieTreeHook implements TreeHook {
         String jwtString = getJwtString(orgName, authContext, signingKey, kid);
 
         if (jwtString != null && !jwtString.isEmpty()) {
-            long expiryInMillis = Time.currentTimeMillis() + config.maxLife().to(TimeUnit.MILLISECONDS);
+            long expiryInMillis = Time.currentTimeMillis() + config.maxLife().toMillis();
             persistentCookieResponseHandler.setCookieOnResponse(response, request, config.persistentCookieName(),
-                    jwtString, new Date(expiryInMillis), config.useSecureCookie(), config.useHttpOnlyCookie());
+                    jwtString, new Date(expiryInMillis), config.useSecureCookie(), config.useHttpOnlyCookie(),
+                    config.sameSite());
         }
     }
 
@@ -137,8 +141,8 @@ public class CreatePersistentCookieTreeHook implements TreeHook {
         String jwtString;
         try {
             jwtString = persistentJwtStringSupplier.createJwtString(
-                    orgName, authContext, config.maxLife().to(TimeUnit.HOURS),
-                    config.idleTimeout().to(TimeUnit.HOURS), signingKey, kid
+                    orgName, authContext, config.maxLife().toHours(),
+                    config.idleTimeout().toHours(), signingKey, kid
             );
         } catch (InvalidPersistentJwtException e) {
             logger.error("Error creating jwt string", e);

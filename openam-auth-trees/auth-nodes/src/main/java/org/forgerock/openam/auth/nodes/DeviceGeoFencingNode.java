@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -63,7 +63,7 @@ public class DeviceGeoFencingNode extends AbstractDecisionNode implements Device
         /**
          * The Latitude & Longitude of trusted locations.
          *
-         * @return A set of trusted locations with format <latitude>,<longitude>
+         * @return A set of trusted locations in the format &lt;latitude&gt;,&lt;longitude&gt;
          */
         @Attribute(order = 100, validators = {RequiredValueValidator.class, GeoFencingValidator.class})
         default Set<String> locations() {
@@ -130,7 +130,8 @@ public class DeviceGeoFencingNode extends AbstractDecisionNode implements Device
     }
 
     /**
-     * Validates a value can convert to a Latitude and longitude value, string representation is <latitude>,<longitude>.
+     * Validates a value can convert to a Latitude and longitude value, string representation is
+     * &lt;latitude&gt;,&lt;longitude&gt;.
      */
     public static class GeoFencingValidator implements ServiceAttributeValidator {
 

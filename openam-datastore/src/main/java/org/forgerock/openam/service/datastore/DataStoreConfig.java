@@ -50,7 +50,6 @@ public final class DataStoreConfig implements ConnectionConfig {
     private final boolean dataStoreEnabled;
     private final boolean mtlsEnabled;
     private final String mtlsSecretId;
-    private final boolean identityStore;
 
     private DataStoreConfig(Builder builder) {
         this.id = builder.id;
@@ -65,7 +64,6 @@ public final class DataStoreConfig implements ConnectionConfig {
         this.dataStoreEnabled = builder.dataStoreEnabled;
         this.mtlsEnabled = builder.mtlsEnabled;
         this.mtlsSecretId = builder.mtlsSecretId;
-        this.identityStore = builder.identityStore;
     }
 
     DataStoreId getId() {
@@ -122,15 +120,6 @@ public final class DataStoreConfig implements ConnectionConfig {
         return SystemProperties.getAsInt(LDAP_SM_HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL_DEFAULT);
     }
 
-    /**
-     * Indicates that this data store will be used for identities, rather than configuration.
-     *
-     * @return {@code true} data store is used for identities, {@code false} otherwise.
-     */
-    public boolean isIdentityStore() {
-        return identityStore;
-    }
-
     public static Builder builder(DataStoreId id) {
         return new Builder(id);
     }
@@ -151,7 +140,6 @@ public final class DataStoreConfig implements ConnectionConfig {
                 && affinityEnabled == that.affinityEnabled
                 && dataStoreEnabled == that.dataStoreEnabled
                 && mtlsEnabled == that.mtlsEnabled
-                && identityStore == that.identityStore
                 && Objects.equals(id, that.id)
                 && Objects.equals(serverUrls, that.serverUrls)
                 && Objects.equals(bindDN, that.bindDN)
@@ -162,7 +150,7 @@ public final class DataStoreConfig implements ConnectionConfig {
     @Override
     public int hashCode() {
         int result = Objects.hash(id, serverUrls, bindDN, minimumConnectionPool, maximumConnectionPool, useSsl,
-                useStartTLS, affinityEnabled, dataStoreEnabled, mtlsEnabled, mtlsSecretId, identityStore);
+                useStartTLS, affinityEnabled, dataStoreEnabled, mtlsEnabled, mtlsSecretId);
         result = 31 * result + Arrays.hashCode(bindPassword);
         return result;
     }
@@ -184,7 +172,6 @@ public final class DataStoreConfig implements ConnectionConfig {
         private boolean dataStoreEnabled;
         private boolean mtlsEnabled;
         public String mtlsSecretId;
-        private boolean identityStore;
 
         Builder(DataStoreId id) {
             this.id = id;
@@ -245,18 +232,6 @@ public final class DataStoreConfig implements ConnectionConfig {
 
         public Builder withMtlsSecretId(String secretId) {
             this.mtlsSecretId = secretId;
-            return this;
-        }
-
-        /**
-         * Indicates that this data store will be used for identities, rather than configuration.
-         * External Data Stores used for identities are used for storing OAuth2 configuration alongside IoT identities.
-         *
-         * @param identityStore {@code true} data store is used for identities, {@code false} otherwise.
-         * @return this builder
-         */
-        public Builder withIdentityStore(boolean identityStore) {
-            this.identityStore = identityStore;
             return this;
         }
 

@@ -11,18 +11,23 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2025 Ping Identity Corporation.
+ * Copyright 2020-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
 
+import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_DEVICE_PROFILE_KEY;
+import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_ENABLE_RECOVERY_CODE_KEY;
+
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorDeviceProfileHelper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DeviceJsonUtils;
@@ -128,5 +133,19 @@ public class OathDeviceProfileHelper extends MultiFactorDeviceProfileHelper<Oath
         } catch (DevicePersistenceException e) {
             throw new NodeProcessException("Unable to store device profile", e);
         }
+    }
+
+    /**
+     * Update stored device details to the SharedState.
+     *
+     * @param nodeState             the Node state representation object.
+     * @param oathDeviceSettings    the Push device's settings.
+     * @param generateRecoveryCodes indicates whether recovery codes were created for the device.
+     * @throws IOException if unable to update the shared state.
+     */
+    public void updateSharedState(NodeState nodeState, OathDeviceSettings oathDeviceSettings,
+            boolean generateRecoveryCodes) throws IOException {
+        nodeState.putShared(OATH_DEVICE_PROFILE_KEY, encodeDeviceSettings(oathDeviceSettings));
+        nodeState.putShared(OATH_ENABLE_RECOVERY_CODE_KEY, generateRecoveryCodes);
     }
 }

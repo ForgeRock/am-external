@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -24,6 +24,7 @@ import java.util.Arrays;
 
 import org.forgerock.openam.auth.nodes.mfa.CombinedMultiFactorRegistrationNode;
 import org.forgerock.openam.auth.nodes.oath.OathRegistrationNode;
+import org.forgerock.openam.auth.nodes.oidc.OidcNode;
 import org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode;
 import org.forgerock.openam.auth.nodes.push.PushRegistrationNode;
 import org.forgerock.openam.auth.nodes.saml2.Saml2Node;
@@ -53,12 +54,6 @@ public class NodesPluginTest {
 
     private NodesPlugin nodesPlugin;
 
-    @BeforeEach
-    void setup() {
-        nodesPlugin = new NodesPlugin();
-        nodesPlugin.setPluginTools(pluginTools);
-    }
-
     private static Object[] upgradeDataProvider() {
         return new Object[][]{
                 {"12.0.0", new Class[]{LdapDecisionNode.class,
@@ -66,13 +61,13 @@ public class NodesPluginTest {
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
                         PersistentCookieDecisionNode.class, DeviceSigningVerifierNode.class, CaptchaNode.class,
                         WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class, ScriptedDecisionNode.class,
-                        DeviceMatchNode.class}},
+                        DeviceMatchNode.class, DeviceBindingNode.class, OidcNode.class}},
                 {"11.0.0", new Class[]{CombinedMultiFactorRegistrationNode.class, LdapDecisionNode.class,
                         PushAuthenticationSenderNode.class, OneTimePasswordSmsSenderNode.class,
                         OneTimePasswordSmtpSenderNode.class, CertificateValidationNode.class,
                         PersistentCookieDecisionNode.class, CaptchaNode.class, WebAuthnAuthenticationNode.class,
-                        SetSessionPropertiesNode.class, ScriptedDecisionNode.class,
-                        DeviceMatchNode.class}},
+                        SetSessionPropertiesNode.class, ScriptedDecisionNode.class, DeviceMatchNode.class,
+                        OidcNode.class}},
                 {"10.0.0", new Class[]{LdapDecisionNode.class, PushAuthenticationSenderNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
                         CertificateValidationNode.class, PersistentCookieDecisionNode.class, CaptchaNode.class,
@@ -134,6 +129,12 @@ public class NodesPluginTest {
                         SetSessionPropertiesNode.class}},
                 {"0.0.0", new Class[]{}},
         };
+    }
+
+    @BeforeEach
+    void setup() {
+        nodesPlugin = new NodesPlugin();
+        nodesPlugin.setPluginTools(pluginTools);
     }
 
     @ParameterizedTest

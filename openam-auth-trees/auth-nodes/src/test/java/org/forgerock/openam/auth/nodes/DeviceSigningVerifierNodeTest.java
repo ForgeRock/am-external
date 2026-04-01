@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -58,11 +58,10 @@ import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.json.jose.jws.JwsAlgorithm;
 import org.forgerock.json.jose.jws.handlers.SecretRSASigningHandler;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.DeviceSigningVerifierCallback;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingManager;
@@ -133,6 +132,7 @@ public class DeviceSigningVerifierNodeTest {
         given(config.timeout()).willReturn(60);
         given(config.applicationIds()).willReturn(Set.of(ISS));
         given(config.captureFailure()).willReturn(false);
+        given(config.skewAllowance()).willReturn(DeviceBinding.SKEW_ALLOWANCE);
         when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
     }
 
@@ -285,6 +285,8 @@ public class DeviceSigningVerifierNodeTest {
         //Then
         assertThat(result.outcome).isEqualTo("my_custom_outcome");
         assertThat(result.callbacks).isEmpty();
+        assertThat(node.getAuditEntryDetail().get(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON).asString())
+                .isEqualTo("my_custom_outcome");
     }
 
     private String buildSignedJwt(KeyPair keyPair, String kid, String iss, String sub,
@@ -357,6 +359,9 @@ public class DeviceSigningVerifierNodeTest {
                 Offset.offset(1000L));
         assertThat(result.outcome).isEqualTo(DeviceSigningVerifierNode.SUCCESS_OUTCOME_ID);
         assertThat(result.callbacks).isEmpty();
+        assertThat(transientState.get(DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME)).isNotNull();
+        assertThat(node.getAuditEntryDetail().keys())
+                .containsExactly(DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME);
     }
 
     @Test
@@ -401,6 +406,12 @@ public class DeviceSigningVerifierNodeTest {
         assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
                 .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_CLAIM.name());
         assertThat(result.callbacks).isEmpty();
+        assertThat(transientState.get(DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME)).isNotNull();
+        assertThat(node.getAuditEntryDetail().keys())
+                .contains(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON,
+                        DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME);
+        assertThat(node.getAuditEntryDetail().get(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_CLAIM.name());
     }
 
     @Test
@@ -447,6 +458,12 @@ public class DeviceSigningVerifierNodeTest {
         assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
                 .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_CLAIM.name());
         assertThat(result.callbacks).isEmpty();
+        assertThat(transientState.get(DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME)).isNotNull();
+        assertThat(node.getAuditEntryDetail().keys())
+                .contains(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON,
+                        DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME);
+        assertThat(node.getAuditEntryDetail().get(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_CLAIM.name());
     }
 
 
@@ -491,6 +508,12 @@ public class DeviceSigningVerifierNodeTest {
         assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
                 .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_CLAIM.name());
         assertThat(result.callbacks).isEmpty();
+        assertThat(transientState.get(DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME)).isNotNull();
+        assertThat(node.getAuditEntryDetail().keys())
+                .contains(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON,
+                        DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME);
+        assertThat(node.getAuditEntryDetail().get(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_CLAIM.name());
     }
 
     @Test
@@ -535,6 +558,12 @@ public class DeviceSigningVerifierNodeTest {
         assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
                 .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_SIGNATURE.name());
         assertThat(result.callbacks).isEmpty();
+        assertThat(transientState.get(DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME)).isNotNull();
+        assertThat(node.getAuditEntryDetail().keys())
+                .contains(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON,
+                        DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME);
+        assertThat(node.getAuditEntryDetail().get(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_SIGNATURE.name());
     }
 
     @Test
@@ -572,6 +601,7 @@ public class DeviceSigningVerifierNodeTest {
         //Then
         assertThat(result.outcome).isEqualTo(DeviceSigningVerifierNode.KEY_NOT_FOUND);
         assertThat(result.callbacks).isEmpty();
+        assertThat(transientState.get(DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME)).isNotNull();
     }
 
     @Test
@@ -614,6 +644,12 @@ public class DeviceSigningVerifierNodeTest {
         assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
                 .isEqualTo(DeviceSigningVerifierNode.FailureReason.NOT_ACTIVE_USER.name());
         assertThat(result.callbacks).isEmpty();
+        assertThat(transientState.get(DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME)).isNotNull();
+        assertThat(node.getAuditEntryDetail().keys())
+                .contains(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON,
+                        DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME);
+        assertThat(node.getAuditEntryDetail().get(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.NOT_ACTIVE_USER.name());
     }
 
     @Test
@@ -659,11 +695,20 @@ public class DeviceSigningVerifierNodeTest {
         assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
                 .isEqualTo(DeviceSigningVerifierNode.FailureReason.NOT_ACTIVE_USER.name());
         assertThat(result.callbacks).isEmpty();
+        assertThat(transientState.get(DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME)).isNotNull();
+        assertThat(node.getAuditEntryDetail().keys())
+                .contains(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON,
+                DeviceSigningVerifierNode.DEVICE_JWT_CONTEXT_NAME);
+        assertThat(node.getAuditEntryDetail().get(DeviceSigningVerifierNode.AUDIT_FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.NOT_ACTIVE_USER.name());
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {
-        return new TreeContext(sharedState, transientState, new Builder().build(),
-                callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 }

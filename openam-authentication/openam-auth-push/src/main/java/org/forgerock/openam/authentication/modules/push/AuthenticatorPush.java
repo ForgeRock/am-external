@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2025 Ping Identity Corporation.
+ * Copyright 2016-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.push;
 
@@ -80,7 +80,7 @@ import org.forgerock.util.Reject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.sns.model.InvalidParameterException;
+import software.amazon.awssdk.services.sns.model.InvalidParameterException;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.iplanet.dpro.session.SessionException;

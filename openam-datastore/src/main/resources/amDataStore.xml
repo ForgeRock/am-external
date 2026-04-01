@@ -139,16 +139,6 @@
                                 <BooleanFalseValue i18nKey="i18nNo">false</BooleanFalseValue>
                             </BooleanValues>
                         </AttributeSchema>
-                        <AttributeSchema name="identityStore"
-                                         order="1100"
-                                         type="single"
-                                         syntax="boolean"
-                                         i18nKey="identityStore">
-                            <BooleanValues>
-                                <BooleanTrueValue i18nKey="i18nYes">true</BooleanTrueValue>
-                                <BooleanFalseValue i18nKey="i18nNo">false</BooleanFalseValue>
-                            </BooleanValues>
-                        </AttributeSchema>
                     </SubSchema>
                 </SubSchema>
             </Global>

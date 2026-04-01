@@ -15,8 +15,7 @@
  */
 package org.forgerock.openam.auth.nodes.script;
 
-import static org.forgerock.openam.auth.node.api.AuthScriptUtilities.OAUTH_APPLICATION;
-import static org.forgerock.openam.auth.node.api.AuthScriptUtilities.SAML_APPLICATION;
+import static org.forgerock.openam.auth.node.api.AuthScriptUtilities.CACHE_MANAGER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.EXISTING_SESSION;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HEADERS_IDENTIFIER;
@@ -30,10 +29,10 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.TRANSIE
 
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.openam.scripting.api.secrets.IScriptedSecrets;
+import org.forgerock.openam.scripting.cache.service.CacheManagerScriptFacade;
+import org.forgerock.openam.scripting.cache.service.CacheManagerService;
 import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
-import org.forgerock.openam.scripting.domain.OAuthScriptedBindingObject;
-import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 
 /**
@@ -47,16 +46,7 @@ public final class ScriptedDecisionNodeBindings extends BaseScriptedDecisionNode
     private final ChfHttpClient httpClient;
     private final IScriptedSecrets secrets;
     private final ScriptIdentityRepository scriptIdentityRepository;
-    /**
-     *  When the scripted decision node is executed as part of a SAML flow, this provides information to the script
-     *  about the SAML application and incoming authentication request.
-     */
-    private final SAMLScriptedBindingObject samlApplication;
-    /**
-     *  When the scripted decision node is executed as part of an OAuth flow, this provides information to the script
-     *  about the OAuth request and the client.
-     */
-    private final OAuthScriptedBindingObject oauthApplication;
+    private final CacheManagerService cacheManagerService;
 
     private ScriptedDecisionNodeBindings(Builder builder) {
         super(builder);
@@ -65,8 +55,7 @@ public final class ScriptedDecisionNodeBindings extends BaseScriptedDecisionNode
         this.httpClient = builder.httpClient;
         this.secrets = builder.secrets;
         this.scriptIdentityRepository = builder.scriptIdentityRepository;
-        this.samlApplication = builder.samlApplication;
-        this.oauthApplication = builder.oauthApplication;
+        this.cacheManagerService = builder.cacheManagerService;
     }
 
     /**
@@ -98,8 +87,7 @@ public final class ScriptedDecisionNodeBindings extends BaseScriptedDecisionNode
     @Override
     public BindingsMap nextGenBindings() {
         BindingsMap bindingsMap = commonNextGenBindings();
-        bindingsMap.put(SAML_APPLICATION, samlApplication);
-        bindingsMap.put(OAUTH_APPLICATION, oauthApplication);
+        bindingsMap.put(CACHE_MANAGER, new CacheManagerScriptFacade(cacheManagerService));
         return bindingsMap;
     }
 
@@ -174,27 +162,13 @@ public final class ScriptedDecisionNodeBindings extends BaseScriptedDecisionNode
      */
     public interface ScriptedDecisionNodeBindingsStep6 {
         /**
-         * Sets the saml application binding.
+         * Sets the cache manager binding.
          *
-         * @param samlApplication the saml application binding
+         * @param cacheManagerService the cache manager service
          * @return the next step of the {@link Builder}
          */
-        ScriptedDecisionNodeBindingsStep7 withSamlApplication(
-                SAMLScriptedBindingObject samlApplication);
-    }
-
-    /**
-     * Step 7 of the builder.
-     */
-    public interface ScriptedDecisionNodeBindingsStep7 {
-        /**
-         * Sets the oauth application binding.
-         *
-         * @param oauthApplication the oauth application binding
-         * @return the next step of the {@link Builder}
-         */
-        BaseScriptedDecisionNodeBindingsStep1<ScriptedDecisionNodeBindings> withOauthApplication(
-                OAuthScriptedBindingObject oauthApplication);
+        BaseScriptedDecisionNodeBindingsStep1<ScriptedDecisionNodeBindings> withCacheManager(
+                CacheManagerService cacheManagerService);
     }
 
     /**
@@ -205,15 +179,14 @@ public final class ScriptedDecisionNodeBindings extends BaseScriptedDecisionNode
     private static final class Builder extends BaseScriptedDecisionNodeBindings.Builder<ScriptedDecisionNodeBindings>
             implements ScriptedDecisionNodeBindingsStep1, ScriptedDecisionNodeBindingsStep2,
             ScriptedDecisionNodeBindingsStep3, ScriptedDecisionNodeBindingsStep4, ScriptedDecisionNodeBindingsStep5,
-            ScriptedDecisionNodeBindingsStep6, ScriptedDecisionNodeBindingsStep7 {
+            ScriptedDecisionNodeBindingsStep6 {
 
         private Object sharedState;
         private Object transientState;
         private ChfHttpClient httpClient;
         private IScriptedSecrets secrets;
         private ScriptIdentityRepository scriptIdentityRepository;
-        private SAMLScriptedBindingObject samlApplication;
-        private OAuthScriptedBindingObject oauthApplication;
+        private CacheManagerService cacheManagerService;
 
         /**
          * Builds the {@link ScriptedDecisionNodeBindings}.
@@ -287,29 +260,17 @@ public final class ScriptedDecisionNodeBindings extends BaseScriptedDecisionNode
         }
 
         /**
-         * Set the saml application binding for the builder.
+         * Set the cache manager service for the builder.
          *
-         * @param samlApplication the saml application binding.
+         * @param cacheManagerService the cache manager service.
          * @return the next step of the Builder.
          */
         @Override
-        public ScriptedDecisionNodeBindingsStep7 withSamlApplication(
-                SAMLScriptedBindingObject samlApplication) {
-            this.samlApplication = samlApplication;
+        public BaseScriptedDecisionNodeBindingsStep1<ScriptedDecisionNodeBindings> withCacheManager(
+                CacheManagerService cacheManagerService) {
+            this.cacheManagerService = cacheManagerService;
             return this;
         }
 
-        /**
-         * Set the oauth application binding for the builder.
-         *
-         * @param oauthApplication the oauth application binding.
-         * @return the next step of the Builder.
-         */
-        @Override
-        public BaseScriptedDecisionNodeBindingsStep1<ScriptedDecisionNodeBindings> withOauthApplication(
-                OAuthScriptedBindingObject oauthApplication) {
-            this.oauthApplication = oauthApplication;
-            return this;
-        }
     }
 }

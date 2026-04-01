@@ -17,8 +17,10 @@ import { combineReducers } from "redux";
 
 import local from "./local";
 import remote from "./remote";
+import featureFlags from "./featureFlags";
 
 export default combineReducers({
     local,
-    remote
+    remote,
+    featureFlags
 });

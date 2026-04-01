@@ -16,7 +16,6 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.forgerock.json.JsonValue.array;
@@ -28,11 +27,8 @@ import static org.forgerock.openam.utils.CollectionUtils.asSet;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import java.util.Optional;
-
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.junit.jupiter.api.Test;
 
@@ -49,8 +45,10 @@ public class MetadataNodeTest {
                 field("attr2", array("other value"))
         ));
         JsonValue transientState = json(object(field("attr3", "private")));
-        TreeContext context = new TreeContext(sharedState, transientState,
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .build();
         MetadataNode.Config config = mock(MetadataNode.Config.class);
         given(config.attributes()).willReturn(asSet("attr1", "attr2", "attr3"));
 

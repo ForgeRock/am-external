@@ -37,7 +37,6 @@ import org.forgerock.http.protocol.Request;
 import org.forgerock.http.protocol.Response;
 import org.forgerock.http.protocol.Status;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -119,8 +118,9 @@ public class CaptchaNodeTest {
     void shouldThrowExceptionIfNoResponseProvided() throws Exception {
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         assertThatThrownBy(() -> node.process(context)).isInstanceOf(NodeProcessException.class);
     }
@@ -131,8 +131,9 @@ public class CaptchaNodeTest {
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
         callback.setResponse("response");
-        TreeContext context = new TreeContext(json(object()),
-        new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         Promise promise = mock(Promise.class);
 
@@ -147,8 +148,9 @@ public class CaptchaNodeTest {
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
         callback.setResponse("success");
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         Response response = new Response(Status.OK);
         response.setEntity(json(object(
@@ -166,8 +168,9 @@ public class CaptchaNodeTest {
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
         callback.setResponse("response");
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         Response response = new Response(Status.OK);
         response.setEntity(json(object(
@@ -186,8 +189,9 @@ public class CaptchaNodeTest {
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
         callback.setResponse("response");
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         Response response = new Response(Status.OK);
         response.setEntity(json(object(
@@ -210,8 +214,9 @@ public class CaptchaNodeTest {
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
         callback.setResponse("response");
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
         Response response = new Response(Status.OK);
         response.setEntity(json(object(
                 field("success", true), field("score", 0.4)
@@ -233,8 +238,9 @@ public class CaptchaNodeTest {
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
         callback.setResponse("response");
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
         Response response = new Response(Status.OK);
         response.setEntity(json(object(
                 field("success", true), field("score", 0.4)
@@ -256,8 +262,9 @@ public class CaptchaNodeTest {
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
         callback.setResponse("success");
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         // Then
         assertThatThrownBy(() -> node.process(context))

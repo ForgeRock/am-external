@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.forgerock.am.examples</groupId>
         <artifactId>openam-samples</artifactId>
-        <version>8.0.2</version>
+        <version>8.1.0</version>
     </parent>
 
     <artifactId>policy-evaluation-plugin</artifactId>
@@ -36,10 +36,6 @@
     </repositories>
 
     <dependencies>
-        <dependency>
-            <groupId>org.forgerock.am</groupId>
-            <artifactId>openam-entitlements</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>entitlements-api</artifactId>

@@ -11,23 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2025 Ping Identity Corporation.
+ * Copyright 2016-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.guice;
 
-import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_NAMEID_MAPPER;
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ADAPTER;
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ATTRIBUTE_MAPPER;
+import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_NAMEID_MAPPER;
+import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_SP_ACCOUNT_MAPPER;
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_SP_ADAPTER;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
 import javax.xml.soap.SOAPConnection;
 
-import com.google.inject.assistedinject.FactoryModuleBuilder;
-import com.sun.identity.plugin.session.impl.FMSessionNotification;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import org.forgerock.openam.authentication.Saml2SessionUpgradeHandler;
 import org.forgerock.openam.federation.config.Saml2DataStoreListener;
@@ -35,10 +34,17 @@ import org.forgerock.openam.saml2.plugins.IDPAdapter;
 import org.forgerock.openam.saml2.plugins.SPAdapter;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.saml2.plugins.SecretsSaml2CredentialResolver;
+import org.forgerock.openam.saml2.service.Saml2AccountMapperScriptContext;
+import org.forgerock.openam.saml2.service.Saml2GlobalScriptsProvider;
+import org.forgerock.openam.saml2.service.Saml2IdpAdapterContext;
+import org.forgerock.openam.saml2.service.Saml2IdpAttributeMapperContext;
+import org.forgerock.openam.saml2.service.Saml2NameIdMapperContext;
 import org.forgerock.openam.saml2.service.Saml2ScriptContextProvider;
+import org.forgerock.openam.saml2.service.Saml2SpAdapterContext;
 import org.forgerock.openam.saml2.soap.SOAPConnectionFactory;
 import org.forgerock.openam.saml2.soap.SamlMtlsHandlerFactory;
 import org.forgerock.openam.saml2.soap.SecretsAwareSOAPConnection;
+import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
 import org.forgerock.openam.secrets.config.SecretStoreConfigChangeListener;
 import org.forgerock.openam.services.datastore.DataStoreServiceChangeNotifier;
@@ -48,13 +54,17 @@ import org.forgerock.util.thread.ExecutorServiceFactory;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Provides;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
+import com.sun.identity.plugin.session.impl.FMSessionNotification;
 import com.sun.identity.saml2.plugins.IDPAccountMapper;
 import com.sun.identity.saml2.plugins.IDPAttributeMapper;
+import com.sun.identity.saml2.plugins.SPAccountMapper;
+import com.sun.identity.saml2.plugins.scripted.ScriptedIDPAccountMapper;
 import com.sun.identity.saml2.plugins.scripted.ScriptedIdpAdapter;
 import com.sun.identity.saml2.plugins.scripted.ScriptedIdpAttributeMapper;
-import com.sun.identity.saml2.plugins.scripted.ScriptedIDPAccountMapper;
+import com.sun.identity.saml2.plugins.scripted.ScriptedSpAccountMapper;
 import com.sun.identity.saml2.plugins.scripted.ScriptedSpAdapter;
 
 /**
@@ -71,12 +81,22 @@ public class FederationGuiceModule extends AbstractModule {
     protected void configure() {
         Multibinder.newSetBinder(binder(), ScriptContextDetailsProvider.class)
                 .addBinding().to(Saml2ScriptContextProvider.class);
+        
+        Multibinder<GlobalScriptsProvider> globalScriptsProviderMultibinder = Multibinder.newSetBinder(binder(), GlobalScriptsProvider.class);
+        globalScriptsProviderMultibinder.addBinding().to(Saml2AccountMapperScriptContext.class);
+        globalScriptsProviderMultibinder.addBinding().to(Saml2GlobalScriptsProvider.class);
+        globalScriptsProviderMultibinder.addBinding().to(Saml2IdpAdapterContext.class);
+        globalScriptsProviderMultibinder.addBinding().to(Saml2IdpAttributeMapperContext.class);
+        globalScriptsProviderMultibinder.addBinding().to(Saml2NameIdMapperContext.class);
+        globalScriptsProviderMultibinder.addBinding().to(Saml2SpAdapterContext.class);
+        
         bind(Saml2CredentialResolver.class).to(SecretsSaml2CredentialResolver.class);
         Multibinder.newSetBinder(binder(), DataStoreServiceChangeNotifier.class)
                 .addBinding().to(Saml2DataStoreListener.class);
         bind(Key.get(IDPAttributeMapper.class,
                 Names.named(SCRIPTED_IDP_ATTRIBUTE_MAPPER))).to(ScriptedIdpAttributeMapper.class);
         bind(Key.get(IDPAdapter.class, Names.named(SCRIPTED_IDP_ADAPTER))).to(ScriptedIdpAdapter.class);
+        bind(Key.get(SPAccountMapper.class, Names.named(SCRIPTED_SP_ACCOUNT_MAPPER))).to(ScriptedSpAccountMapper.class);
         bind(Key.get(SPAdapter.class, Names.named(SCRIPTED_SP_ADAPTER))).to(ScriptedSpAdapter.class);
         bind(Key.get(IDPAccountMapper.class, Names.named(SCRIPTED_NAMEID_MAPPER))).to(ScriptedIDPAccountMapper.class);
         bind(FMSessionNotification.class).in(Singleton.class);

@@ -19,22 +19,25 @@ package org.forgerock.openam.auth.nodes;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.http.protocol.Response.newResponsePromise;
+import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.emptyTreeContext;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.sun.identity.authentication.callbacks.CaptchaEnterpriseCallback;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import org.forgerock.http.Handler;
 import org.forgerock.http.protocol.Request;
 import org.forgerock.http.protocol.Response;
 import org.forgerock.http.protocol.Status;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -55,10 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.List;
-import java.util.Optional;
+import com.sun.identity.authentication.callbacks.CaptchaEnterpriseCallback;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -127,8 +127,10 @@ public class CaptchaEnterpriseNodeTest {
         String clientError = "Token expired";
         callback.setClientError(clientError);
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(json(object()), sharedState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(sharedState)
+                .callbacks(singletonList(callback))
+                .build();
         Action action = node.process(context);
         assertThat(action.outcome).isEqualTo("false");
         assertThat(sharedState.get("CaptchaEnterpriseNode.FAILURE").asString())
@@ -139,8 +141,10 @@ public class CaptchaEnterpriseNodeTest {
     void shouldFailGivenNoTokenProvided() throws NodeProcessException {
         CaptchaEnterpriseCallback callback = new CaptchaEnterpriseCallback(SITE_KEY, API_URI, DIV_CLASS);
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(json(object()), sharedState, json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(sharedState)
+                .callbacks(singletonList(callback))
+                .build();
         Action action = node.process(context);
         assertThat(action.outcome).isEqualTo("false");
         assertThat(sharedState.get("CaptchaEnterpriseNode.FAILURE").asString())
@@ -154,8 +158,10 @@ public class CaptchaEnterpriseNodeTest {
         callback.setToken("success");
 
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(json(object()), sharedState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(sharedState)
+                .callbacks(singletonList(callback))
+                .build();
         Action action = node.process(context);
         assertThat(action.outcome).isEqualTo("false");
         assertThat(sharedState.get("CaptchaEnterpriseNode.FAILURE").asString())
@@ -171,8 +177,10 @@ public class CaptchaEnterpriseNodeTest {
         callback.setToken("success");
 
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(json(object()), sharedState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(sharedState)
+                .callbacks(singletonList(callback))
+                .build();
         Action action = node.process(context);
         assertThat(action.outcome).isEqualTo("false");
         assertThat(sharedState.get("CaptchaEnterpriseNode.FAILURE").asString())
@@ -187,8 +195,10 @@ public class CaptchaEnterpriseNodeTest {
         callback.setToken("success");
 
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(json(object()), sharedState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(sharedState)
+                .callbacks(singletonList(callback))
+                .build();
         Action action = node.process(context);
         assertThat(action.outcome).isEqualTo("false");
         assertThat(sharedState.get("CaptchaEnterpriseNode.FAILURE").asString())
@@ -208,8 +218,10 @@ public class CaptchaEnterpriseNodeTest {
         callback.setAction("action");
 
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(json(object()), sharedState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(sharedState)
+                .callbacks(singletonList(callback))
+                .build();
         Action action = node.process(context);
         assertThat(action.outcome).isEqualTo("false");
         assertThat(sharedState.get("CaptchaEnterpriseNode.FAILURE").asString())
@@ -222,8 +234,10 @@ public class CaptchaEnterpriseNodeTest {
         callback.setToken("response");
 
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(json(object()), sharedState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(sharedState)
+                .callbacks(singletonList(callback))
+                .build();
 
         Promise promise = mock(Promise.class);
 
@@ -243,8 +257,10 @@ public class CaptchaEnterpriseNodeTest {
         callback.setToken("response");
 
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(json(object()), sharedState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(sharedState)
+                .callbacks(singletonList(callback))
+                .build();
 
         Promise promise = mock(Promise.class);
 
@@ -264,8 +280,10 @@ public class CaptchaEnterpriseNodeTest {
         CaptchaEnterpriseCallback callback = new CaptchaEnterpriseCallback(SITE_KEY, API_URI, DIV_CLASS);
         callback.setToken("success");
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(json(object()), sharedState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(sharedState)
+                .callbacks(singletonList(callback))
+                .build();
 
         Response response = new Response(Status.OK);
 
@@ -286,8 +304,9 @@ public class CaptchaEnterpriseNodeTest {
         CaptchaEnterpriseCallback callback = new CaptchaEnterpriseCallback(SITE_KEY, API_URI, DIV_CLASS);
         callback.setToken("response");
 
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         Response response = new Response(Status.OK);
         Map<String, Object> entity = object(field("riskAnalysis",
@@ -305,8 +324,9 @@ public class CaptchaEnterpriseNodeTest {
         CaptchaEnterpriseCallback callback = new CaptchaEnterpriseCallback(SITE_KEY, API_URI, DIV_CLASS);
         callback.setToken("response");
 
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
 
         Response response = new Response(Status.OK);
         Map<String, Object> entity = object(field("riskAnalysis",
@@ -325,8 +345,10 @@ public class CaptchaEnterpriseNodeTest {
         CaptchaEnterpriseCallback callback = new CaptchaEnterpriseCallback(SITE_KEY, API_URI, DIV_CLASS);
         callback.setToken("response");
         JsonValue sharedState = json(object());
-        TreeContext context = new TreeContext(json(object()), sharedState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(sharedState)
+                .callbacks(singletonList(callback))
+                .build();
 
         Response response = new Response(Status.OK);
         Map<String, Object> entity = object(field("riskAnalysis",
@@ -347,8 +369,10 @@ public class CaptchaEnterpriseNodeTest {
         CaptchaEnterpriseCallback callback = new CaptchaEnterpriseCallback(SITE_KEY, API_URI, DIV_CLASS);
         callback.setToken("response");
         JsonValue transientState = json(object());
-        TreeContext context = new TreeContext(json(object()), transientState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .transientState(transientState)
+                .callbacks(singletonList(callback))
+                .build();
 
         Response response = new Response(Status.OK);
         Map<String, Object> entity = object(field("riskAnalysis",
@@ -375,8 +399,9 @@ public class CaptchaEnterpriseNodeTest {
                 .thenReturn(SecretReference.constant(GenericSecret.password("new-password".toCharArray())));
         CaptchaEnterpriseCallback callback = new CaptchaEnterpriseCallback(SITE_KEY, API_URI, DIV_CLASS);
         callback.setToken("response");
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
         Response response = new Response(Status.OK);
         Map<String, Object> entity = object(field("riskAnalysis",
                 object(field("score", 0.4))), field("tokenProperties", object(field("valid", true))));
@@ -399,8 +424,9 @@ public class CaptchaEnterpriseNodeTest {
         CaptchaEnterpriseCallback callback = new CaptchaEnterpriseCallback(SITE_KEY, API_URI, DIV_CLASS);
         callback.setToken("response");
         callback.setAction("action");
-        TreeContext context = new TreeContext(json(object()),
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .callbacks(singletonList(callback))
+                .build();
         Response response = new Response(Status.OK);
         Map<String, Object> entity = object(field("riskAnalysis",
                 object(field("score", 0.4))), field("tokenProperties", object(field("valid", true))));
@@ -441,8 +467,11 @@ public class CaptchaEnterpriseNodeTest {
                 + "\"fraudPrevention\": \"fraudPrevention\""
                 + "}";
         callback.setPayload(jsonString);
-        TreeContext context = new TreeContext(sharedState, transientState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(singletonList(callback))
+                .build();
         Response response = new Response(Status.OK);
         Map<String, Object> entity = object(field("riskAnalysis",
                 object(field("score", 0.4))), field("tokenProperties", object(field("valid", true))));
@@ -487,8 +516,11 @@ public class CaptchaEnterpriseNodeTest {
                 field("headers", "headers"),
                 field("fraudPrevention", "fraudPrevention")));
 
-        TreeContext context = new TreeContext(sharedState, transientState,
-                new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(singletonList(callback))
+                .build();
         Response response = new Response(Status.OK);
         Map<String, Object> entity = object(field("riskAnalysis",
                 object(field("score", 0.4))), field("tokenProperties", object(field("valid", true))));

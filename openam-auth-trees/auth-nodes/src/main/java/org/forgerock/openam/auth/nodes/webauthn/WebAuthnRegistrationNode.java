@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -24,7 +24,6 @@ import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.WEB_
 
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +31,7 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.http.util.Json;
 import org.forgerock.json.JsonValue;
@@ -71,6 +70,7 @@ import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdConstants;
 import com.sun.identity.idm.IdRepoException;
+import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.validation.PositiveIntegerValidator;
 import com.sun.identity.sm.DNMapper;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -85,6 +85,7 @@ import com.sun.identity.sm.RequiredValueValidator;
         tags = {"mfa", "multi-factor authentication"})
 public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
 
+    static final String FMT = "fmt";
     private static final String BUNDLE = WebAuthnRegistrationNode.class.getName();
     private static final String REGISTRATION_SCRIPT = RESOURCE_LOCATION + "webauthn-client-registration-script.js";
 
@@ -310,10 +311,8 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
          * attestation types.
          *
          * @return {@code true} if validation is to be performed
-         * <pre>
          * @see <a href="https://fidoalliance.org/specs/fido-v2.2-rd-20230321/fido-client-to-authenticator-protocol-v2.2-rd-20230321.html#u2f-authenticatorMakeCredential-interoperability">
          *     10.2.5 Using the CTAP2 authenticatorMakeCredential Command with CTAP1/U2F authenticators</a>
-         * </pre>
          */
         //@Checkstyle:on LineLength
         @Attribute(order = 170)
@@ -369,8 +368,6 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         logger.debug("WebAuthnRegistrationNode started");
         NodeState nodeState = context.getStateFor(this);
         String username = context.sharedState.get(USERNAME).asString();
-        byte[] challengeBytes = getChallenge(context);
-        String registrationScript = clientScriptUtilities.getScriptAsString(REGISTRATION_SCRIPT);
 
         Optional<String> result = context.getCallback(HiddenValueCallback.class)
                 .map(HiddenValueCallback::getValue)
@@ -391,8 +388,8 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                 WebAuthnDomException exception = outcome.error().get();
                 logger.error("An error was reported by the DOM.");
                 return Action.goTo(ERROR_OUTCOME_ID).replaceSharedState(
-                                context.sharedState.copy().put(WEB_AUTHENTICATION_DOM_EXCEPTION, exception.toString()))
-                        .build();
+                        context.sharedState.copy().put(WEB_AUTHENTICATION_DOM_EXCEPTION,
+                                WEBAUTHN_DOM_EXCEPTION_SHARED_STATE_PREFIX + exception)).build();
             }
 
             //parse script, perform attestation
@@ -404,13 +401,13 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
             String rpId = getDomain(config.relyingPartyDomain(), context.request.headers.get("origin"),
                     context.request.serverUrl);
 
+            byte[] challengeBytes = getChallenge(context);
             try {
                 attestationResponse = registerFlow.accept(response.getClientData(),
                         response.getAttestationData(), challengeBytes, rpId,
                         getPermittedOrigins(config.origins(), context));
 
-                JsonValue webAuthnObjectInfo = getWebAuthnObjectInfo(
-                        attestationResponse.getAttestationObject().authData);
+                JsonValue webAuthnObjectInfo = getAttestationObjectInfo(attestationResponse.getAttestationObject());
 
                 outcome.authenticatorAttachment().ifPresent(authenticatorAttachment ->
                         addAuthenticatorAttachment(webAuthnObjectInfo, authenticatorAttachment));
@@ -467,13 +464,20 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                     throw new NodeProcessException("Unable to read existing device profiles", e);
                 }
             }
-
+            String registrationScript = clientScriptUtilities.getScriptAsString(REGISTRATION_SCRIPT);
+            byte[] challengeBytes = getChallenge(context);
             return getCallbacksForWebAuthnInteraction(config.asScript(), registrationScript,
                     getScriptContext(challengeBytes, user.get(),
                             config.relyingPartyDomain().orElse(null), context,
                             getExtensions(context)),
-                    context);
+                            true, context);
         }
+    }
+
+    private JsonValue getAttestationObjectInfo(AttestationObject attestationObject) {
+        JsonValue result = getCommonWebAuthnObjectInfo(attestationObject.authData);
+        result.put(FMT, attestationObject.format);
+        return result;
     }
 
     private Action generateDevice(Action.ActionBuilder outcomeBuilder, ClientRegistrationScriptResponse response,
@@ -533,7 +537,9 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         JsonValue scriptContext = json(object());
         String username = getAccountNameFromIdentity(user);
         scriptContext.put("_action", "webauthn_registration");
-        scriptContext.put("challenge", Arrays.toString(challengeBytes));
+        scriptContext.put("_type", "WebAuthn");
+        scriptContext.put("supportsJsonResponse", true);
+        scriptContext.put("challenge", Base64.encode(challengeBytes));
         scriptContext.put("attestationPreference", config.attestationPreference().getValue());
         scriptContext.put("userName", username);
         scriptContext.put("userId", EncodingUtilities.base64UrlEncode(user.getName()));

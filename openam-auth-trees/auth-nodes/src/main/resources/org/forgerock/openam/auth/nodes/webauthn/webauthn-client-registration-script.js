@@ -11,34 +11,40 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
-if (!window.PublicKeyCredential) {
+if (!window.PublicKeyCredential || !navigator.credentials) {
     document.getElementById('webAuthnOutcome').value = "unsupported";
     document.getElementById("loginButton_0").click();
 }
 
+var scriptContext = {scriptContext};
+
 var publicKey = {
-    challenge: new Int8Array({challenge}).buffer,
+    challenge: Uint8Array.from(atob(scriptContext.challenge), c => c.charCodeAt(0)),
     // Relying Party:
     rp: {
-        {relyingPartyId}
-        name: "{relyingPartyName}"
+        name:  scriptContext.relyingPartyName
     },
     // User:
     user: {
-        id: Uint8Array.from("{userId}", function (c) { return c.charCodeAt(0) }),
-        name: "{userName}",
-        displayName: "{displayName}"
+        id: Uint8Array.from(scriptContext.userId, function (c) { return c.charCodeAt(0) }),
+        name: scriptContext.userName,
+        displayName: scriptContext.displayName
     },
-    pubKeyCredParams: {pubKeyCredParams},
-    attestation: "{attestationPreference}",
-    timeout: {timeout},
-    excludeCredentials: [{excludeCredentials}],
-    authenticatorSelection: {authenticatorSelection},
-    extensions: {extensions}
+    pubKeyCredParams: scriptContext._pubKeyCredParams,
+    attestation: scriptContext.attestationPreference,
+    timeout: Number(scriptContext.timeout),
+    excludeCredentials: scriptContext._excludeCredentials,
+    authenticatorSelection: scriptContext._authenticatorSelection,
+    extensions: scriptContext.extensions
 };
+
+var relyingPartyId = scriptContext._relyingPartyId;
+if (relyingPartyId) {
+    publicKey.rp.id = relyingPartyId;
+}
 
 navigator.credentials.create({publicKey: publicKey})
     .then(function (newCredentialInfo) {
@@ -54,7 +60,7 @@ navigator.credentials.create({publicKey: publicKey})
     }).catch(function (err) {
         var outcome = {
             error: String(err)
-        }
+        };
         document.getElementById('webAuthnOutcome').value = JSON.stringify(outcome);
         document.getElementById("loginButton_0").click();
     });

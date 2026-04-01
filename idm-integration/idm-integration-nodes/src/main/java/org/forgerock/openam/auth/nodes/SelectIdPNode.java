@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2025 Ping Identity Corporation.
+ * Copyright 2019-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -38,7 +38,7 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -48,6 +48,7 @@ import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutputState;
+import org.forgerock.openam.auth.node.api.PageNodeCompatibility;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.SelectIdPCallback;
 import org.forgerock.openam.core.realms.Realm;
@@ -64,7 +65,8 @@ import com.google.inject.assistedinject.Assisted;
  */
 @Node.Metadata(outcomeProvider = SelectIdPNode.SelectIdPNodeOutcomeProvider.class,
         configClass = SelectIdPNode.Config.class,
-        tags = {"identity management"})
+        tags = {"identity management"},
+        pageNodeCompatibility = PageNodeCompatibility.STANDALONE)
 public class SelectIdPNode implements Node {
     private static final String PROVIDER_PROPERTY = "provider";
     private static final String UI_CONFIG_PROPERTY = "uiConfig";
@@ -187,7 +189,7 @@ public class SelectIdPNode implements Node {
         }
 
         Optional<SelectIdPCallback> callback = context.getCallback(SelectIdPCallback.class);
-        if (!callback.isPresent()) {
+        if (!callback.isPresent() || callback.get().getProvider().isEmpty()) {
             logger.debug("SelectIdPNode returning initial callback");
             return send(new SelectIdPCallback(providers)).build();
         }

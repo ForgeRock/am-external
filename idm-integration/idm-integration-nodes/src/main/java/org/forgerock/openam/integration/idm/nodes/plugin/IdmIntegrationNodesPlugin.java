@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.integration.idm.nodes.plugin;
@@ -20,6 +20,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.forgerock.openam.auth.nodes.NodesPlugin.NODES_PLUGIN_VERSION;
 
+import java.util.List;
 import java.util.Map;
 
 import org.forgerock.openam.auth.node.api.AbstractNodeAmPlugin;
@@ -56,10 +57,11 @@ import org.forgerock.openam.auth.nodes.TermsAndConditionsDecisionNode;
 import org.forgerock.openam.auth.nodes.TimeSinceDecisionNode;
 import org.forgerock.openam.auth.nodes.ValidatedPasswordNode;
 import org.forgerock.openam.auth.nodes.ValidatedUsernameNode;
+import org.forgerock.openam.auth.nodes.ValidatedUsernameNodeV2;
 import org.forgerock.openam.plugins.AmPlugin;
+import org.forgerock.openam.plugins.PluginException;
 
 import com.google.common.collect.ImmutableMap;
-import org.forgerock.openam.plugins.PluginException;
 
 /**
  * Node installation plugin for the IDM integration nodes.
@@ -69,7 +71,7 @@ public class IdmIntegrationNodesPlugin extends AbstractNodeAmPlugin {
     /**
      * The current version of the IDM integration nodes plugin.
      */
-    public static final String IDM_NODES_PLUGIN_VERSION = "3.0.0";
+    public static final String IDM_NODES_PLUGIN_VERSION = "6.0.0";
 
     @Override
     public String getPluginVersion() {
@@ -83,12 +85,12 @@ public class IdmIntegrationNodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public void upgrade(String fromVersion) throws PluginException {
-        if (inRange("1.0.0", fromVersion, "2.0.0")) {
-            pluginTools.upgradeAuthNode(SocialProviderHandlerNode.class);
-            pluginTools.upgradeAuthNode(SocialProviderHandlerNodeV2.class);
-        }
         if (inRange("1.0.0", fromVersion, "3.0.0")) {
             pluginTools.upgradeAuthNode(EmailSuspendNode.class);
+        }
+        if (inRange("1.0.0", fromVersion, "6.0.0")) {
+            pluginTools.upgradeAuthNode(SocialProviderHandlerNode.class);
+            pluginTools.upgradeAuthNode(SocialProviderHandlerNodeV2.class);
         }
         super.upgrade(fromVersion);
     }
@@ -127,6 +129,9 @@ public class IdmIntegrationNodesPlugin extends AbstractNodeAmPlugin {
                                IncrementLoginCountNode.class,
                                LoginCountDecisionNode.class,
                                SocialProviderHandlerNode.class,
-                               SocialProviderHandlerNodeV2.class)).build();
+                               SocialProviderHandlerNodeV2.class))
+                .put("4.0.0", List.of(
+                        ValidatedUsernameNodeV2.class))
+                .build();
     }
 }

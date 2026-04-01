@@ -20,7 +20,7 @@ import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 
 import com.google.inject.Key;
-import com.google.inject.Singleton;
+import jakarta.inject.Singleton;
 import com.google.inject.name.Names;
 
 /**

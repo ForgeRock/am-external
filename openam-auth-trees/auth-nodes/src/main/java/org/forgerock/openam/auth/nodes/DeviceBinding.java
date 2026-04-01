@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -19,9 +19,9 @@ import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.SignatureException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.exceptions.InvalidJwtException;
@@ -40,7 +40,6 @@ import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.secrets.SecretBuilder;
 import org.forgerock.secrets.SecretsProvider;
 import org.forgerock.secrets.keys.VerificationKey;
-import org.forgerock.util.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +68,7 @@ public interface DeviceBinding {
     /**
      * SKEW Allowance.
      */
-    Duration SKEW_ALLOWANCE = Duration.duration(30, TimeUnit.SECONDS);
+    Duration SKEW_ALLOWANCE = Duration.ofSeconds(60);
 
     /**
      * State variable name for Bounded Device.
@@ -152,10 +151,21 @@ public interface DeviceBinding {
      * @param issuers   the accepted issuers
      */
     default void validateClaim(SignedJwt signedJwt, String challenge, Set<String> issuers) {
+        validateClaim(signedJwt, challenge, issuers, SKEW_ALLOWANCE);
+    }
+    /**
+     * Validate JWT claim.
+     *
+     * @param signedJwt The JWT to be validated
+     * @param challenge The signing challenge
+     * @param issuers   the accepted issuers
+     * @param skewAllowance the skew allowance in seconds
+     */
+    default void validateClaim(SignedJwt signedJwt, String challenge, Set<String> issuers, Duration skewAllowance) {
         //Validate Claim
         JwtClaimsValidationOptions<InvalidJwtException> validationOptions =
                 new JwtClaimsValidationOptions<>(InvalidJwtException::new)
-                        .setSkewAllowance(SKEW_ALLOWANCE)
+                        .setSkewAllowance(skewAllowance)
                         .addClaimValidator(JwtClaimsSetKey.ISS.value(), v -> v.isString()
                                 && issuers.contains(v.asString()))
                         .addClaimValidator(JwtClaimsSetKey.SUB.value(), JsonValue::isNotNull)

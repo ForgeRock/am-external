@@ -16,7 +16,6 @@
 package com.sun.identity.plugin.datastore.impl;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
 
 import java.util.stream.Stream;
 
@@ -24,8 +23,7 @@ import org.forgerock.am.identity.application.IdentityService;
 import org.forgerock.am.identity.application.IdentityStoreFactory;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.i18n.LocalizedIllegalArgumentException;
-import org.forgerock.openam.ldap.LDAPUtils;
-import org.junit.jupiter.api.BeforeAll;
+import org.forgerock.openam.ldap.LdapUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +56,7 @@ public class IdRepoDataStoreProviderTest {
     @MethodSource("exceptionThrowingUsernames")
     public void testValuesWillThrowExceptionIfAttemptToConvertToDn(String username) {
         // when - then
-        assertThatThrownBy(() -> LDAPUtils.newDN(username))
+        assertThatThrownBy(() -> LdapUtils.newDN(username))
             .isInstanceOf(LocalizedIllegalArgumentException.class);
     }
 

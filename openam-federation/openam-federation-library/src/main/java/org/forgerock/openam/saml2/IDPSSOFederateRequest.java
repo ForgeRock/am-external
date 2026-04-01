@@ -15,6 +15,8 @@
  */
 package org.forgerock.openam.saml2;
 
+import static org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject.FlowInitiator;
+
 import com.sun.identity.saml2.assertion.AuthnContext;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
@@ -295,6 +297,21 @@ public class IDPSSOFederateRequest {
 
         @Override
         public void setConfiguredService(String service) {
+            // Do Nothing
+        }
+
+        @Override
+        public void setFlowInitiator(FlowInitiator authnContext) {
+            // Do Nothing
+        }
+
+        @Override
+        public void setNameID(String nameID) {
+            // Do Nothing
+        }
+
+        @Override
+        public void setUserID(String userID) {
             // Do Nothing
         }
     }

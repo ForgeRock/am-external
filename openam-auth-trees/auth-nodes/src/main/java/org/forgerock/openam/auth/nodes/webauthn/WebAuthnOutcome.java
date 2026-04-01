@@ -11,10 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 Ping Identity Corporation.
+ * Copyright 2025-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -28,6 +29,8 @@ import java.util.Optional;
  */
 public record WebAuthnOutcome(String legacyData, Optional<String> authenticatorAttachment,
         Optional<WebAuthnDomException> error, boolean isSupported) {
+
+    private static final List<String> INCOMPLETE_VALUES = List.of("false", AbstractWebAuthnNode.OUTCOME);
 
     /**
      * Create a new unsupported outcome.
@@ -61,5 +64,13 @@ public record WebAuthnOutcome(String legacyData, Optional<String> authenticatorA
      */
     public boolean isError() {
         return error.isPresent();
+    }
+
+    /**
+     * Returns whether the operation was responded to by the caller.
+     * @return {@code true} if the operation was responded to, {@code false} otherwise.
+     */
+    public boolean isComplete() {
+        return legacyData == null || !INCOMPLETE_VALUES.contains(legacyData);
     }
 }

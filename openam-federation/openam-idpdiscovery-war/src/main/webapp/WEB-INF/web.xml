@@ -39,22 +39,22 @@
 
     <servlet>
         <servlet-name>saml2writer</servlet-name>
-        <servlet-class>com.sun.identity.saml2.idpdiscovery.CookieWriterServlet
+        <servlet-class>com.sun.identity.saml2.idpdiscovery.IdpDiscoveryCookieWriterServlet
         </servlet-class>
     </servlet>
     <servlet>
         <servlet-name>saml2reader</servlet-name>
-        <servlet-class>com.sun.identity.saml2.idpdiscovery.CookieReaderServlet
+        <servlet-class>com.sun.identity.saml2.idpdiscovery.IdpDiscoveryCookieReaderServlet
         </servlet-class>
     </servlet>
     <servlet>
         <servlet-name>idffwriter</servlet-name>
-        <servlet-class>com.sun.identity.saml2.idpdiscovery.CookieWriterServlet
+        <servlet-class>com.sun.identity.saml2.idpdiscovery.IdpDiscoveryCookieWriterServlet
         </servlet-class>
     </servlet>
     <servlet>
         <servlet-name>idffreader</servlet-name>
-        <servlet-class>com.sun.identity.saml2.idpdiscovery.CookieReaderServlet
+        <servlet-class>com.sun.identity.saml2.idpdiscovery.IdpDiscoveryCookieReaderServlet
         </servlet-class>
     </servlet>
 

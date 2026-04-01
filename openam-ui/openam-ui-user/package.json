@@ -15,7 +15,7 @@
   "dependencies": {
     "@forgerock/crest-js": "2.1.11",
     "@forgerock/javascript-sdk": "2.2.0",
-    "ajv": "6.12.3",
+    "ajv": "6.14.0",
     "backbone": "1.4.0",
     "backbone-relational": "0.10.0",
     "backbone.paginator": "2.0.8",
@@ -33,7 +33,7 @@
     "i18next-browser-languagedetector": "6.1.4",
     "jquery": "3.6.1",
     "jquery-i18next": "1.2.1",
-    "lodash": "4.17.21",
+    "lodash": "4.17.23",
     "moment": "2.29.4",
     "moment-duration-format": "2.3.2",
     "moment-timezone": "0.5.37",
@@ -112,7 +112,7 @@
   },
   "resolutions": {
     "@babel/runtime": "7.26.10",
-    "less/request/har-validator/ajv": "6.12.3",
+    "ajv": "6.14.0",
     "selectize/sifter/async": "3.2.3",
     "selectize/sifter/optimist/minimist": "1.2.6",
     "webpack-dev-server/portfinder/async": "3.2.3",
@@ -121,8 +121,9 @@
     "**/**/mkdirp/minimist": "1.2.6",
     "**/**/nanoid": "3.3.8",
     "**/**/rc/minimist": "1.2.6",
-    "**/**/underscore": "1.12.1",
+    "**/**/underscore": "1.13.8",
     "**/**/path-parse": "1.0.7",
+    "lodash": "4.17.23",
     "minimatch": "3.0.5",
     "sanitize-html/postcss": "8.4.31",
     "sanitize-html/htmlparser2": "^6.0.0"

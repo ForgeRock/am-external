@@ -65,8 +65,6 @@ public final class SmsDataStoreLookupTest {
     public static final String CONFIG_WITHOUT_ENABLED_ATTRIBUTE = "configwithoutenabledattribute";
     public static final String ENABLED_CONFIG_STORE = "enabled-config-store";
     public static final String DISABLED_CONFIG_STORE = "disabled-config-store";
-    public static final String ENABLED_IDENTITY_STORE = "enabled-identity-store";
-    public static final String DISABLED_IDENTITY_STORE = "disabled-identity-store";
     public static final DataStoreId DEFAULT_DS_ID = DataStoreId.CONFIG;
     @Mock
     private ConsoleConfigHandler configHandler;
@@ -152,7 +150,7 @@ public final class SmsDataStoreLookupTest {
     @Test
     void whenGlobalLookupIsCalledForUnsupportedServiceConfigIsReturned() {
         // When
-        DataStoreId id = dataStoreLookup.lookupGlobalId("other-service");
+        DataStoreId id = dataStoreLookup.lookupDefaultRealmId("other-service");
 
         // Then
         assertThat(id).isEqualTo(DEFAULT_DS_ID);
@@ -168,7 +166,7 @@ public final class SmsDataStoreLookupTest {
         given(sc.getAttributeValue("myAttribute")).willReturn(Collections.singleton("my-store"));
 
         // When
-        DataStoreId id = dataStoreLookup.lookupGlobalId("myService");
+        DataStoreId id = dataStoreLookup.lookupDefaultRealmId("myService");
 
         // Then
         assertThat(id).isEqualTo(DataStoreId.of("my-store"));
@@ -247,25 +245,6 @@ public final class SmsDataStoreLookupTest {
     }
 
     @Test
-    void shouldGetEnabledIdsOfConfigAndIdentityStores() throws Exception {
-        // Given
-        ServiceConfig containerConfig = setupMockContainerConfig();
-        given(containerConfig.getSubConfigNames()).willReturn(Set.of(ENABLED_CONFIG_STORE, DISABLED_CONFIG_STORE,
-            ENABLED_IDENTITY_STORE, DISABLED_IDENTITY_STORE));
-        mockConfig(containerConfig, ENABLED_CONFIG_STORE, "true", "false");
-        mockConfig(containerConfig, DISABLED_CONFIG_STORE, "false", "false");
-        mockConfig(containerConfig, ENABLED_IDENTITY_STORE, "true", "true");
-        mockConfig(containerConfig, DISABLED_IDENTITY_STORE, "false", "true");
-        smsWrapperObjectMockedStatic.when(SmsWrapperObject::isFbcWithoutEmbeddedEnabled).thenReturn(true);
-
-        // When
-        Set<DataStoreId> ids = dataStoreLookup.getEnabledIds();
-
-        // Then
-        assertThat(ids).isEqualTo(Set.of(DataStoreId.of(ENABLED_CONFIG_STORE), DataStoreId.of(ENABLED_IDENTITY_STORE)));
-    }
-
-    @Test
     void shouldGetEnabledIdsGivenNoEnabledAttributePresent() throws Exception {
         // Given
         ServiceConfig containerConfig = setupMockContainerConfig();
@@ -341,12 +320,9 @@ public final class SmsDataStoreLookupTest {
     void shouldGetEnabledConfigStoreIds() throws Exception {
         // Given
         ServiceConfig containerConfig = setupMockContainerConfig();
-        given(containerConfig.getSubConfigNames()).willReturn(Set.of(ENABLED_CONFIG_STORE, DISABLED_CONFIG_STORE,
-            ENABLED_IDENTITY_STORE, DISABLED_IDENTITY_STORE));
-        mockConfig(containerConfig, ENABLED_CONFIG_STORE, "true", "false");
-        mockConfig(containerConfig, DISABLED_CONFIG_STORE, "false", "false");
-        mockConfig(containerConfig, ENABLED_IDENTITY_STORE, "true", "true");
-        mockConfig(containerConfig, DISABLED_IDENTITY_STORE, "false", "true");
+        given(containerConfig.getSubConfigNames()).willReturn(Set.of(ENABLED_CONFIG_STORE, DISABLED_CONFIG_STORE));
+        mockConfig(containerConfig, ENABLED_CONFIG_STORE, "true");
+        mockConfig(containerConfig, DISABLED_CONFIG_STORE, "false");
         smsWrapperObjectMockedStatic.when(SmsWrapperObject::isFbcWithoutEmbeddedEnabled).thenReturn(true);
 
         // When
@@ -425,13 +401,11 @@ public final class SmsDataStoreLookupTest {
         return containerConfig;
     }
 
-    private void mockConfig(ServiceConfig containerConfig, String name, String enabled, String idStore)
+    private void mockConfig(ServiceConfig containerConfig, String name, String enabled)
         throws Exception {
         ServiceConfig mockConfig = mock(ServiceConfig.class);
         given(containerConfig.getSubConfig(name)).willReturn(mockConfig);
         given(mockConfig.getAttributes()).willReturn(ConfigurationAttributesFactory
-            .create(Map.of(
-                SmsDataStoreLookup.DATA_STORE_ENABLED, Set.of(enabled),
-                SmsDataStoreLookup.IDENTITY_STORE, Set.of(idStore))));
+            .create(Map.of(SmsDataStoreLookup.DATA_STORE_ENABLED, Set.of(enabled))));
     }
 }

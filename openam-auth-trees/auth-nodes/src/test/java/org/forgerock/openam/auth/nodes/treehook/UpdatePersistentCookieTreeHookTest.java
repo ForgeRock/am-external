@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.treehook;
 
@@ -128,7 +128,7 @@ public class UpdatePersistentCookieTreeHookTest {
 
         // Then
         verify(persistentCookieResponseHandler).setCookieOnResponse(response, request, config.persistentCookieName(),
-                JWT_STRING, null, config.useSecureCookie(), config.useHttpOnlyCookie());
+                JWT_STRING, null, config.useSecureCookie(), config.useHttpOnlyCookie(), Cookie.SameSite.LAX);
     }
 
     @Test
@@ -154,7 +154,7 @@ public class UpdatePersistentCookieTreeHookTest {
 
         // Then
         verify(persistentCookieResponseHandler).setCookieOnResponse(response, request, config.persistentCookieName(),
-                JWT_STRING, null, config.useSecureCookie(), config.useHttpOnlyCookie());
+                JWT_STRING, null, config.useSecureCookie(), config.useHttpOnlyCookie(), Cookie.SameSite.LAX);
     }
 
     private SigningKey getTestSigningKey() throws NoSuchSecretException {

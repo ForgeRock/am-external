@@ -19,7 +19,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>8.0.2</version>
+        <version>8.1.0</version>
     </parent>
 
     <artifactId>openam-saml2-client</artifactId>
@@ -50,8 +50,23 @@
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
+            <artifactId>scripting-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
             <artifactId>openam-shared</artifactId>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>${mockito-inline.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-guice-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

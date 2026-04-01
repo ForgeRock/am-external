@@ -17,9 +17,9 @@
 package org.forgerock.openam.radius.server;
 
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import org.forgerock.openam.radius.server.audit.RadiusAuditLoggerEventBus;
 import org.forgerock.openam.radius.server.audit.RadiusAuditor;
@@ -31,8 +31,10 @@ import org.forgerock.openam.radius.server.monitoring.RadiusServerEventRegistrato
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.auto.service.AutoService;
 import com.google.common.eventbus.EventBus;
 import com.google.inject.AbstractModule;
+import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.security.AdminTokenAction;
@@ -41,6 +43,7 @@ import com.sun.identity.sm.ServiceConfigManager;
 /**
  * This module is loaded by the java service loader mechanism due, initiated by the entry in META-INF/services.
  */
+@AutoService(Module.class)
 public class RadiusServerGuiceModule extends AbstractModule {
 
     private static final Logger LOG = LoggerFactory.getLogger(RadiusServerGuiceModule.class);

@@ -58,7 +58,7 @@ public class OathHotpVerifier extends AbstractOathVerifier {
             }
         }
 
-        throw new OathVerificationException();
+        throw new OathVerificationException("Invalid OTP code");
     }
 
     private static int calcChecksum(long num, int digits) {

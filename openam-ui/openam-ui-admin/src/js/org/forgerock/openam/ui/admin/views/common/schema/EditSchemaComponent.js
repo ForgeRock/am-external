@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2025 Ping Identity Corporation.
+ * Copyright 2016-2026 Ping Identity Corporation.
  */
 
 import { t } from "i18next";
@@ -33,7 +33,8 @@ import SubSchemaListComponent from "org/forgerock/openam/ui/admin/views/common/s
 import TabComponent from "org/forgerock/openam/ui/common/components/TabComponent";
 import TabSearch from "org/forgerock/openam/ui/admin/views/common/TabSearch";
 import { revertPlaceholdersToOriginalValue } from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
-
+import PingOneWorkerService from "org/forgerock/openam/ui/admin/services/realm/PingOneWorkerService";
+import pingOneWorkerTestDialog from "org/forgerock/openam/ui/admin/views/PingOneWorkerTestDialog";
 /**
  * @module org/forgerock/openam/ui/admin/views/common/schema/EditSchemaComponent
  */
@@ -76,6 +77,7 @@ export default Backbone.View.extend({
     },
     events: {
         "click [data-save]": "onSave",
+        "click [data-save-and-test]": "onSaveAndTestConnection",
         "click [data-delete]": "onDelete"
     },
 
@@ -235,6 +237,26 @@ export default Backbone.View.extend({
         });
     },
 
+    onSaveAndTestConnection () {
+        if (!this.getJSONSchemaView().isValid()) {
+            Messages.addMessage({
+                message: $.t("common.form.validation.errorsNotSaved"),
+                type: Messages.TYPE_DANGER
+            });
+            return Promise.resolve();
+        }
+        this.updateValues();
+        const valuesWithoutNullPasswords = this.data.values.removeNullPasswords(this.data.schema);
+        const values = revertPlaceholdersToOriginalValue(valuesWithoutNullPasswords, this.data.schema);
+
+        return this.updateInstance(values.toJSON()).then(() => {
+            Messages.addMessage({ message: t("config.messages.CommonMessages.changesSaved") });
+            return this.testPingOneConnection();
+        }, (response) => {
+            Messages.addMessage({ response, type: Messages.TYPE_DANGER });
+        });
+    },
+
     onDelete (event) {
         event.preventDefault();
 
@@ -250,5 +272,28 @@ export default Backbone.View.extend({
                 });
             }
         });
+    },
+
+    testPingOneConnection () {
+        const realm = this.data.realmPath;
+        const workerId = this.data.id;
+
+        return PingOneWorkerService.testConnection(realm, workerId)
+            .then((response) => {
+                pingOneWorkerTestDialog(response, "success");
+            })
+            .catch((error) => {
+                const reasonKey = error.status === 400
+                    ? "pingone.worker.test.configurationError"
+                    : "pingone.worker.test.connectionCreationError";
+
+                const errorDetails = _.assign({
+                    code: _.get(error, "responseJSON.code", ""),
+                    message: _.get(error, "responseJSON.message", error.message || ""),
+                    reason: t(reasonKey)
+                }, _.get(error, "responseJSON.detail", {}));
+
+                pingOneWorkerTestDialog(errorDetails, "error");
+            });
     }
 });

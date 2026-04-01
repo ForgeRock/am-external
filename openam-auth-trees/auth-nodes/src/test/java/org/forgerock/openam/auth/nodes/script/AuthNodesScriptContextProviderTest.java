@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -20,12 +20,14 @@ import static org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript.DECIS
 import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
 import static org.forgerock.openam.auth.nodes.script.DeviceMatchNodeScriptContext.DEVICE_MATCH_NODE_DEFAULT_SCRIPT_ID;
 import static org.forgerock.openam.auth.nodes.script.DeviceMatchNodeScriptContext.DEVICE_MATCH_NODE_NAME;
+import static org.forgerock.openam.auth.nodes.script.OidcNodeScriptContext.OIDC_NODE_NAME;
 import static org.forgerock.openam.auth.nodes.script.ScriptedDecisionNodeContext.SCRIPTED_DECISION_NODE_DEFAULT_SCRIPT_ID;
 import static org.forgerock.openam.auth.nodes.script.ScriptedDecisionNodeContext.SCRIPTED_DECISION_NODE_NAME;
 
 import java.util.Arrays;
 import java.util.List;
 
+import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContextDetails;
 import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
@@ -48,8 +50,10 @@ public class AuthNodesScriptContextProviderTest {
 
     @BeforeEach
     void setUp() throws ScriptException {
-        provider = new AuthNodesScriptContextProvider(annotatedServiceRegistry, new ScriptedDecisionNodeContext(),
-                new DeviceMatchNodeScriptContext());
+        provider = new AuthNodesScriptContextProvider(annotatedServiceRegistry,
+                new ScriptedDecisionNodeContext(null, null),
+                new DeviceMatchNodeScriptContext(null, null),
+                new OidcNodeScriptContext());
     }
 
     @Test
@@ -58,7 +62,7 @@ public class AuthNodesScriptContextProviderTest {
         List<ScriptContextDetails> actual = provider.get();
 
         // Then
-        assertThat(actual.size()).isEqualTo(3);
+        assertThat(actual.size()).isEqualTo(4);
 
         assertThat(actual.get(0).name()).isEqualTo(AUTHENTICATION_TREE_DECISION_NODE.name());
         assertThat(actual.get(0).getDefaultScriptId()).isEqualTo(DECISION_NODE_SCRIPT.getId());
@@ -74,6 +78,11 @@ public class AuthNodesScriptContextProviderTest {
         assertThat(actual.get(2).name()).isEqualTo(DEVICE_MATCH_NODE_NAME);
         assertThat(actual.get(2).getDefaultScriptId()).isEqualTo(DEVICE_MATCH_NODE_DEFAULT_SCRIPT_ID);
         assertThat(actual.get(2).getWhiteList())
+                .doesNotContain("org.forgerock.openam.auth.node.api.Action");
+
+        assertThat(actual.get(3).name()).isEqualTo(OIDC_NODE_NAME);
+        assertThat(actual.get(3).getDefaultScriptId()).isEqualTo(Script.EMPTY_SCRIPT.getId());
+        assertThat(actual.get(3).getWhiteList())
                 .doesNotContain("org.forgerock.openam.auth.node.api.Action");
     }
 }

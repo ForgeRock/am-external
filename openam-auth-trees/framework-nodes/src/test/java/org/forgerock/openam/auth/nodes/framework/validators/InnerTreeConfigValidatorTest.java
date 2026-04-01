@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.framework.validators;
@@ -33,6 +33,7 @@ import java.util.UUID;
 import org.forgerock.am.trees.api.Tree;
 import org.forgerock.am.trees.api.TreeProvider;
 import org.forgerock.openam.auth.nodes.framework.InnerTreeEvaluatorNode;
+import org.forgerock.openam.auth.nodes.framework.InputStatesCache;
 import org.forgerock.openam.auth.nodes.helpers.AuthSessionHelper;
 import org.forgerock.openam.core.realms.Realm;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +56,8 @@ public class InnerTreeConfigValidatorTest {
     private AuthSessionHelper authSessionHelper;
     private InnerTreeConfigValidator validator;
     private Set<String> stateContainers;
+    @Mock
+    private InputStatesCache inputStatesCache;
 
     @BeforeEach
     void setup() {
@@ -97,7 +100,7 @@ public class InnerTreeConfigValidatorTest {
         given(tree.visitNodes(any())).willReturn(true);
 
         InnerTreeEvaluatorNode loopNode = new InnerTreeEvaluatorNode(authTreeService, null, realm,
-                nodeConfig("tree1"), stateContainers, authSessionHelper
+                nodeConfig("tree1"), stateContainers, authSessionHelper, inputStatesCache
         );
         // When
        assertThatThrownBy(() -> validator.validate(realm, singletonList(nodeId.toString()),
@@ -116,7 +119,7 @@ public class InnerTreeConfigValidatorTest {
         makeTree("tree3", realm);
 
         InnerTreeEvaluatorNode node = new InnerTreeEvaluatorNode(authTreeService, null, realm, nodeConfig("tree3"),
-                stateContainers, authSessionHelper);
+                stateContainers, authSessionHelper, inputStatesCache);
 
         // When
         validator.validate(realm, singletonList(nodeId.toString()), singletonMap("tree", singleton("tree2")));

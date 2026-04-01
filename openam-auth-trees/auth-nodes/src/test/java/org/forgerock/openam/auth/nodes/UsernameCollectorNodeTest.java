@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -30,8 +30,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.stream.Stream;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
@@ -42,14 +42,30 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 
 public class UsernameCollectorNodeTest {
-    UsernameCollectorNode node = new UsernameCollectorNode();
 
-    @Test
-    void testProcessWithNoCallbacksReturnsASingleCallback() throws Exception {
+    private static Stream<Arguments> autocompleteValuesProvider() {
+        return Stream.of(
+                Arguments.of(List.of()),
+                Arguments.of(List.of("user1", "user2", "user3"))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("autocompleteValuesProvider")
+    void testProcessWithNoCallbacksReturnsASingleCallback(List<String> autocompleteValues) throws Exception {
         // Given
+        UsernameCollectorNode node = new UsernameCollectorNode(new UsernameCollectorNode.Config() {
+            @Override
+            public List<String> autocompleteValues() {
+                return autocompleteValues;
+            }
+        });
         JsonValue sharedState = json(object(field("initial", "initial")));
         PreferredLocales preferredLocales = mock(PreferredLocales.class);
         ResourceBundle resourceBundle = new MockResourceBundle("Username");
@@ -61,21 +77,27 @@ public class UsernameCollectorNodeTest {
         // Then
         assertThat(result.outcome).isEqualTo(null);
         assertThat(result.callbacks).hasSize(1);
-        assertThat(result.callbacks.get(0)).isInstanceOf(NameCallback.class);
-        assertThat(((NameCallback) result.callbacks.get(0)).getPrompt()).isEqualTo("Username");
+        assertThat(result.callbacks.get(0)).isInstanceOf(AutoCompleteNameCallback.class);
+        assertThat(((AutoCompleteNameCallback) result.callbacks.get(0)).getPrompt()).isEqualTo("Username");
+        assertThat(((AutoCompleteNameCallback) result.callbacks.get(0)).getAutocompleteValues())
+                .containsExactlyElementsOf(autocompleteValues);
         assertThat((Object) result.sharedState).isNull();
         assertThat(sharedState).isObject().containsExactly(entry("initial", "initial"));
     }
 
     private TreeContext getContext(JsonValue sharedState, PreferredLocales preferredLocales,
             List<? extends Callback> callbacks) {
-        return new TreeContext(sharedState,
-                new Builder().locales(preferredLocales).build(), callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .requestContext(new Builder().locales(preferredLocales).build())
+                .callbacks(callbacks)
+                .build();
     }
 
     @Test
     void testProcessWithCallbacksAddsToState() throws Exception {
         // Given
+        UsernameCollectorNode node = new UsernameCollectorNode(new UsernameCollectorNode.Config() { });
         JsonValue sharedState = json(object(field("initial", "initial")));
         NameCallback callback = new NameCallback("prompt");
         callback.setName("bob");

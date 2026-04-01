@@ -18,10 +18,13 @@ package org.forgerock.openam.saml2.audit;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.forgerock.audit.events.AccessAuditEventBuilder.ResponseStatus.FAILED;
 import static org.forgerock.audit.events.AccessAuditEventBuilder.ResponseStatus.SUCCESSFUL;
-import static org.forgerock.json.JsonValue.*;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.audit.AMAuditEventBuilderUtils.getTrackingIdFromSSOToken;
 import static org.forgerock.openam.audit.context.AuditRequestContext.USER_ID;
 import static org.forgerock.openam.audit.context.AuditRequestContext.getAuditRequestContext;
+import static org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject.FlowInitiator;
 import static org.forgerock.openam.utils.StringUtils.isEmpty;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
@@ -202,4 +205,18 @@ public class SAML2Auditor implements SAML2EventLogger {
         this.auditDetails.put("configuredService", service);
     }
 
+    @Override
+    public void setFlowInitiator(FlowInitiator flowInitiator) {
+        this.auditDetails.put("flowInitiator", flowInitiator);
+    }
+
+    @Override
+    public void setNameID(String nameID) {
+        this.auditDetails.put("nameID", nameID);
+    }
+
+    @Override
+    public void setUserID(String userID) {
+        this.auditDetails.put("userID", userID);
+    }
 }

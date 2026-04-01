@@ -24,7 +24,7 @@
  *
  * $Id: FSUtils.java,v 1.10 2009/11/20 23:52:57 ww203982 Exp $
  *
- * Portions Copyrighted 2013-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2013-2026 Ping Identity Corporation.
  */
 package com.sun.identity.federation.common;
 
@@ -234,7 +234,7 @@ public class FSUtils {
     }
 
     private static String getlbCookieName() {
-        return SystemPropertiesManager.get(Constants.AM_LB_COOKIE_NAME, "amlbcookie");
+        return SystemPropertiesManager.get(Constants.AM_LB_COOKIE_NAME, Constants.AM_LB_COOKIE_DEFAULT_VALUE);
     }
 
     private static String getlbCookieValue() {

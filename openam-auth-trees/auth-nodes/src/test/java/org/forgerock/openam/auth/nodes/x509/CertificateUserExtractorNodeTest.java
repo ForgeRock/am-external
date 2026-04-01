@@ -29,14 +29,12 @@ import static org.mockito.Mockito.mock;
 
 import java.security.cert.X509Certificate;
 import java.util.List;
-import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,12 +97,10 @@ public class CertificateUserExtractorNodeTest {
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {
-        return new TreeContext(
-                sharedState,
-                transientState,
-                new ExternalRequestContext.Builder().build(),
-                callbacks,
-                Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 }

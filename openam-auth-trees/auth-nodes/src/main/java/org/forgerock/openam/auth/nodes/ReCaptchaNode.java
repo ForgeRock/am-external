@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2025 Ping Identity Corporation.
+ * Copyright 2019-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.forgerock.http.Handler;
 import org.forgerock.http.protocol.Form;
@@ -67,7 +67,7 @@ import com.sun.identity.sm.RequiredValueValidator;
         configClass = ReCaptchaNode.Config.class,
         tags = {"risk", "deprecated"},
         namespace = Namespace.PRODUCT)
-@Deprecated
+@Deprecated(since = "7.2.0", forRemoval = true)
 public class ReCaptchaNode extends SingleOutcomeNode {
     @VisibleForTesting
     static final String SUCCESS = "success";

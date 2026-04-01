@@ -32,15 +32,16 @@ package com.sun.identity.saml2.servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import javax.inject.Inject;
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPMessage;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPMessage;
 
-import org.forgerock.guice.core.InjectorHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -61,14 +62,20 @@ import com.sun.identity.saml2.protocol.ProtocolFactory;
  * This class <code>NameIDMappingServiceSOAP</code> receives and processes 
  * Name ID mapping request using SOAP binding on IDP side.
  */
+@Singleton
 public class NameIDMappingServiceSOAP extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(NameIDMappingServiceSOAP.class);
 
-    private SOAPCommunicator soapCommunicator;
+    private final SOAPCommunicator soapCommunicator;
+
+    @Inject
+    NameIDMappingServiceSOAP(SOAPCommunicator soapCommunicator) {
+        this.soapCommunicator = soapCommunicator;
+    }
 
     public void init() throws ServletException {
-        soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        logger.debug("NameIDMappingServiceSOAP initialized");
     }
 
     public void doPost(HttpServletRequest req, HttpServletResponse resp)

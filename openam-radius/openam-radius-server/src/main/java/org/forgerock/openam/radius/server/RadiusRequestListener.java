@@ -34,6 +34,7 @@ import java.text.MessageFormat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.forgerock.openam.radius.common.MessageAuthenticatorCalculator;
 import org.forgerock.openam.radius.server.config.ClientConfig;
 import org.forgerock.openam.radius.server.config.RadiusServerConstants;
 import org.forgerock.openam.radius.server.config.RadiusServiceConfig;

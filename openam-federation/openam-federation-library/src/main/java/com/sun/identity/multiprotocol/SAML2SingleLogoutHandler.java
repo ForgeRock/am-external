@@ -365,7 +365,7 @@ public class SAML2SingleLogoutHandler implements SingleLogoutHandler {
         }
         //  invaidate session
         MultiProtocolUtils.invalidateSession(session, request, response,
-            SingleLogoutManager.SAML2);
+            SingleLogoutManager.SAML2, realm);
         IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(sessIndex[0]);
         if (logger.isDebugEnabled()) {
             logger.debug("SAML2SLOHandler.doSOAPSLO: return status for "  +

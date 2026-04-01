@@ -19,10 +19,15 @@ import javax.xml.soap.MessageFactory;
 import javax.xml.soap.SOAPConnectionFactory;
 import javax.xml.soap.SOAPException;
 
+import jakarta.inject.Singleton;
+
+import org.forgerock.openam.saml2.SAMLScriptedBindingObjectImpl;
+import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.xmlsig.KeyProvider;
@@ -37,6 +42,8 @@ public class FederationGuiceModule extends AbstractModule {
 
     @Override
     protected void configure() {
+        bind(Key.get(SAMLScriptedBindingObject.class, SAMLScriptedBindingObject.ExampleObject.class))
+                .toInstance(SAMLScriptedBindingObjectImpl.getExampleObject());
     }
 
     @Provides

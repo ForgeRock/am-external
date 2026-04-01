@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
@@ -39,10 +39,12 @@ import org.forgerock.guice.core.GuiceExtension;
 import org.forgerock.http.Client;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
+import org.forgerock.openam.saml2.service.Saml2IdpAttributeMapperContext;
 import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
 import org.forgerock.openam.scripting.domain.BindingsMap;
+import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.LegacyScriptContext;
 import org.forgerock.openam.scripting.domain.Script;
@@ -65,6 +67,7 @@ import com.sun.identity.plugin.monitoring.impl.AgentProvider;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SOAPCommunicator;
 import com.sun.identity.saml2.plugins.ValidationHelper;
+import com.sun.identity.saml2.plugins.scripted.bindings.SamlIdpAttributeMapperNextGenBindings;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
 
 @ExtendWith(MockitoExtension.class)
@@ -94,6 +97,8 @@ public class ScriptedIdpAttributeMapperTest {
     private AgentProvider agentProvider;
     @Mock
     private Client httpClient;
+    @Mock
+    private Saml2IdpAttributeMapperContext saml2IdpAttributeMapperContext;
 
     private final UUID scriptId = UUID.randomUUID();
     private final String exampleScript = "exampleScript";
@@ -106,9 +111,11 @@ public class ScriptedIdpAttributeMapperTest {
     @BeforeEach
     void setup() throws Exception {
         when(scriptEvaluatorFactory.create(any(LegacyScriptContext.class))).thenReturn(scriptEvaluator);
+        when(scriptEvaluatorFactory.create(any(Saml2IdpAttributeMapperContext.class))).thenReturn(scriptEvaluator);
+
         when(scriptEvaluator.getScriptEvaluationHelper()).thenReturn(scriptEvaluationHelper);
         scriptedIdpAttributeMapper = new ScriptedIdpAttributeMapper(scriptEvaluatorFactory, scriptStoreFactory,
-                validationHelper, realmLookup, httpClient);
+                validationHelper, realmLookup, httpClient, saml2IdpAttributeMapperContext);
         monitorManagerMockedStatic = mockStatic(MonitorManager.class);
         idpssoUtilMockedStatic = mockStatic(IDPSSOUtil.class);
     }
@@ -154,6 +161,44 @@ public class ScriptedIdpAttributeMapperTest {
                 .containsKey(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER);
     }
 
+    @Test
+    void shouldEvaluateIdpAttributeMapperScriptV2() throws Exception {
+        String hostedEntityId = "myIdp";
+        String remoteEntityId = "mySp";
+        String realm = "myRealm";
+        Realm realmObject = mock(Realm.class);
+        String scriptContent = "myScriptV2";
+        when(realmLookup.lookup(realm)).thenReturn(realmObject);
+
+        ArgumentCaptor<SamlIdpAttributeMapperNextGenBindings> bindingsCaptor = ArgumentCaptor.forClass(
+                SamlIdpAttributeMapperNextGenBindings.class);
+        ArgumentCaptor<Script> scriptCaptor = ArgumentCaptor.forClass(Script.class);
+
+        // Given
+        when(IDPSSOUtil.getAttributeValueFromIDPSSOConfig(realm, hostedEntityId,
+                SAML2Constants.IDP_ATTRIBUTE_MAPPER_SCRIPT)).thenReturn(scriptContent);
+        when(scriptStoreFactory.create(realmObject)).thenReturn(scriptStore);
+        when(scriptStore.get(scriptContent)).thenReturn(scriptConfigurationV2(scriptId.toString()));
+        when(MonitorManager.getAgent()).thenReturn(agentProvider);
+
+        // When
+        scriptedIdpAttributeMapper.getAttributes(session, hostedEntityId, remoteEntityId, realm);
+
+        // Then
+        verify(scriptEvaluationHelper, times(1)).evaluateScript(scriptCaptor.capture(),
+                bindingsCaptor.capture(), eq(List.class), eq(realmObject));
+
+        final Script script = scriptCaptor.getValue();
+        assertThat(script.getName()).isEqualTo(IDP_ATTRIBUTE_MAPPER_SCRIPT);
+        assertThat(script.getEvaluatorVersion()).isEqualTo(EvaluatorVersion.V2_0);
+        BindingsMap bindings = bindingsCaptor.getValue().nextGenBindings();
+        assertThat(bindings).contains(
+                        entry(HOSTED_ENTITYID, hostedEntityId),
+                        entry(REMOTE_ENTITY, remoteEntityId))
+                .containsKey(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER)
+                .containsKey(SESSION);
+    }
+
     private Script scriptConfiguration(String id)
             throws Exception {
 
@@ -165,5 +210,18 @@ public class ScriptedIdpAttributeMapperTest {
                 .setScript(exampleScript)
                 .setLanguage(ScriptingLanguage.JAVASCRIPT)
                 .setContext(SAML2_IDP_ATTRIBUTE_MAPPER).build();
+    }
+
+    private Script scriptConfigurationV2(String id) throws Exception {
+        return Script.builder()
+                .setId(id)
+                .setName(IDP_ATTRIBUTE_MAPPER_SCRIPT)
+                .setCreationDate(10)
+                .setDescription("SAML2 IDP Attribute Mapper Script V2")
+                .setScript(exampleScript)
+                .setLanguage(ScriptingLanguage.JAVASCRIPT)
+                .setEvaluatorVersion(EvaluatorVersion.V2_0)
+                .setContext(SAML2_IDP_ATTRIBUTE_MAPPER)
+                .build();
     }
 }

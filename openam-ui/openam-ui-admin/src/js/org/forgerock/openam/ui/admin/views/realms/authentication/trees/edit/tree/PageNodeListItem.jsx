@@ -11,15 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 import { DragSource } from "react-dnd";
 import PropTypes from "prop-types";
 import React from "react";
 
-import { PAGE_CHILD_NODE_TYPE }
-    from "org/forgerock/openam/ui/admin/views/realms/authentication/trees/edit/nodeTypes/EditTreeDragItemTypes";
+import { PAGE_CHILD_NODE_TYPE } from "org/forgerock/openam/ui/admin/utils/treeUtils";
 import TreeComponent from "./TreeComponent";
 
 const PageNodeListItem = ({ node, isDragging, isSelected, connectDragSource, onMouseDown }) => {

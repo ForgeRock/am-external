@@ -16,7 +16,6 @@
 
 package org.forgerock.openam.auth.nodes.mfa;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
@@ -46,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.security.auth.callback.Callback;
@@ -56,7 +54,6 @@ import javax.security.auth.callback.TextOutputCallback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -338,14 +335,16 @@ public class MultiFactorRegistrationOptionsNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState) {
-        return new TreeContext(sharedState, new ExternalRequestContext.Builder().build(),
-                emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .build();
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(
-                sharedState, new ExternalRequestContext.Builder().build(), callbacks, Optional.empty()
-        );
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private void whenNodeConfigHasDefaultValues(boolean mandatory, boolean getApp) {

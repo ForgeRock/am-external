@@ -42,7 +42,6 @@ import javax.security.auth.callback.Callback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.SelectIdPCallback;
@@ -296,8 +295,7 @@ public class SelectIdPNodeTest {
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState,
-                new ExternalRequestContext.Builder().build(), callbacks);
+        return TreeContext.builder().sharedState(sharedState).callbacks(callbacks).build();
     }
 
     private OAuthClientConfig jsonToIdPConfig(JsonValue provider) {

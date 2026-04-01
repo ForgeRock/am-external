@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -26,10 +26,13 @@ import org.forgerock.openam.auth.node.api.TreeHook;
 import org.forgerock.openam.auth.nodes.SetSuccessDetailsNode.ResponseBodyPredefinedKeysValidator;
 import org.forgerock.openam.auth.nodes.treehook.SuccessDetailsTreeHook;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class SetSuccessDetailsNodeTest {
 
     @Test
@@ -75,7 +78,5 @@ class SetSuccessDetailsNodeTest {
 
         // then
         assertThat(result).isEqualTo(expectedResult);
-
     }
-
 }

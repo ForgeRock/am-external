@@ -133,7 +133,7 @@ public class OAuth2PostAuthnPlugin implements AMPostAuthProcessInterface {
                 }
 
                 logoutURL = serviceURI + "/oauth2c/OAuthLogout.jsp?" + PARAM_LOGOUT_URL +
-                        "=" + URLEncoder.encode(logoutURL, "UTF-8");;
+                        "=" + URLEncoder.encode(logoutURL, "UTF-8");
                 
                 if (logoutBehaviour.equalsIgnoreCase("logout")) {
                     logoutURL += "&" + PARAM_LOGGEDOUT + "=logmeout";

@@ -85,6 +85,13 @@ function handleCaptchaCallback(response) {
     }
 }
 
+function handleCaptchaExpired() {
+    // Clear the hidden input when CAPTCHA expires
+    document.getElementById("{{id}}").value = "";
+    // Disable submit button until re-verified
+    loginButton_0.disabled = true;
+}
+
 </script>
 
 <style>
@@ -99,7 +106,8 @@ function handleCaptchaCallback(response) {
 <div id="captchaCallback"
      class="{{divClass}} captcha"
      data-sitekey="{{siteKey}}"
-     data-callback="handleCaptchaCallback"></div>
+     data-callback="handleCaptchaCallback"
+     data-expired-callback="handleCaptchaExpired"></div>
 
 <input type="hidden"
     id="{{id}}"

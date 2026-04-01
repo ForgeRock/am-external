@@ -1,0 +1,40 @@
+<script>
+    /*
+     * Copyright 2018-2026 Ping Identity Corporation. All Rights Reserved
+     *
+     * This code is to be used exclusively in connection with Ping Identity
+     * Corporation software or services. Ping Identity Corporation only offers
+     * such software or services to legal entities who have entered into a
+     * binding license agreement with Ping Identity Corporation.
+     *
+     */
+
+    /*
+     * Note:
+     *
+     * When a ConfirmationCallback is used (e.g. during recovery code use), the XUI does not render a loginButton. However
+     * the webAuthn script needs to call loginButton.click() to execute the appropriate data reformatting prior to sending
+     * the request into AM. Here we query whether the loginButton exists and add it to the DOM if it doesn't.
+     */
+
+    var newLocation = document.getElementById("wrapper");
+
+    var script = "<div class=\"form-group\">\n" +
+        "<div class=\"panel panel-default\">\n" +
+        "    <div class=\"panel-body text-center\">\n" +
+        "    <h4 class=\"awaiting-response\"><i class=\"fa fa-circle-o-notch fa-spin text-primary\"></i> {{t 'openam.webauthn.spinnerText'}} </h4>\n" +
+        "    </div>\n" +
+        "</div>\n";
+
+    if (!document.getElementById("loginButton_0")) {
+        script += "<input id=\"loginButton_0\" role=\"button\" type=\"submit\" hidden>";
+    } else {
+        document.getElementById("loginButton_0").style.visibility='hidden';
+    }
+
+    script += "</div>";
+
+    newLocation.getElementsByTagName("fieldset")[0].innerHTML += script;
+    document.body.appendChild(newLocation);
+
+</script>

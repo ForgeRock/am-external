@@ -41,6 +41,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.inject.Inject;
+
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -60,7 +62,6 @@ import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.sm.RequiredValueValidator;
 
@@ -460,7 +461,7 @@ public class AttributeCollectorNode extends SingleOutcomeNode {
         JsonValue attributes = mapContextToObject(inputValues, json(object()));
         logger.debug("Validating attributes");
         JsonValue result = validateInput(idmIntegrationService, realm, context.request.locales,
-                context.identityResource, attributes, attributes.keys());
+                context.identityResource, attributes, attributes.keys(), Optional.empty());
         if (!result.isDefined("result")) {
             throw new NodeProcessException("Communication failure");
         }

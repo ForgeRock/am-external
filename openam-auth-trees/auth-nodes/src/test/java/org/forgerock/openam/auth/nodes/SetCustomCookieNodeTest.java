@@ -16,7 +16,6 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -121,9 +120,10 @@ public class SetCustomCookieNodeTest {
 
     private void createAndProcessCustomCookieNode() throws NodeProcessException {
         SetCustomCookieNode node = new SetCustomCookieNode(config);
-        TreeContext context = new TreeContext(sharedState,
-                new ExternalRequestContext.Builder().servletResponse(servletResponse).build(),
-                emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .requestContext(new ExternalRequestContext.Builder().servletResponse(servletResponse).build())
+                .build();
         node.process(context);
     }
 

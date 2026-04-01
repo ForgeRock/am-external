@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -54,7 +54,7 @@ public final class TreeContext {
      * @deprecated Use {@link #getStateFor(Node)} instead as this method does not leak implementation detail
      * of the specific type of state.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public final JsonValue sharedState;
     /**
      * The HTTP request associated with the current authentication request.
@@ -66,7 +66,7 @@ public final class TreeContext {
      * @deprecated Use {@link #getStateFor(Node)} instead as this method does not leak implementation detail
      * of the specific type of state.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public final JsonValue transientState;
     /**
      * The identity objects universal id.
@@ -80,6 +80,10 @@ public final class TreeContext {
      * The IDM identity resource container for all IDM object interactions in this tree.
      */
     public final String identityResource;
+    /**
+     * The identified identity if present.
+     */
+    public final Optional<IdentifiedIdentity> identifiedIdentity;
 
     private final List<? extends Callback> callbacks;
 
@@ -94,10 +98,9 @@ public final class TreeContext {
      * @param sharedState The shared state.
      * @param request The request associated with the current authentication request.
      * @param callbacks The callbacks received in the current authentication request.
-     * @deprecated use {@link #TreeContext(String, JsonValue, JsonValue, JsonValue, ExternalRequestContext, List,
-     * boolean, Optional, Set)}
+     * @deprecated use {@link #builder()}
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public TreeContext(String identityResource, JsonValue sharedState, ExternalRequestContext request,
             List<? extends Callback> callbacks) {
         this(identityResource, sharedState, json(object()), json(object()), request, callbacks, Optional.empty());
@@ -110,10 +113,9 @@ public final class TreeContext {
      * @param request The request associated with the current authentication request.
      * @param callbacks The callbacks received in the current authentication request.
      * @param universalId The universal id of the identity object.
-     * @deprecated use {@link #TreeContext(String, JsonValue, JsonValue, JsonValue, ExternalRequestContext, List,
-     * boolean, Optional, Set)}
+     * @deprecated use {@link #builder()}
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public TreeContext(JsonValue sharedState, ExternalRequestContext request,
             List<? extends Callback> callbacks, Optional<String> universalId) {
         this(DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, json(object()),
@@ -129,10 +131,9 @@ public final class TreeContext {
      * @param request The request associated with the current authentication request.
      * @param callbacks The callbacks received in the current authentication request.
      * @param universalId The universal id of the identity object.
-     * @deprecated use {@link #TreeContext(String, JsonValue, JsonValue, JsonValue, ExternalRequestContext, List,
-     * boolean, Optional, Set)}
+     * @deprecated use {@link #builder()}
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public TreeContext(String identityResource, JsonValue sharedState, JsonValue transientState,
             ExternalRequestContext request, List<? extends Callback> callbacks, Optional<String> universalId) {
         this(identityResource, sharedState, transientState, json(object()), request, callbacks, universalId);
@@ -146,10 +147,9 @@ public final class TreeContext {
      * @param request The request associated with the current authentication request.
      * @param callbacks The callbacks received in the current authentication request.
      * @param universalId The universal id of the identity object.
-     * @deprecated use {@link #TreeContext(String, JsonValue, JsonValue, JsonValue, ExternalRequestContext, List,
-     * boolean, Optional, Set)}
+     * @deprecated use {@link #builder()}
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public TreeContext(JsonValue sharedState, JsonValue transientState,
             ExternalRequestContext request, List<? extends Callback> callbacks, Optional<String> universalId) {
         this(DEFAULT_IDM_IDENTITY_RESOURCE, sharedState,
@@ -166,10 +166,9 @@ public final class TreeContext {
      * @param request The request associated with the current authentication request.
      * @param callbacks The callbacks received in the current authentication request.
      * @param universalId The universal id of the identity object.
-     * @deprecated use {@link #TreeContext(String, JsonValue, JsonValue, JsonValue, ExternalRequestContext, List,
-     * boolean, Optional, Set)}
+     * @deprecated use {@link #builder()}
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public TreeContext(String identityResource, JsonValue sharedState, JsonValue transientState,
             JsonValue secureState, ExternalRequestContext request,
             List<? extends Callback> callbacks, Optional<String> universalId) {
@@ -185,10 +184,9 @@ public final class TreeContext {
      * @param request The request associated with the current authentication request.
      * @param callbacks The callbacks received in the current authentication request.
      * @param universalId The universal id of the identity object.
-     * @deprecated use {@link #TreeContext(String, JsonValue, JsonValue, JsonValue, ExternalRequestContext, List,
-     * boolean, Optional, Set)}
+     * @deprecated use {@link #builder()}
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public TreeContext(JsonValue sharedState, JsonValue transientState, JsonValue secureState,
             ExternalRequestContext request, List<? extends Callback> callbacks, Optional<String> universalId) {
         this(DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, transientState,
@@ -206,10 +204,9 @@ public final class TreeContext {
      * @param callbacks The callbacks received in the current authentication request.
      * @param resumedFromSuspend whether the tree has been resumed from having been suspended.
      * @param universalId The universal id of the identity object.
-     * @deprecated use {@link #TreeContext(String, JsonValue, JsonValue, JsonValue, ExternalRequestContext, List,
-     * boolean, Optional, Set)}
+     * @deprecated use {@link #builder()}
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public TreeContext(String identityResource, JsonValue sharedState, JsonValue transientState,
             JsonValue secureState, ExternalRequestContext request, List<? extends Callback> callbacks,
             boolean resumedFromSuspend, Optional<String> universalId) {
@@ -229,19 +226,14 @@ public final class TreeContext {
      * @param resumedFromSuspend whether the tree has been resumed from having been suspended.
      * @param universalId The universal id of the identity object.
      * @param treeStateContainers The set of containers that are valid for the tree.
+     * @deprecated use {@link #builder()}
      */
+    @Deprecated(since = "8.1.0")
     public TreeContext(String identityResource, JsonValue sharedState, JsonValue transientState,
             JsonValue secureState, ExternalRequestContext request, List<? extends Callback> callbacks,
             boolean resumedFromSuspend, Optional<String> universalId, Set<String> treeStateContainers) {
-        this.sharedState = requireNonNull(sharedState);
-        this.secureState = requireNonNull(secureState);
-        this.transientState = requireNonNull(transientState);
-        this.request = requireNonNull(request);
-        this.callbacks = unmodifiableList(requireNonNull(callbacks));
-        this.resumedFromSuspend = resumedFromSuspend;
-        this.identityResource = requireNonNull(identityResource);
-        this.universalId = requireNonNull(universalId);
-        this.treeStateContainers = unmodifiableSet(requireNonNull(treeStateContainers));
+        this(identityResource, sharedState, transientState, secureState, request, callbacks, resumedFromSuspend,
+                universalId, Optional.empty(), treeStateContainers);
     }
 
     /**
@@ -254,12 +246,50 @@ public final class TreeContext {
      * @param callbacks The callbacks received in the current authentication request.
      * @param resumedFromSuspend whether the tree has been resumed from having been suspended.
      * @param universalId The universal id of the identity object.
+     * @deprecated use {@link #builder()}
      */
+    @Deprecated(since = "8.1.0")
     public TreeContext(JsonValue sharedState, JsonValue transientState, JsonValue secureState,
-            ExternalRequestContext request, List<? extends Callback> callbacks,
-            boolean resumedFromSuspend, Optional<String> universalId) {
+                       ExternalRequestContext request, List<? extends Callback> callbacks,
+                       boolean resumedFromSuspend, Optional<String> universalId) {
         this(DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, transientState, secureState, request, callbacks,
                 resumedFromSuspend, universalId);
+    }
+
+    /**
+     * Construct a tree context for the current state.
+     *
+     * @param identityResource The IDM identity resource.
+     * @param sharedState The shared state.
+     * @param transientState The transient state.
+     * @param secureState The secure state.
+     * @param request The request associated with the current authentication request.
+     * @param callbacks The callbacks received in the current authentication request.
+     * @param resumedFromSuspend whether the tree has been resumed from having been suspended.
+     * @param universalId The universal id of the identity object.
+     * @param identifiedIdentity The identified identity if present.
+     * @param treeStateContainers The set of containers that are valid for the tree.
+     */
+    private TreeContext(String identityResource,
+                       JsonValue sharedState,
+                       JsonValue transientState,
+                       JsonValue secureState,
+                       ExternalRequestContext request,
+                       List<? extends Callback> callbacks,
+                       boolean resumedFromSuspend,
+                       Optional<String> universalId,
+                       Optional<IdentifiedIdentity> identifiedIdentity,
+                       Set<String> treeStateContainers) {
+        this.sharedState = requireNonNull(sharedState);
+        this.secureState = requireNonNull(secureState);
+        this.transientState = requireNonNull(transientState);
+        this.request = requireNonNull(request);
+        this.callbacks = unmodifiableList(requireNonNull(callbacks));
+        this.resumedFromSuspend = resumedFromSuspend;
+        this.identityResource = requireNonNull(identityResource);
+        this.universalId = requireNonNull(universalId);
+        this.identifiedIdentity = requireNonNull(identifiedIdentity);
+        this.treeStateContainers = unmodifiableSet(requireNonNull(treeStateContainers));
     }
 
     /**
@@ -338,7 +368,7 @@ public final class TreeContext {
      * @deprecated Use {@link #getStateFor(Node)} instead as this method performs the same function
      * but supports filtering of the available state based on the nodes declared inputs.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public JsonValue getState(String stateKey) {
         if (transientState.isDefined(stateKey)) {
             return transientState.get(stateKey);
@@ -358,7 +388,7 @@ public final class TreeContext {
      * @deprecated Use {@link #getStateFor(Node)} instead as this method does not leak implementation detail
      * of the specific type of state.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public JsonValue getSecureState(String stateKey) {
         return secureState.get(stateKey).defaultTo(null);
     }
@@ -372,7 +402,7 @@ public final class TreeContext {
      * @deprecated Use {@link #getStateFor(Node)} instead as this method does not leak implementation detail
      * of the specific type of state.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public JsonValue getTransientState(String stateKey) {
         if (secureState.isDefined(stateKey)) {
             return secureState.get(stateKey);
@@ -399,7 +429,7 @@ public final class TreeContext {
      */
     public TreeContext copyWithCallbacks(List<? extends Callback> callbacks) {
         return new TreeContext(identityResource, sharedState, transientState, secureState, request, callbacks,
-                resumedFromSuspend, universalId);
+                resumedFromSuspend, universalId, treeStateContainers);
     }
 
     /**
@@ -418,7 +448,7 @@ public final class TreeContext {
         return new TreeContext(identityResource, (sharedState != null) ? sharedState : this.sharedState,
                 (transientState != null) ? transientState : this.transientState,
                 (secureState != null) ? secureState : this.secureState,
-                request, callbacks, resumedFromSuspend, universalId);
+                request, callbacks, resumedFromSuspend, universalId, treeStateContainers);
     }
 
     /**
@@ -427,5 +457,164 @@ public final class TreeContext {
      */
     public Set<String> treeStateContainers() {
         return treeStateContainers;
+    }
+
+    /**
+     * Creates a TreeContext builder.
+     * @return the builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * A builder for TreeContext.
+     */
+    public static class Builder {
+        private String identityResource = DEFAULT_IDM_IDENTITY_RESOURCE;
+        private JsonValue sharedState = json(object());
+        private JsonValue transientState = json(object());
+        private JsonValue secureState = json(object());
+        private ExternalRequestContext requestContext = new ExternalRequestContext.Builder().build();
+        private List<? extends Callback> callbacks = List.of();
+        private boolean resumedFromSuspend = false;
+        private Optional<String> universalId = Optional.empty();
+        private Optional<IdentifiedIdentity> identifiedIdentity = Optional.empty();
+        private Set<String> treeStateContainers = Set.of();
+
+        /**
+         * Constructor, for required parameters.
+         */
+        public Builder() {
+        }
+
+        /**
+         * Set the identity resource.
+         * @param identityResource The identity resource
+         * @return this builder
+         */
+        public Builder identityResource(String identityResource) {
+            this.identityResource = identityResource;
+            return this;
+        }
+
+        /**
+         * Set the shared state.
+         * @param sharedState The shared state
+         * @return this builder
+         */
+        public Builder sharedState(JsonValue sharedState) {
+            this.sharedState = sharedState;
+            return this;
+        }
+
+        /**
+         * Set the transient state.
+         * @param transientState The transient state
+         * @return this builder
+         */
+        public Builder transientState(JsonValue transientState) {
+            this.transientState = transientState;
+            return this;
+        }
+
+        /**
+         * Set the secure state.
+         * @param secureState The secure state
+         * @return this builder
+         */
+        public Builder secureState(JsonValue secureState) {
+            this.secureState = secureState;
+            return this;
+        }
+
+        /**
+         * Set the request context.
+         * @param requestContext The request context
+         * @return this builder
+         */
+        public Builder requestContext(ExternalRequestContext requestContext) {
+            this.requestContext = requestContext;
+            return this;
+        }
+
+        /**
+         * Set the callbacks.
+         * @param callbacks The callbacks
+         * @return this builder
+         */
+        public Builder callbacks(List<? extends Callback> callbacks) {
+            this.callbacks = callbacks;
+            return this;
+        }
+
+        /**
+         * Set resumedFromSuspend.
+         * @param resumedFromSuspend whether the tree has been resumed from having been suspended
+         * @return this builder
+         */
+        public Builder resumedFromSuspend(boolean resumedFromSuspend) {
+            this.resumedFromSuspend = resumedFromSuspend;
+            return this;
+        }
+
+        /**
+         * Set the universal id.
+         * @param universalId The universal id
+         * @return this builder
+         */
+        public Builder universalId(String universalId) {
+            this.universalId = Optional.of(universalId);
+            return this;
+        }
+
+        /**
+         * Set the universal id.
+         * @param universalId The universal id
+         * @return this builder
+         */
+        public Builder universalId(Optional<String> universalId) {
+            this.universalId = universalId;
+            return this;
+        }
+
+        /**
+         * Set the identified identity.
+         * @param identifiedIdentity The identified identity
+         * @return this builder
+         */
+        public Builder identifiedIdentity(IdentifiedIdentity identifiedIdentity) {
+            this.identifiedIdentity = Optional.of(identifiedIdentity);
+            return this;
+        }
+
+        /**
+         * Set the identified identity.
+         * @param identifiedIdentity The identified identity
+         * @return this builder
+         */
+        public Builder identifiedIdentity(Optional<IdentifiedIdentity> identifiedIdentity) {
+            this.identifiedIdentity = identifiedIdentity;
+            return this;
+        }
+
+        /**
+         * Set the tree state containers.
+         * @param treeStateContainers The tree state containers
+         * @return this builder
+         */
+        public Builder treeStateContainers(Set<String> treeStateContainers) {
+            this.treeStateContainers = treeStateContainers;
+            return this;
+        }
+
+        /**
+         * Build the TreeContext.
+         * @return the TreeContext
+         */
+        public TreeContext build() {
+            return new TreeContext(identityResource, sharedState, transientState, secureState, requestContext,
+                    callbacks, resumedFromSuspend, universalId, identifiedIdentity, treeStateContainers);
+        }
     }
 }

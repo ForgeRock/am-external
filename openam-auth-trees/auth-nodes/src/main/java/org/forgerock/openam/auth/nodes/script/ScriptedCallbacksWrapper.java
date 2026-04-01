@@ -196,11 +196,11 @@ public class ScriptedCallbacksWrapper {
      *                       provider - String
      *                       clientId - String
      *                       redirectUri - String
-     *                       scope - List<String>
+     *                       scope - List&lt;String&gt;
      *                       nonce - String
      *                       request - String
      *                       requestUri - String
-     *                       acrValues - List<String>
+     *                       acrValues - List&lt;String&gt;
      *                       token - String
      *                       tokenType - String
      *                       userInfo - String

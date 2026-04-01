@@ -31,6 +31,7 @@ package com.sun.identity.multiprotocol;
 
 import java.io.IOException;
 
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,6 +48,7 @@ import com.sun.identity.federation.common.IFSConstants;
  * next federation protocol.
  *
  */
+@Singleton
 public class MultiProtocolRelayServlet extends HttpServlet {
     
     private static final Logger logger = LoggerFactory.getLogger(MultiProtocolRelayServlet.class);

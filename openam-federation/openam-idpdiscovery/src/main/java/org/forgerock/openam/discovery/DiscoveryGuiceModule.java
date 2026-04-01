@@ -19,7 +19,7 @@ import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;
 import org.forgerock.openam.shared.security.whitelist.ValidDomainExtractor;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;

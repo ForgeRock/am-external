@@ -25,12 +25,9 @@ import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
 
-import com.google.auto.service.AutoService;
-
 /**
  * Global script configurations for framework nodes scripts.
  */
-@AutoService(GlobalScriptsProvider.class)
 public class FrameworkNodesGlobalScriptsProvider implements GlobalScriptsProvider {
     @Override
     public List<Script> get() throws ScriptException {

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 /**
@@ -46,3 +46,18 @@ global.document = window.document;
 global.navigator = { userAgent: "Node.js" };
 
 copyProps(window, global);
+
+const $ = require("jquery");
+
+// Assign jQuery to the global and window objects
+global.$ = global.jQuery = $;
+window.$ = window.jQuery = $;
+
+// Load Bootstrap as popover-clickaway.js uses $.fn.popover, which comes from Bootstrap.
+require("bootstrap");
+
+// Mock the i18next jQuery plugin function
+$.t = (key) => key;
+$.fn.t = function(key) {
+    return key;
+};

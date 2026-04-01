@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.script.Bindings;
-import javax.validation.constraints.NotNull;
 
 import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.http.client.ChfHttpClient;
@@ -30,6 +29,7 @@ import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.OAuthScriptedBindingObject;
 import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 import org.forgerock.openam.scripting.domain.Script;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Utilities for running scripts in authentication nodes.
@@ -92,6 +92,10 @@ public interface AuthScriptUtilities {
      */
     String REQUEST_COOKIES_IDENTIFIER = "requestCookies";
     /**
+     * Tree name identifier for script bindings.
+     */
+    String JOURNEY = "journey";
+    /**
      * SAML2 Auth Request binding.
      */
     String SAML_APPLICATION = "samlApplication";
@@ -99,6 +103,16 @@ public interface AuthScriptUtilities {
      * OAuth Request binding.
      */
     String OAUTH_APPLICATION = "oauthApplication";
+
+    /**
+     * Cache Manager.
+     */
+    String CACHE_MANAGER = "cacheManager";
+
+    /**
+     * Localized Message.
+     */
+    String LOCALES = "locales";
 
     /**
      * The request headers are unmodifiable, this prevents them being converted into javascript. This method
@@ -172,7 +186,7 @@ public interface AuthScriptUtilities {
      * @param context Context object that specifies the required params.
      * @return SAML Application object if found in CTS, otherwise <pre>Optional.empty()</pre>
      */
-    Optional<SAMLScriptedBindingObject> getSamlDecisionNodeApplication(TreeContext context) throws NodeProcessException;
+    Optional<SAMLScriptedBindingObject> getSAMLData(TreeContext context) throws NodeProcessException;
 
     /**
      * If the context request params include {@value DecisionNodeApplicationConstants#OAUTH_OBJECT_KEY_PARAM},

@@ -302,11 +302,11 @@ public class MultiProtocolUtils {
     public static void invalidateSession(Object session, 
         HttpServletRequest request, 
         HttpServletResponse response,
-        String protocol) throws SessionException {
+        String protocol, String realm) throws SessionException {
         SessionProvider provider = SessionManager.getProvider();
         if (!isMultipleProtocolSession(session, protocol)) {
             provider.clearPersistentCookie(session, request, response);
-            provider.invalidateSession(session, request, response);
+            provider.invalidateSession(session, request, response, realm);
         } else {
             removeFederationProtocol(session, protocol);
         }

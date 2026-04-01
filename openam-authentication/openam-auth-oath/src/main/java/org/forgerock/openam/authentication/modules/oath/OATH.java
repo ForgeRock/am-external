@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2012-2025 Ping Identity Corporation.
+ * Copyright 2012-2026 Ping Identity Corporation.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -72,7 +72,7 @@ import com.sun.identity.shared.datastruct.CollectionHelper;
  * generation and authentication; HMAC-based One Time Password (HOTP) and
  * Time-based One Time Password (TOTP).
  */
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 public class OATH extends AMLoginModule {
 
     //debug log name

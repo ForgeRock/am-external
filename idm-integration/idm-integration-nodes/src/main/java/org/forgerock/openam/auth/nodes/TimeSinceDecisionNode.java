@@ -15,7 +15,6 @@
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getAttributeFromContext;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getObject;
@@ -25,14 +24,15 @@ import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.strin
 import static org.forgerock.openam.integration.idm.IdmIntegrationConfig.CREATE_DATE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.util.Strings.isNullOrEmpty;
-import static org.forgerock.util.time.Duration.duration;
+import static org.forgerock.util.time.Durations.duration;
 
+import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -45,7 +45,6 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.utils.Time;
-import org.forgerock.util.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,7 +120,7 @@ public class TimeSinceDecisionNode extends AbstractDecisionNode {
         ZonedDateTime originalTime = ZonedDateTime.parse(createDate.get(CREATE_DATE).asString());
         ZonedDateTime currentTime = Time.zonedDateTime(ZoneOffset.UTC);
         Duration elapsed = duration(config.elapsedTime());
-        return goTo(originalTime.plus(elapsed.convertTo(MILLISECONDS).getValue(), ChronoUnit.MILLIS)
+        return goTo(originalTime.plus(elapsed.toMillis(), ChronoUnit.MILLIS)
                 .compareTo(currentTime) <= 0)
                 .replaceSharedState(context.sharedState.copy())
                 .replaceTransientState(context.transientState.copy()).build();

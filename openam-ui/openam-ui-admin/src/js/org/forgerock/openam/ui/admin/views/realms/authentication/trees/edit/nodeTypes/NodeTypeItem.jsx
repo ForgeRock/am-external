@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 import { DragSource } from "react-dnd";
 import { Badge, Panel } from "react-bootstrap";
@@ -19,7 +19,7 @@ import classnames from "classnames";
 import PropTypes from "prop-types";
 import React from "react";
 
-import { NEW_NODE_TYPE } from "./EditTreeDragItemTypes";
+import { NEW_NODE_TYPE } from "org/forgerock/openam/ui/admin/utils/treeUtils";
 import EmphasizedText from "components/EmphasizedText";
 
 const NodeTypeItem = ({ connectDragSource, displayName, filter, icon, isDragging, nodeType, tags }) => {
@@ -77,7 +77,8 @@ const source = {
     beginDrag (props) {
         return {
             displayName: props.displayName,
-            nodeType: props.nodeType
+            nodeType: props.nodeType,
+            version: props.version
         };
     }
 };

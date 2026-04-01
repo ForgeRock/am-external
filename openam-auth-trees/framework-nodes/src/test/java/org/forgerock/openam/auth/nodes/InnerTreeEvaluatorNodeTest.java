@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -22,9 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.openam.auth.node.api.Action.DESCRIPTION;
-import static org.forgerock.openam.auth.node.api.Action.HEADER;
-import static org.forgerock.openam.auth.node.api.Action.STAGE;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.CURRENT_NODE_ID;
 import static org.forgerock.openam.authentication.modules.scripted.Scripted.SHARED_STATE;
 import static org.mockito.BDDMockito.given;
@@ -51,6 +48,7 @@ import org.forgerock.am.trees.api.TreeProvider;
 import org.forgerock.am.trees.model.SessionProperties;
 import org.forgerock.am.trees.model.TreeResult;
 import org.forgerock.am.trees.model.TreeState;
+import org.forgerock.am.trees.model.TreeStateFactory;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.test.assertj.AssertJJsonValueAssert;
 import org.forgerock.openam.auth.node.api.Action;
@@ -60,6 +58,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SuspensionHandler;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.framework.InnerTreeEvaluatorNode;
+import org.forgerock.openam.auth.nodes.framework.InputStatesCache;
 import org.forgerock.openam.auth.nodes.helpers.AuthSessionHelper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.session.Session;
@@ -90,6 +89,8 @@ public class InnerTreeEvaluatorNodeTest {
     private Session session;
     @Mock
     private AuthSessionHelper authSessionHelper;
+    @Mock
+    private InputStatesCache inputStatesCache;
 
     private InnerTreeEvaluatorNode node;
 
@@ -99,14 +100,13 @@ public class InnerTreeEvaluatorNodeTest {
         given(treeProvider.getTree(realm, "mock_tree")).willAnswer(inv -> Optional.of(tree));
         given(tree.isEnabled()).willReturn(true);
         node = new InnerTreeEvaluatorNode(treeProvider, executor, realm, serviceConfig, Set.of(TEST_STATE_CONTAINER),
-                authSessionHelper);
+                authSessionHelper, inputStatesCache);
     }
 
     @Test
     void whenInnerTreeReturnsTrueOutcomeIsTrue() throws Exception {
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder().build(), Outcome.TRUE));
-        given(tree.visitNodes(any())).willReturn(emptyList());
+                .willReturn(new TreeResult(TreeStateFactory.builder().build(), Outcome.TRUE));
 
         Action result = node.process(getContext());
 
@@ -116,8 +116,7 @@ public class InnerTreeEvaluatorNodeTest {
     @Test
     void whenInnerTreeReturnsFalseOutcomeIsFalse() throws Exception {
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder().build(), Outcome.FALSE));
-        given(tree.visitNodes(any())).willReturn(emptyList());
+                .willReturn(new TreeResult(TreeStateFactory.builder().build(), Outcome.FALSE));
 
         Action result = node.process(getContext());
 
@@ -127,10 +126,8 @@ public class InnerTreeEvaluatorNodeTest {
     @Test
     void whenInnerTreeReturnsNeedInputOutcomeIsNeedInput() throws Exception {
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder().withCurrentNodeId(UUID.randomUUID()).build(),
-                        Outcome.NEED_INPUT,
-                        null, List.of(new PasswordCallback("prompt", false))));
-        given(tree.visitNodes(any())).willReturn(emptyList());
+                .willReturn(new TreeResult(TreeStateFactory.builder().withCurrentNodeId(UUID.randomUUID()).build(),
+                        Outcome.NEED_INPUT, null, List.of(new PasswordCallback("prompt", false))));
 
         Action result = node.process(getContext());
 
@@ -141,10 +138,8 @@ public class InnerTreeEvaluatorNodeTest {
     void whenInnerTreeReturnsNeedInputCallbacksAreReturnsInNodeResult() throws Exception {
         List<Callback> callbacks = List.of(new PasswordCallback("prompt", false));
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder().withCurrentNodeId(UUID.randomUUID()).build(),
-                        Outcome.NEED_INPUT,
-                        null, callbacks));
-        given(tree.visitNodes(any())).willReturn(emptyList());
+                .willReturn(new TreeResult(TreeStateFactory.builder().withCurrentNodeId(UUID.randomUUID()).build(),
+                        Outcome.NEED_INPUT, null, callbacks));
 
         Action result = node.process(getContext());
 
@@ -155,12 +150,11 @@ public class InnerTreeEvaluatorNodeTest {
     void whenInnerTreeReturnsTrueInnerSharedStateIsReturnedAsSharedState() throws Exception {
         UUID innerTreeCurrentNodeId = UUID.randomUUID();
         JsonValue innerTreeSharedState = json(object(field("foo", "bar")));
-        TreeState treeState = TreeState.builder()
+        TreeState treeState = TreeStateFactory.builder()
                 .withSharedState(innerTreeSharedState)
                 .withCurrentNodeId(innerTreeCurrentNodeId).build();
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
                 .willReturn(new TreeResult(treeState, Outcome.TRUE));
-        given(tree.visitNodes(any())).willReturn(emptyList());
 
         Action result = node.process(getContext());
 
@@ -172,12 +166,11 @@ public class InnerTreeEvaluatorNodeTest {
         List<Callback> callbacks = List.of(new PasswordCallback("prompt", false));
         UUID innerTreeCurrentNodeId = UUID.randomUUID();
         JsonValue innerTreeSharedState = json(object(field("foo", "bar")));
-        TreeState treeState = TreeState.builder()
+        TreeState treeState = TreeStateFactory.builder()
                 .withSharedState(innerTreeSharedState)
                 .withCurrentNodeId(innerTreeCurrentNodeId).build();
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
                 .willReturn(new TreeResult(treeState, Outcome.NEED_INPUT, null, callbacks));
-        given(tree.visitNodes(any())).willReturn(emptyList());
 
         Action result = node.process(getContext());
 
@@ -190,13 +183,12 @@ public class InnerTreeEvaluatorNodeTest {
     void whenInnerTreeReturnsNeedInputTitleDescriptionAndStageAreReturnedIfPresent() throws Exception {
         List<Callback> callbacks = List.of(new PasswordCallback("prompt", false));
         JsonValue properties = json(object(
-                field(HEADER, "header"),
-                field(DESCRIPTION, "description"),
-                field(STAGE, "stage")));
+                field("header", "header"),
+                field("description", "description"),
+                field("stage", "stage")));
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder().withCurrentNodeId(UUID.randomUUID()).build(),
+                .willReturn(new TreeResult(TreeStateFactory.builder().withCurrentNodeId(UUID.randomUUID()).build(),
                         Outcome.NEED_INPUT, properties.asMap(), callbacks));
-        given(tree.visitNodes(any())).willReturn(emptyList());
 
         Action result = node.process(getContext());
 
@@ -208,37 +200,34 @@ public class InnerTreeEvaluatorNodeTest {
         UUID innerTreeCurrentNodeId = UUID.randomUUID();
         JsonValue outerTreeSharedState = json(object(field("foo", "bar")));
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder()
+                .willReturn(new TreeResult(TreeStateFactory.builder()
                         .withSharedState(outerTreeSharedState).withCurrentNodeId(innerTreeCurrentNodeId).build(),
                         Outcome.TRUE));
-        given(tree.visitNodes(any())).willReturn(emptyList());
         TreeContext context = getContext(emptyList(), outerTreeSharedState, "123");
 
         node.process(context);
 
         ArgumentCaptor<TreeState> treeState = ArgumentCaptor.forClass(TreeState.class);
         verify(executor).process(eq(realm), eq(tree), treeState.capture(), any(), eq(false), any());
-        assertThat(treeState.getValue().currentNodeId).isNull();
-        assertThat(treeState.getValue().sharedState.getObject()).isEqualTo(outerTreeSharedState.getObject());
+        assertThat(treeState.getValue().currentNodeId()).isNull();
+        assertThat(treeState.getValue().sharedState().getObject()).isEqualTo(outerTreeSharedState.getObject());
     }
 
     @Test
     void processWithCallbacksWithoutCurrentNodeIdPassesOuterTreeSharedStateAsInitialInnerTreeSharedState()
             throws Exception {
-        List<? extends Callback> callbacks = List.of(new ChoiceCallback("prompt", new String[] {"tree" },
-                0, false));
+        List<? extends Callback> callbacks = List.of(new ChoiceCallback("prompt", new String[] {"tree" }, 0, false));
         JsonValue outerTreeSharedState = json(object(field("foo", "bar")));
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
                 .willReturn(new TreeResult(
-                        TreeState.builder().withSharedState(outerTreeSharedState).build(), Outcome.TRUE));
-        given(tree.visitNodes(any())).willReturn(List.of());
+                        TreeStateFactory.builder().withSharedState(outerTreeSharedState).build(), Outcome.TRUE));
         TreeContext context = getContext(callbacks, outerTreeSharedState, "123");
         node.process(context);
 
         ArgumentCaptor<TreeState> treeState = ArgumentCaptor.forClass(TreeState.class);
         verify(executor).process(eq(realm), eq(tree), treeState.capture(), any(), eq(false), any());
-        assertThat(treeState.getValue().currentNodeId).isNull();
-        assertThat(treeState.getValue().sharedState.getObject()).isEqualTo(outerTreeSharedState.getObject());
+        assertThat(treeState.getValue().currentNodeId()).isNull();
+        assertThat(treeState.getValue().sharedState().getObject()).isEqualTo(outerTreeSharedState.getObject());
     }
 
     @Test
@@ -249,7 +238,7 @@ public class InnerTreeEvaluatorNodeTest {
         UUID innerTreeCurrentNodeId = UUID.randomUUID();
         JsonValue innerTreeSharedState = json(object(field("foo", "bar")));
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder()
+                .willReturn(new TreeResult(TreeStateFactory.builder()
                         .withSharedState(innerTreeSharedState).withCurrentNodeId(innerTreeCurrentNodeId).build(),
                         Outcome.TRUE));
         JsonValue outerSharedState = json(object(
@@ -261,8 +250,8 @@ public class InnerTreeEvaluatorNodeTest {
 
         ArgumentCaptor<TreeState> treeState = ArgumentCaptor.forClass(TreeState.class);
         verify(executor).process(eq(realm), eq(tree), treeState.capture(), any(), eq(false), any());
-        assertThat(treeState.getValue().currentNodeId).isEqualTo(innerTreeCurrentNodeId);
-        assertThat(treeState.getValue().sharedState.getObject()).isEqualTo(innerTreeSharedState.getObject());
+        assertThat(treeState.getValue().currentNodeId()).isEqualTo(innerTreeCurrentNodeId);
+        assertThat(treeState.getValue().sharedState().getObject()).isEqualTo(innerTreeSharedState.getObject());
     }
 
     @Test
@@ -272,7 +261,7 @@ public class InnerTreeEvaluatorNodeTest {
         List<? extends Callback> callbacks = List.of(new PasswordCallback("prompt", false));
         UUID innerTreeCurrentNodeId = UUID.randomUUID();
         JsonValue innerTreeSharedState = json(object(field("foo", "bar")));
-        TreeState treeState = TreeState.builder()
+        TreeState treeState = TreeStateFactory.builder()
                 .withSharedState(innerTreeSharedState)
                 .withCurrentNodeId(innerTreeCurrentNodeId).build();
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
@@ -291,9 +280,8 @@ public class InnerTreeEvaluatorNodeTest {
     void whenInnerTreeReturnsSuspendTheSuspensionHandlerAndSuspendDurationArePassedThrough() throws Exception {
         SuspensionHandler handler = mock(SuspensionHandler.class);
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder().withCurrentNodeId(UUID.randomUUID()).build(),
+                .willReturn(new TreeResult(TreeStateFactory.builder().withCurrentNodeId(UUID.randomUUID()).build(),
                         Outcome.SUSPENDED, emptyMap(), emptyList(), handler, Duration.ofMinutes(1), null));
-        given(tree.visitNodes(any())).willReturn(emptyList());
 
         Action result = node.process(getContext());
 
@@ -306,33 +294,28 @@ public class InnerTreeEvaluatorNodeTest {
         given(serviceConfig.displayErrorOutcome()).willReturn(false);
         var exception = new NodeProcessException("error");
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder().withCurrentNodeId(UUID.randomUUID()).build(),
+                .willReturn(new TreeResult(TreeStateFactory.builder().withCurrentNodeId(UUID.randomUUID()).build(),
                         Outcome.EXCEPTION, emptyMap(), emptyList(), null, Duration.ofMinutes(1), exception));
-        given(tree.visitNodes(any())).willReturn(emptyList());
 
         assertThatThrownBy(() -> node.process(getContext())).isEqualTo(exception);
     }
 
     @Test
     void shouldGoToErrorOutcomeWhenInnerTreeThrowsExceptionAndDisplayErrorOutcomeTrue() throws Exception {
-        // given
         given(serviceConfig.displayErrorOutcome()).willReturn(true);
         var exception = new NodeProcessException(new RuntimeException("Some error"));
         UUID nodeId = UUID.randomUUID();
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder().withCurrentNodeId(nodeId).build(), Outcome.EXCEPTION,
-                        emptyMap(), emptyList(), null, Duration.ofMinutes(1), exception));
-        given(tree.visitNodes(any())).willReturn(emptyList());
+                .willReturn(new TreeResult(TreeStateFactory.builder().withCurrentNodeId(nodeId).build(),
+                        Outcome.EXCEPTION, emptyMap(), emptyList(), null, Duration.ofMinutes(1), exception));
         Tree.Node failedNode = mock(Tree.Node.class);
         given(failedNode.id()).willReturn(nodeId);
         given(failedNode.type()).willReturn("ErrorNode");
         given(failedNode.displayName()).willReturn("My Error Node");
         given(tree.getNodeForId(nodeId)).willReturn(failedNode);
 
-        // when
         var result = node.process(getContext());
 
-        // then
         assertThat(result.outcome).isEqualTo("error");
         Map<String, Object> errorNode = result.sharedState.get("errorNode").asMap();
         String errorMessage = result.sharedState.get("errorMessage").asString();
@@ -344,8 +327,7 @@ public class InnerTreeEvaluatorNodeTest {
 
     @Test
     void innerTreeReturnsInputs() throws Exception {
-        InputState input = new InputState("test");
-        given(tree.visitNodes(any())).willReturn(List.of(input));
+        given(inputStatesCache.get(tree)).willReturn(List.of(new InputState("test")));
 
         InputState[] inputs = node.getInputs();
 
@@ -355,21 +337,19 @@ public class InnerTreeEvaluatorNodeTest {
 
     @Test
     void innerTreeReturnsInputsWithNoDuplicates() throws Exception {
-        given(tree.visitNodes(any())).willReturn(List.of(new InputState("test")));
+        given(inputStatesCache.get(tree)).willReturn(List.of(new InputState("test")));
 
         InputState[] inputs = node.getInputs();
 
         assertThat(inputs.length).isEqualTo(1);
-        assertThat(inputs[0].name).isEqualTo("test");
     }
 
     @Test
     void innerTreeReturnsRequiredInputInsteadOfOptionalInput() throws Exception {
-        given(tree.visitNodes(any())).willReturn(List.of(new InputState("test")));
+        given(inputStatesCache.get(tree)).willReturn(List.of(new InputState("test", true)));
 
         InputState[] inputs = node.getInputs();
 
-        assertThat(inputs.length).isEqualTo(1);
         assertThat(inputs[0].name).isEqualTo("test");
         assertThat(inputs[0].required).isTrue();
     }
@@ -378,56 +358,67 @@ public class InnerTreeEvaluatorNodeTest {
     void shouldPassTransientInputsIntoInnerTreeOnlyIfTheyAreInOuterTransientState() throws Exception {
         UUID nodeId = UUID.randomUUID();
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder().withCurrentNodeId(nodeId).build(), Outcome.TRUE));
-        given(tree.visitNodes(any())).willReturn(List.of(new InputState("test"),  new InputState("nodata")));
+                .willReturn(new TreeResult(TreeStateFactory.builder().withCurrentNodeId(nodeId).build(), Outcome.TRUE));
+
+        given(inputStatesCache.get(tree)).willReturn(List.of(new InputState("test"), new InputState("nodata")));
+
         JsonValue outerTransientState = json(object(field("test", "value"), field("ignored", "value")));
-        TreeContext context = new TreeContext(json(object()), outerTransientState, json(object()),
-                               new Builder().build(), emptyList(), false, Optional.empty());
+
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object()))
+                .requestContext(new Builder().authId("123").build())
+                .transientState(outerTransientState)
+                .build();
 
         node.process(context);
 
-        ArgumentCaptor<TreeState> treeState = ArgumentCaptor.forClass(TreeState.class);
-        verify(executor).process(eq(realm), eq(tree), treeState.capture(), any(), eq(false), any());
-        assertThat(treeState.getValue().transientState.get("test").asString()).isEqualTo("value");
-        assertThat(treeState.getValue().transientState.get("ignored").isNotNull()).isFalse();
-        assertThat(treeState.getValue().transientState.isDefined("nodata")).isFalse();
+        ArgumentCaptor<TreeState> treeStateCaptor = ArgumentCaptor.forClass(TreeState.class);
+        verify(executor).process(eq(realm), eq(tree), treeStateCaptor.capture(), any(), eq(false), any());
+
+        TreeState capturedState = treeStateCaptor.getValue();
+        assertThat(capturedState.transientState().get("test").asString()).isEqualTo("value");
+        assertThat(capturedState.transientState().get("ignored").isNotNull()).isFalse();
     }
 
     @Test
     void shouldPassTransientInputsIntoInnerTreeFromObjectAttributes() throws Exception {
         UUID nodeId = UUID.randomUUID();
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
-                .willReturn(new TreeResult(TreeState.builder().withCurrentNodeId(nodeId).build(), Outcome.TRUE));
+                .willReturn(new TreeResult(TreeStateFactory.builder().withCurrentNodeId(nodeId).build(), Outcome.TRUE));
 
-        given(tree.visitNodes(any())).willReturn(List.of(new InputState("test")));
+        given(inputStatesCache.get(tree)).willReturn(List.of(new InputState("test")));
+
         JsonValue outerTransientState = json(object(
                 field(TEST_STATE_CONTAINER, object(field("test", "value"))),
                 field("ignored", "value")));
-        TreeContext context = new TreeContext(json(object()), outerTransientState, json(object()),
-                new Builder().build(), emptyList(), false, Optional.empty());
+
+        TreeContext context = TreeContext.builder()
+                .sharedState(json(object()))
+                .requestContext(new Builder().authId("123").build())
+                .transientState(outerTransientState)
+                .build();
 
         node.process(context);
 
-        ArgumentCaptor<TreeState> treeState = ArgumentCaptor.forClass(TreeState.class);
-        verify(executor).process(eq(realm), eq(tree), treeState.capture(), any(), eq(false), any());
-        assertThat(treeState.getValue().transientState.get(TEST_STATE_CONTAINER).get("test").asString())
+        ArgumentCaptor<TreeState> treeStateCaptor = ArgumentCaptor.forClass(TreeState.class);
+        verify(executor).process(eq(realm), eq(tree), treeStateCaptor.capture(), any(), eq(false), any());
+
+        TreeState capturedState = treeStateCaptor.getValue();
+        assertThat(capturedState.transientState().get(TEST_STATE_CONTAINER).get("test").asString())
                 .isEqualTo("value");
-        assertThat(treeState.getValue().transientState.get("ignored").isNotNull()).isFalse();
     }
 
     @Test
     void shouldAddSessionPropertiesToResult() throws Exception {
         Map<String, String> properties = Map.of("key1", "value1", "key2", "value2");
-        TreeState treeState = TreeState.builder()
+        TreeState treeState = TreeStateFactory.builder()
                 .withCurrentNodeId(UUID.randomUUID())
                 .withSessionProperties(new SessionProperties(properties))
                 .build();
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
                 .willReturn(new TreeResult(treeState, Outcome.TRUE));
-        given(tree.visitNodes(any())).willReturn(emptyList());
-        TreeContext context = getContext();
 
-        Action result = node.process(context);
+        Action result = node.process(getContext());
 
         assertThat(result.sessionProperties).containsExactlyInAnyOrderEntriesOf(properties);
     }
@@ -438,16 +429,14 @@ public class InnerTreeEvaluatorNodeTest {
         Duration maxIdleTime = Duration.ofMinutes(2);
         SessionProperties sessionProperties =
                 new SessionProperties(emptyMap(), Optional.of(maxSessionTime), Optional.of(maxIdleTime));
-        TreeState treeState = TreeState.builder()
+        TreeState treeState = TreeStateFactory.builder()
                 .withCurrentNodeId(UUID.randomUUID())
                 .withSessionProperties(sessionProperties)
                 .build();
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
                 .willReturn(new TreeResult(treeState, Outcome.TRUE));
-        given(tree.visitNodes(any())).willReturn(emptyList());
-        TreeContext context = getContext();
 
-        Action result = node.process(context);
+        Action result = node.process(getContext());
 
         assertThat(result.maxSessionTime).isEqualTo(Optional.of(maxSessionTime));
         assertThat(result.maxIdleTime).isEqualTo(Optional.of(maxIdleTime));
@@ -462,7 +451,7 @@ public class InnerTreeEvaluatorNodeTest {
         JsonValue innerTreeSharedState = json(object(field("foo", "bar")));
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
                 .willReturn(new TreeResult(
-                        TreeState.builder()
+                        TreeStateFactory.builder()
                                 .withSharedState(innerTreeSharedState)
                                 .withCurrentNodeId(innerTreeCurrentNodeId)
                                 .withMaxTreeDuration(Duration.ofMinutes(3))
@@ -485,7 +474,7 @@ public class InnerTreeEvaluatorNodeTest {
         JsonValue innerTreeSharedState = json(object(field("foo", "bar")));
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
                 .willReturn(new TreeResult(
-                        TreeState.builder()
+                        TreeStateFactory.builder()
                                 .withSharedState(innerTreeSharedState)
                                 .withCurrentNodeId(innerTreeCurrentNodeId)
                                 .build(),
@@ -502,42 +491,60 @@ public class InnerTreeEvaluatorNodeTest {
 
     @Test
     void shouldHaveAllOutcomesWhenGetAllOutcomes() {
-        // given
         InnerTreeEvaluatorNode.OutcomeProvider outcomeProvider = new InnerTreeEvaluatorNode.OutcomeProvider();
-
-        // when
         var outcomes = outcomeProvider.getAllOutcomes(new PreferredLocales());
-
-        // then
-        assertThat(outcomes.stream().map(outcome -> outcome.id).toList()).containsExactlyInAnyOrder("true", "false",
-                "error");
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactlyInAnyOrder("true", "false", "error");
     }
 
     @Test
     void shouldHaveErrorOutcomeWhenDisplayErrorIsTrue() {
-        // given
         InnerTreeEvaluatorNode.OutcomeProvider outcomeProvider = new InnerTreeEvaluatorNode.OutcomeProvider();
-
-        // when
         var outcomes = outcomeProvider.getOutcomes(new PreferredLocales(),
                 json(object(field("displayErrorOutcome", true))));
-
-        // then
-        assertThat(outcomes.stream().map(outcome -> outcome.id).toList()).containsExactlyInAnyOrder("true", "false",
-                "error");
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactlyInAnyOrder("true", "false", "error");
     }
 
     @Test
     void shouldHaveErrorOutcomeWhenDisplayErrorIsFalse() {
-        // given
         InnerTreeEvaluatorNode.OutcomeProvider outcomeProvider = new InnerTreeEvaluatorNode.OutcomeProvider();
-
-        // when
         var outcomes = outcomeProvider.getOutcomes(new PreferredLocales(),
                 json(object(field("displayErrorOutcome", false))));
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactlyInAnyOrder("true", "false");
+    }
 
-        // then
-        assertThat(outcomes.stream().map(outcome -> outcome.id).toList()).containsExactlyInAnyOrder("true", "false");
+    @Test
+    void shouldClearHooksFromTreeStateAfterCallbacksSubmitted() throws Exception {
+        given(authSessionHelper.getAuthSession(any())).willReturn(session);
+        given(session.getMaxSessionTime()).willReturn(3L);
+
+        JsonValue innerTreeSharedState = json(object(field("foo", "bar")));
+        UUID innerTreeCurrentNodeId = UUID.randomUUID();
+
+        JsonValue outerSharedState = json(object(
+                field(SHARED_STATE, innerTreeSharedState),
+                field(CURRENT_NODE_ID, innerTreeCurrentNodeId.toString()),
+                field("sessionHooks", new java.util.ArrayList<>(List.of("sessionHook"))),
+                field("webhooks", new java.util.ArrayList<>(List.of("webHook")))
+        ));
+        List<? extends Callback> callbacks = List.of(new PasswordCallback("prompt", false));
+        TreeContext context = getContext(callbacks, outerSharedState, "123");
+
+        given(executor.process(eq(realm), eq(tree), any(TreeState.class), any(), eq(false), any()))
+                .willReturn(new TreeResult(TreeStateFactory.builder()
+                        .withSharedState(innerTreeSharedState).withCurrentNodeId(innerTreeCurrentNodeId).build(),
+                        Outcome.TRUE));
+
+        node.process(context);
+
+        ArgumentCaptor<TreeState> treeStateCaptor = ArgumentCaptor.forClass(TreeState.class);
+        verify(executor).process(eq(realm), eq(tree), treeStateCaptor.capture(), any(), eq(false), any());
+
+        TreeState capturedTreeState = treeStateCaptor.getValue();
+        assertThat(capturedTreeState.sessionHooks()).isEmpty();
+        assertThat(capturedTreeState.webhooks()).isEmpty();
     }
 
     private TreeContext getContext() {
@@ -545,7 +552,10 @@ public class InnerTreeEvaluatorNodeTest {
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue outerSharedState, String authId) {
-        return new TreeContext(outerSharedState, json(object()), json(object()), new Builder().authId(authId).build(),
-                callbacks, false, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(outerSharedState)
+                .requestContext(new Builder().authId(authId).build())
+                .callbacks(callbacks)
+                .build();
     }
 }

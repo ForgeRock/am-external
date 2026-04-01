@@ -11,11 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.script;
 
+import static org.forgerock.openam.auth.node.api.AuthScriptUtilities.JOURNEY;
+import static org.forgerock.openam.auth.node.api.AuthScriptUtilities.LOCALES;
+import static org.forgerock.openam.auth.node.api.AuthScriptUtilities.OAUTH_APPLICATION;
+import static org.forgerock.openam.auth.node.api.AuthScriptUtilities.SAML_APPLICATION;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.ACTION;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_BUILDER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_IDENTIFIER;
@@ -31,12 +35,16 @@ import java.util.Map;
 
 import javax.security.auth.callback.Callback;
 
+import org.forgerock.am.trees.api.Tree;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.NodeStateScriptWrapper;
+import org.forgerock.openam.auth.node.api.ScriptedLocalizedMessage;
 import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepository;
 import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepositoryScriptWrapper;
 import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.NextGenScriptBindings;
+import org.forgerock.openam.scripting.domain.OAuthScriptedBindingObject;
+import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 
 /**
  * Abstract parent class of the scripted decision node bindings.
@@ -75,11 +83,30 @@ public abstract class BaseScriptedDecisionNodeBindings implements NextGenScriptB
     /**
      * The existing session binding.
      */
-    protected final Object existingSession;
+    protected final Map<String, String> existingSession;
     /**
      * The request cookies binding.
      */
     protected final Map<String, String> requestCookies;
+    /**
+     * The tree name binding.
+     */
+    protected final Tree tree;
+    /**
+     *  When the scripted decision node is executed as part of a SAML flow, this provides information to the script
+     *  about the SAML application and incoming authentication request.
+     */
+    private final SAMLScriptedBindingObject samlApplication;
+    /**
+     *  When the scripted decision node is executed as part of an OAuth flow, this provides information to the script
+     *  about the OAuth request and the client.
+     */
+    private final OAuthScriptedBindingObject oauthApplication;
+
+    /**
+     * The localized message binding.
+     */
+    protected final ScriptedLocalizedMessage scriptedLocalizedMessage;
 
     /**
      * Constructor for the BaseScriptedDecisionNodeBindings object.
@@ -95,6 +122,10 @@ public abstract class BaseScriptedDecisionNodeBindings implements NextGenScriptB
         this.resumedFromSuspend = builder.resumedFromSuspend;
         this.existingSession = builder.existingSession;
         this.requestCookies = builder.requestCookies;
+        this.tree = builder.tree;
+        this.samlApplication = builder.samlApplication;
+        this.oauthApplication = builder.oauthApplication;
+        this.scriptedLocalizedMessage = builder.scriptedLocalizedMessage;
     }
 
     /**
@@ -116,6 +147,10 @@ public abstract class BaseScriptedDecisionNodeBindings implements NextGenScriptB
         bindingsMap.put(ACTION, new ActionWrapper());
         bindingsMap.put(CALLBACKS_BUILDER, new ScriptedCallbacksBuilder());
         bindingsMap.put(REQUEST_COOKIES_IDENTIFIER, requestCookies);
+        bindingsMap.put(JOURNEY, new ScriptedTreeWrapper(tree));
+        bindingsMap.put(SAML_APPLICATION, samlApplication);
+        bindingsMap.put(OAUTH_APPLICATION, oauthApplication);
+        bindingsMap.put(LOCALES, scriptedLocalizedMessage);
         return bindingsMap;
     }
 
@@ -224,12 +259,71 @@ public abstract class BaseScriptedDecisionNodeBindings implements NextGenScriptB
      */
     public interface BaseScriptedDecisionNodeBindingsStep8<T extends BaseScriptedDecisionNodeBindings> {
         /**
-         * Sets the request cookies.
+         * Sets existing session.
          *
-         * @param requestCookies the request cookies
+         * @param existingSession the existing session
          * @return the next step of the {@link Builder}
          */
-        BaseScriptedDecisionNodeBindingsFinalStep<T> withRequestCookies(Map<String, String> requestCookies);
+        BaseScriptedDecisionNodeBindingsStep9<T> withRequestCookies(Map<String, String> existingSession);
+    }
+
+    /**
+     * Step 9 of the builder.
+     * @param <T> The concrete type of bindings returned by the builder.
+     */
+    public interface BaseScriptedDecisionNodeBindingsStep9<T extends BaseScriptedDecisionNodeBindings> {
+        /**
+         * Sets the tree.
+         *
+         * @param tree the tree.
+         * @return the next step of the {@link Builder}
+         */
+        BaseScriptedDecisionNodeBindingsStep10<T> withTree(Tree tree);
+    }
+
+
+    /**
+     * Step 10 of the builder.
+     * @param <T> The concrete type of bindings returned by the builder.
+     */
+    public interface BaseScriptedDecisionNodeBindingsStep10<T extends BaseScriptedDecisionNodeBindings> {
+        /**
+         * Sets the saml application binding.
+         *
+         * @param samlApplication the saml application binding
+         * @return the next step of the {@link Builder}
+         */
+        BaseScriptedDecisionNodeBindingsStep11<T> withSamlApplication(
+                SAMLScriptedBindingObject samlApplication);
+    }
+
+    /**
+     * Step 11 of the builder.
+     * @param <T> The concrete type of bindings returned by the builder.
+     */
+    public interface BaseScriptedDecisionNodeBindingsStep11<T extends BaseScriptedDecisionNodeBindings> {
+        /**
+         * Sets the oauth application binding.
+         *
+         * @param oauthApplication the oauth application binding
+         * @return the next step of the {@link Builder}
+         */
+        BaseScriptedDecisionNodeBindingsStep12<T> withOauthApplication(OAuthScriptedBindingObject oauthApplication);
+    }
+
+    /**
+     * Step 12 of the builder.
+     * @param <T> The concrete type of bindings returned by the builder.
+     */
+    public interface BaseScriptedDecisionNodeBindingsStep12<T extends BaseScriptedDecisionNodeBindings> {
+        /**
+         * Sets the scripted localized message binding.
+         *
+         * @param scriptedLocalizedMessage the scripted localized message binding
+         * @return the next step of the {@link Builder}
+         */
+        BaseScriptedDecisionNodeBindingsFinalStep<T> withScriptedLocalizedMessage(
+                ScriptedLocalizedMessage scriptedLocalizedMessage);
     }
 
     /**
@@ -256,6 +350,8 @@ public abstract class BaseScriptedDecisionNodeBindings implements NextGenScriptB
             BaseScriptedDecisionNodeBindingsStep3<T>, BaseScriptedDecisionNodeBindingsStep4<T>,
             BaseScriptedDecisionNodeBindingsStep5<T>, BaseScriptedDecisionNodeBindingsStep6<T>,
             BaseScriptedDecisionNodeBindingsStep7<T>, BaseScriptedDecisionNodeBindingsStep8<T>,
+            BaseScriptedDecisionNodeBindingsStep9<T>, BaseScriptedDecisionNodeBindingsStep10<T>,
+            BaseScriptedDecisionNodeBindingsStep11<T>, BaseScriptedDecisionNodeBindingsStep12<T>,
             BaseScriptedDecisionNodeBindingsFinalStep<T> {
 
         private NodeState nodeState;
@@ -266,6 +362,10 @@ public abstract class BaseScriptedDecisionNodeBindings implements NextGenScriptB
         private Map<String, List<String>> headers;
         private Map<String, String> existingSession;
         private Map<String, String> requestCookies;
+        private Tree tree;
+        private SAMLScriptedBindingObject samlApplication;
+        private OAuthScriptedBindingObject oauthApplication;
+        private ScriptedLocalizedMessage scriptedLocalizedMessage;
 
         /**
          * Set the nodeState for the builder.
@@ -360,9 +460,62 @@ public abstract class BaseScriptedDecisionNodeBindings implements NextGenScriptB
          * @return The next step of the Builder.
          */
         @Override
-        public BaseScriptedDecisionNodeBindingsFinalStep<T> withRequestCookies(Map<String, String> requestCookies) {
+        public BaseScriptedDecisionNodeBindingsStep9<T> withRequestCookies(Map<String, String> requestCookies) {
             this.requestCookies = requestCookies;
             return this;
         }
+
+
+        /**
+         * Set the tree.
+         *
+         * @param tree the tree.
+         * @return The next step of the Builder.
+         */
+        @Override
+        public BaseScriptedDecisionNodeBindingsStep10<T> withTree(Tree tree) {
+            this.tree = tree;
+            return this;
+        }
+
+        /**
+         * Set the saml application binding for the builder.
+         *
+         * @param samlApplication the saml application binding.
+         * @return the next step of the Builder.
+         */
+        @Override
+        public BaseScriptedDecisionNodeBindingsStep11<T> withSamlApplication(
+                SAMLScriptedBindingObject samlApplication) {
+            this.samlApplication = samlApplication;
+            return this;
+        }
+
+        /**
+         * Set the oauth application binding for the builder.
+         *
+         * @param oauthApplication the oauth application binding.
+         * @return the next step of the Builder.
+         */
+        @Override
+        public BaseScriptedDecisionNodeBindingsStep12<T> withOauthApplication(
+                OAuthScriptedBindingObject oauthApplication) {
+            this.oauthApplication = oauthApplication;
+            return this;
+        }
+
+        /**
+         * Set the scripted localized message binding.
+         *
+         * @param scriptedLocalizedMessage the scripted localized message binding
+         * @return the next step of the Builder.
+         */
+        @Override
+        public BaseScriptedDecisionNodeBindingsFinalStep<T> withScriptedLocalizedMessage(
+                ScriptedLocalizedMessage scriptedLocalizedMessage) {
+            this.scriptedLocalizedMessage = scriptedLocalizedMessage;
+            return this;
+        }
+
     }
 }

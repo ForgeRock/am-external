@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.x500.X500Principal;
 
 import org.apache.commons.lang3.StringUtils;

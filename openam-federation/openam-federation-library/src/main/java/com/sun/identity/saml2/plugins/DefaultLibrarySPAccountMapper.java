@@ -32,31 +32,19 @@ import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
 import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
 
 import java.security.PrivateKey;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
-import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.saml2.assertion.Assertion;
-import com.sun.identity.saml2.assertion.Attribute;
-import com.sun.identity.saml2.assertion.AttributeStatement;
-import com.sun.identity.saml2.assertion.EncryptedAttribute;
-import com.sun.identity.saml2.assertion.EncryptedID;
 import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2InvalidUserException;
-import com.sun.identity.saml2.common.SAML2Utils;
 
 /**
  * This class <code>DefaultLibrarySPAccountMapper</code> is the default implementation of the
@@ -68,12 +56,17 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
 
      private static final Logger logger = LoggerFactory.getLogger(DefaultLibrarySPAccountMapper.class);
 
+     private final AccountMapperPluginHelper pluginHelper;
+     private final ValidationHelper validationHelper;
+
     /**
       * Default constructor
       */
      public DefaultLibrarySPAccountMapper() {
          logger.debug("DefaultLibrarySPAccountMapper.constructor: ");
          role = SP_ROLE;
+         pluginHelper = new AccountMapperPluginHelper();
+         validationHelper = new ValidationHelper();
      }
 
     /**
@@ -82,7 +75,7 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
      * retrieves the identity information.
      * The implementation of this method first checks if the NameID-Format is transient and returns the transient user.
      * Otherwise it checks for the user for the corresponding name identifier in the assertion.
-     * If not found, then it will check if this is an auto federation case. 
+     * If not found, then it will check if this is an auto federation case.
      *
      * @param assertion <code>SAML Assertion</code> that needs to be mapped to the user.
      * @param hostEntityID <code>EntityID</code> of the hosted provider.
@@ -92,29 +85,14 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
      */
     @Override
     public String getIdentity(Assertion assertion, String hostEntityID, String realm) throws SAML2Exception {
-        if (assertion == null) {
-            throw new SAML2Exception(bundle.getString("nullAssertion"));
-        }
-
-        if (hostEntityID == null) {
-            throw new SAML2Exception(bundle.getString("nullHostEntityID"));
-        }
-        
-        if (realm == null) {
-            throw new SAML2Exception(bundle.getString("nullRealm"));
-        }
-
-        NameID nameID;
-        EncryptedID encryptedID = assertion.getSubject().getEncryptedID();
+        validationHelper.validateAssertion(assertion);
+        validationHelper.validateHostedEntity(hostEntityID);
+        validationHelper.validateRealm(realm);
 
         Set<PrivateKey> decryptionKeys = InjectorHolder.getInstance(Saml2CredentialResolver.class)
                 .resolveValidDecryptionCredentials(realm, hostEntityID, SP);
-        if (encryptedID != null) {
-            nameID = encryptedID.decrypt(decryptionKeys);
-        } else {
-            nameID = assertion.getSubject().getNameID();
-        }
- 
+        NameID nameID = pluginHelper.getNameID(assertion, decryptionKeys);
+
         String userID = null;
         String format = nameID.getFormat();
         boolean isTransient = SAML2Constants.NAMEID_TRANSIENT_FORMAT.equals(format);
@@ -148,8 +126,7 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
     @Override
     public boolean shouldPersistNameIDFormat(String realm, String hostEntityID, String remoteEntityID,
             String nameIDFormat) {
-        return !Boolean.parseBoolean(SAML2Utils.getAttributeValueFromSSOConfig(realm, hostEntityID,
-                SP_ROLE, SAML2Constants.SP_DO_NOT_WRITE_FEDERATION_INFO));
+        return pluginHelper.shouldPersistNameIDFormat(realm, hostEntityID);
     }
 
     /**
@@ -159,17 +136,17 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
      * @param entityID Hosted <code>EntityID</code>.
      * @return The transient user id configured in entity configuration, or null if not configured or failed for any
      * reason.
-     */ 
+     */
     protected String getTransientUser(String realm, String entityID) {
-        return getAttribute(realm, entityID, SAML2Constants.TRANSIENT_FED_USER);
+        return pluginHelper.getAttribute(realm, entityID, SAML2Constants.TRANSIENT_FED_USER, SP_ROLE);
     }
 
     private boolean useNameIDAsSPUserID(String realm, String entityID) {
-        return Boolean.parseBoolean(getAttribute(realm, entityID, SAML2Constants.USE_NAMEID_AS_SP_USERID));
+        return pluginHelper.useNameIDAsSPUserID(realm, entityID, SP_ROLE);
     }
 
     private boolean isAutoFedEnabled(String realm, String entityID) {
-        return Boolean.parseBoolean(getAttribute(realm, entityID, SAML2Constants.AUTO_FED_ENABLED));
+        return pluginHelper.isAutoFedEnabled(realm, entityID, SP_ROLE);
     }
 
     /**
@@ -181,133 +158,14 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
      * @return Auto federation mapped user from the assertion auto federation <code>AttributeStatement</code>. if the
      * statement does not have the auto federation attribute then the NameID value will be used if use NameID as SP user
      * ID is enabled, otherwise null.
-     */ 
+     */
     protected String getAutoFedUser(String realm, String entityID, Assertion assertion, String decryptedNameID,
             Set<PrivateKey> decryptionKeys) throws SAML2Exception {
-        if (!isAutoFedEnabled(realm, entityID)) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("DefaultLibrarySPAccountMapper.getAutoFedUser: Auto federation is disabled.");
-            }
-            return null;
-        }
-
-        String autoFedAttribute = getAttribute(realm, entityID, SAML2Constants.AUTO_FED_ATTRIBUTE);
-        if (autoFedAttribute == null || autoFedAttribute.isEmpty()) {
-            logger.error("DefaultLibrarySPAccountMapper.getAutoFedUser: " +
-                        "Auto federation is enabled but the auto federation attribute is not configured.");
-            return null;
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("DefaultLibrarySPAccountMapper.getAutoFedUser: Auto federation attribute is set to: "
-                    + autoFedAttribute);
-        }
-
-        Set<String> autoFedAttributeValue = null;
-        List<AttributeStatement> attributeStatements = assertion.getAttributeStatements();
-        if (attributeStatements == null || attributeStatements.isEmpty()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("DefaultLibrarySPAccountMapper.getAutoFedUser: " +
-                        "Assertion does not have any attribute statements.");
-            }
-        } else {
-            for (AttributeStatement statement : attributeStatements) {
-                autoFedAttributeValue = getAttribute(statement, autoFedAttribute, decryptionKeys);
-                if (autoFedAttributeValue != null && !autoFedAttributeValue.isEmpty()) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("DefaultLibrarySPAccountMapper.getAutoFedUser: " +
-                                "Found auto federation attribute value in Assertion: " + autoFedAttributeValue);
-                    }
-                    break;
-                }
-            }
-        }
-
-        if (autoFedAttributeValue == null || autoFedAttributeValue.isEmpty()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("DefaultLibrarySPAccountMapper.getAutoFedUser: Auto federation attribute is not specified"
-                        + " as an attribute.");
-            }
-            if (!useNameIDAsSPUserID(realm, entityID)) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("DefaultLibrarySPAccountMapper.getAutoFedUser: NameID as SP UserID was not enabled "
-                            + " and auto federation attribute " + autoFedAttribute + " was not found in the Assertion");
-                }
-                return null;
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("DefaultLibrarySPAccountMapper.getAutoFedUser: Trying now to autofederate with nameID"
-                            + ", nameID =" + decryptedNameID);
-                }
-                autoFedAttributeValue = CollectionUtils.asSet(decryptedNameID);
-            }
-        }
-
-        String autoFedMapAttribute = null;
-        DefaultSPAttributeMapper attributeMapper = new DefaultSPAttributeMapper();
-        Map<String, String> attributeMap = attributeMapper.getConfigAttributeMap(realm, entityID, SP_ROLE);
-        if (attributeMap == null || attributeMap.isEmpty()) {
-           if(logger.isDebugEnabled()) {
-              logger.debug("DefaultLibrarySPAccountMapper.getAutoFedUser: attribute map is not configured.");
-           }
-        } else {
-            autoFedMapAttribute = attributeMap.get(autoFedAttribute);
-        }
-
-        if (autoFedMapAttribute == null) {
-           if (logger.isDebugEnabled()) {
-               logger.debug("DefaultLibrarySPAccountMapper.getAutoFedUser: " +
-                       "Auto federation attribute map is not specified in config.");
-           }
-           // assume it is the same as the auto fed attribute name 
-           autoFedMapAttribute = autoFedAttribute;
-        }
-
-        for (String s : autoFedAttributeValue) {
-            validateUserId(s);
-        }
-
-        try {
-            Map<String, Set<String>> map = new HashMap<>(1);
-            map.put(autoFedMapAttribute, autoFedAttributeValue);
-
-            if (logger.isDebugEnabled()) {
-                logger.debug("DefaultLibrarySPAccountMapper.getAutoFedUser: Search map: " + map);
-            }
-
-            String userId = dsProvider.getUserID(realm, map);
-            if (userId != null && !userId.isEmpty()) {
-                return userId;
-            } else {
-                // check dynamic profile creation or ignore profile, if enabled,
-                // return auto-federation attribute value as uid 
-                if (isDynamicalOrIgnoredProfile(realm)) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("DefaultLibrarySPAccountMapper: dynamical user creation or ignore profile " +
-                                "enabled : uid=" + autoFedAttributeValue);
-                    }
-                    // return the first value as uid
-                    return autoFedAttributeValue.iterator().next();
-                }
-            } 
-        } catch (DataStoreProviderException dse) {
-            if (logger.isWarnEnabled()) {
-                logger.warn("DefaultLibrarySPAccountMapper.getAutoFedUser: Datastore provider exception", dse);
-            }
-        }
-
-        return null;
+        return pluginHelper.getAutoFedUser(realm, entityID, assertion, decryptedNameID, decryptionKeys, SP_ROLE);
     }
 
     private void validateUserId(String userId) throws SAML2InvalidUserException {
-        try {
-            if (dsProvider.isUsernameUniversalId(userId)) {
-                throw new SAML2InvalidUserException("Invalid user");
-            }
-        } catch (DataStoreProviderException e) {
-            logger.error("Invalid universalId username", e);
-            throw new SAML2InvalidUserException("Invalid user");
-        }
+        pluginHelper.validateUserId(userId);
     }
 
     /**
@@ -319,45 +177,5 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
      */
     protected boolean isDynamicalOrIgnoredProfile(String realm) {
         return true;
-    }
-
-    private Set<String> getAttribute(AttributeStatement statement, String attributeName,
-            Set<PrivateKey> decryptionKeys) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("DefaultLibrarySPAccountMapper.getAttribute: attribute Name =" + attributeName);
-        }
-
-        // check it if the attribute needs to be encrypted?
-        List<Attribute> list = statement.getAttribute();
-        List<EncryptedAttribute> encList = statement.getEncryptedAttribute();
-        if (encList != null && !encList.isEmpty()) {
-            // a new list to hold the union of clear and encrypted attributes
-            List<Attribute> allList = new ArrayList<>();
-            if (list != null) {
-                allList.addAll(list);
-            }
-            list = allList;
-            for (EncryptedAttribute encryptedAttribute : encList) {
-                try {
-                    list.add(encryptedAttribute.decrypt(decryptionKeys));
-                } catch (SAML2Exception se) {
-                    logger.error("Decryption error:", se);
-                    return null;
-                }
-            }
-        }
-
-        for (Attribute attribute : list) {
-            if (!attributeName.equalsIgnoreCase(attribute.getName())) {
-               continue;
-            }
-
-            List<String> values = attribute.getAttributeValueString();
-            if (values == null || values.isEmpty()) {
-               return null;
-            }
-            return new HashSet<>(values);
-        }
-        return null;
     }
 }

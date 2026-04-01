@@ -11,17 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 import React from "react";
 import { t } from "i18next";
+import PropTypes from "prop-types";
 
-const Loading = () => (
-    <p className="loading text-muted">
-        <i className="fa fa-circle-o-notch fa-spin fa-2x fa-fw" />
-        <span>{ t("console.common.loading") }</span>
-    </p>
-);
+export default function Loading ({ loadingText }) {
+    return (
+        <p className="loading text-muted">
+            <i className="fa fa-circle-o-notch fa-spin fa-2x fa-fw" />
+            <span>
+                { loadingText || t("console.common.loading") }
+            </span>
+        </p>
+    );
+}
 
-export default Loading;
+Loading.propTypes = {
+    loadingText: PropTypes.string
+};

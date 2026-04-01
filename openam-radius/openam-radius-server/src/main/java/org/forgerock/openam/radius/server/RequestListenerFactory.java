@@ -19,9 +19,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
+import org.forgerock.openam.radius.common.MessageAuthenticatorCalculator;
 import org.forgerock.openam.radius.server.config.RadiusServiceConfig;
 import org.forgerock.openam.radius.server.config.ThreadPoolConfig;
 import org.forgerock.util.thread.ExecutorServiceFactory;

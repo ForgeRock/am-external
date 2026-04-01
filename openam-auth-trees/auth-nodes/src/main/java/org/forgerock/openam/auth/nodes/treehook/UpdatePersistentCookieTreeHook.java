@@ -19,9 +19,8 @@ package org.forgerock.openam.auth.nodes.treehook;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.http.protocol.Cookie;
 import org.forgerock.http.protocol.Request;
@@ -109,7 +108,7 @@ public class UpdatePersistentCookieTreeHook implements TreeHook {
         if (jwtString != null && !jwtString.isEmpty()) {
             persistentCookieResponseHandler.setCookieOnResponse(response, request,
                     config.persistentCookieName(),
-                    jwtString, expirationTime, config.useSecureCookie(), config.useHttpOnlyCookie());
+                    jwtString, expirationTime, config.useSecureCookie(), config.useHttpOnlyCookie(), config.sameSite());
         }
     }
 
@@ -118,7 +117,7 @@ public class UpdatePersistentCookieTreeHook implements TreeHook {
             NeverThrowsException> verificationKeysReference) {
         try {
             return persistentJwtStringSupplier.getUpdatedJwt(jwtCookie.getValue(), orgName,
-                    signingKeyReference, verificationKeysReference, config.idleTimeout().to(TimeUnit.HOURS));
+                    signingKeyReference, verificationKeysReference, config.idleTimeout().toHours());
         } catch (InvalidPersistentJwtException e) {
             logger.error("Attempt to verify JWT failed");
             return null;

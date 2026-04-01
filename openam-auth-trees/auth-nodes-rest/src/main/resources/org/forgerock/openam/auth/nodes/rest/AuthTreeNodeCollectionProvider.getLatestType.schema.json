@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.title",
+  "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.description",
+  "properties": {
+    "_id": {
+      "type": "string",
+      "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.id.title",
+      "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.id.description"
+    },
+    "name": {
+      "type": "string",
+      "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.name.title",
+      "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.name.description"
+    },
+    "collection": {
+      "type": "boolean",
+      "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.collection.title",
+      "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.collection.description"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.tags.title",
+        "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.tags.description"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.metadata.title",
+      "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.metadata.description",
+      "properties": {
+
+      }
+    },
+    "help": {
+      "type": "string",
+      "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.help.title",
+      "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#getLatestType.response.help.description"
+    }
+  }
+}

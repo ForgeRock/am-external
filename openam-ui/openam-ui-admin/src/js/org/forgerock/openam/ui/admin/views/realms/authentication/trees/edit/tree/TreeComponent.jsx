@@ -11,44 +11,63 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 import classNames from "classnames";
 import Measure from "react-measure";
 import PropTypes from "prop-types";
-import React, { Component } from "react";
+import React from "react";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import { t } from "i18next";
 
-class TreeComponent extends Component {
-    handleMeasure = (dimensions) => {
-        if (this.props.onMeasure) {
-            this.props.onMeasure(this.props.id, dimensions);
+export default function TreeComponent (props) {
+    function handleMeasure (dimensions) {
+        if (props.onMeasure) {
+            props.onMeasure(props.id, dimensions);
         }
-    };
-
-    render () {
-        return (
-            <div
-                onMouseDown={ this.props.onMouseDown }
-                role="presentation"
-            >
-                <Measure onMeasure={ this.handleMeasure }>
-                    <div
-                        className={ classNames(this.props.className, {
-                            "authtree-node": true,
-                            "authtree-node-selected": this.props.isSelected
-                        }) }
-                        onMouseUp={ this.props.onMouseUp }
-                        role="presentation"
-                    >
-                        { this.props.titleDecoration }
-                        <div className="authtree-node-title">{ this.props.node.displayName }</div>
-                        { this.props.children }
-                    </div>
-                </Measure>
-            </div>
-        );
     }
+
+    const upgradeIcon = (
+        props.node.isUpgradable &&
+        <OverlayTrigger
+            overlay={
+                <Tooltip id={ `${props.id}-tooltip` }>
+                    { t("console.authentication.trees.edit.nodes.nodeTypes.updateAvailable") }
+                </Tooltip>
+            }
+            placement="top"
+        >
+            <div className="node-upgrade-icon">
+                <i className="fa fa-refresh" />
+            </div>
+        </OverlayTrigger>
+    );
+
+    return (
+        <div
+            onMouseDown={ props.onMouseDown }
+            role="presentation"
+        >
+            <Measure onMeasure={ handleMeasure }>
+                <div
+                    className={ classNames(props.className, {
+                        "authtree-node": true,
+                        "authtree-node-selected": props.isSelected
+                    }) }
+                    onMouseUp={ props.onMouseUp }
+                    role="presentation"
+                >
+                    { upgradeIcon }
+                    { props.titleDecoration }
+                    <div className="authtree-node-title">
+                        { props.node.displayName }
+                    </div>
+                    { props.children }
+                </div>
+            </Measure>
+        </div>
+    );
 }
 
 TreeComponent.defaultProps = {
@@ -61,12 +80,11 @@ TreeComponent.propTypes = {
     id: PropTypes.string.isRequired,
     isSelected: PropTypes.bool.isRequired,
     node: PropTypes.shape({
-        displayName: PropTypes.string.isRequired
+        displayName: PropTypes.string.isRequired,
+        isUpgradable: PropTypes.bool
     }).isRequired,
     onMeasure: PropTypes.func,
     onMouseDown: PropTypes.func.isRequired,
     onMouseUp: PropTypes.func,
     titleDecoration: PropTypes.node
 };
-
-export default TreeComponent;

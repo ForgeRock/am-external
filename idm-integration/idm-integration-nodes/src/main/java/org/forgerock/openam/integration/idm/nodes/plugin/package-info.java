@@ -14,4 +14,7 @@
  * Copyright 2024-2025 Ping Identity Corporation.
  */
 
+/**
+ * The node installation plugin for the IDM integration nodes.
+ */
 package org.forgerock.openam.integration.idm.nodes.plugin;

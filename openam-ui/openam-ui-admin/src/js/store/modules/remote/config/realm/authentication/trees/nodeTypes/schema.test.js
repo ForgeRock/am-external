@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 import { expect } from "chai";
@@ -21,14 +21,15 @@ import reducer, { addOrUpdateSchema } from "./schema";
 describe("store/modules/remote/config/realm/authentication/trees/nodeTypes/schema", () => {
     const schema = { _id: "one" };
     const nodeType = "nodeType";
+    const nodeVersion = "1.0";
 
     describe("actions", () => {
         describe("#addOrUpdateSchema", () => {
             it("creates an action", () => {
-                expect(addOrUpdateSchema(schema, nodeType)).eql({
+                expect(addOrUpdateSchema(schema, nodeType, nodeVersion)).eql({
                     type: "remote/config/realm/authentication/trees/nodeTypes/schema/ADD_OR_UPDATE_SCHEMA",
                     payload: schema,
-                    meta: { nodeType }
+                    meta: { nodeType, nodeVersion }
                 });
             });
         });
@@ -39,8 +40,10 @@ describe("store/modules/remote/config/realm/authentication/trees/nodeTypes/schem
         });
 
         it("handles #addOrUpdate action", () => {
-            expect(reducer({}, addOrUpdateSchema(schema, nodeType))).eql({
-                [nodeType]: schema
+            expect(reducer({}, addOrUpdateSchema(schema, nodeType, nodeVersion))).eql({
+                [nodeType]: {
+                  [nodeVersion]: schema
+                }
             });
         });
     });

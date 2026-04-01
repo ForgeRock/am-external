@@ -21,7 +21,7 @@ import static java.util.Collections.singletonList;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 

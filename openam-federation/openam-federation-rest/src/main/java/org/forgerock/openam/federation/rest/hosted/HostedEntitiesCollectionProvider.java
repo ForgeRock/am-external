@@ -34,10 +34,13 @@ import static org.forgerock.util.promise.Promises.newResultPromise;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
+import org.forgerock.am.trees.api.TreeProvider;
 import org.forgerock.api.annotations.Action;
 import org.forgerock.api.annotations.ApiError;
 import org.forgerock.api.annotations.CollectionProvider;
@@ -66,6 +69,7 @@ import org.forgerock.openam.federation.rest.schema.hosted.service.ServiceProvide
 import org.forgerock.openam.objectenricher.ObjectEnricher;
 import org.forgerock.openam.rest.RealmContext;
 import org.forgerock.openam.saml2.Saml2EntityRole;
+import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.services.context.Context;
 import org.forgerock.util.promise.Promise;
 import org.slf4j.Logger;
@@ -103,16 +107,22 @@ public final class HostedEntitiesCollectionProvider extends Saml2EntitiesCollect
     private static final Logger logger = LoggerFactory.getLogger(HostedEntitiesCollectionProvider.class);
     private static final String ENTITY_ID = "entityId";
     private static final JsonPointer META_ALIAS_PTR = new JsonPointer("services/metaAlias");
+    private static final JsonPointer TREE_NAME_ID_PTR =
+            new JsonPointer("assertionProcessing/redirectTreeConfiguration/redirectTreeName");
+    private final TreeProvider treeProvider;
 
     /**
      * Instantiates a new Hosted entities collection provider.
      *
      * @param objectEnricher the object enricher
      * @param objectMapper the object mapper
+     * @param treeProvider {@link TreeProvider} object
      */
     @Inject
-    public HostedEntitiesCollectionProvider(ObjectEnricher objectEnricher, ObjectMapper objectMapper) {
+    public HostedEntitiesCollectionProvider(ObjectEnricher objectEnricher, ObjectMapper objectMapper,
+                                            TreeProvider treeProvider) {
         super(objectEnricher, objectMapper);
+        this.treeProvider = treeProvider;
     }
 
     /**
@@ -167,6 +177,12 @@ public final class HostedEntitiesCollectionProvider extends Saml2EntitiesCollect
             logger.debug("An error occurred while creating an entity provider", e);
             return e.asPromise();
         }
+    }
+
+    @Override
+    protected void validateEntityJson(JsonValue payload, Realm realm) throws ResourceException {
+        super.validateEntityJson(payload, realm);
+        validateTree(payload, realm);
     }
 
     private void validateEntityJson(Context context, CreateRequest request, SAML2MetaManager saml2MetaManager)
@@ -268,5 +284,35 @@ public final class HostedEntitiesCollectionProvider extends Saml2EntitiesCollect
 
         EntityConfigElement entityConfigElement = configFactory.createEntityConfigElement(entityConfig);
         return new JaxbEntity(entityDescriptor, entityConfigElement);
+    }
+
+    /**
+     * Validates the tree name in the request json payload.
+     *
+     * @param payload the request json payload
+     * @param realm the realm in which the request is made
+     * @throws BadRequestException if tree name is present and invalid.
+     */
+    private void validateTree(JsonValue payload, Realm realm) throws BadRequestException {
+        Optional<String> treeName = getTreeName(payload);
+        if (treeName.isPresent() && treeProvider.getTree(realm, treeName.get()).isEmpty()) {
+            throw new BadRequestException(String.format("Invalid tree name %s", treeName.get()));
+        }
+    }
+
+    /**
+     * Get the tree name from the request json payload.
+     *
+     * @param payload The request json payload.
+     * @return The tree name.
+     */
+    private Optional<String> getTreeName(JsonValue payload) {
+        return payload.stream()
+                .filter(JsonValue::isMap)
+                .map(schemaEntry -> schemaEntry.get(TREE_NAME_ID_PTR))
+                .filter(Objects::nonNull)
+                .map(JsonValue::asString)
+                .filter(treeName -> !StringUtils.isEmptyOrEmptySelection(treeName))
+                .findFirst();
     }
 }

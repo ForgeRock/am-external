@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.core.realms.RealmLookup;
@@ -166,7 +166,7 @@ public class OidcRpTrustStoreSecretMappingCleaner implements ServiceListener {
         Optional<String> getSecretId(String realm, String configName,
                                      SecretStoreWithMappings store, Multiple<PurposeMapping> mappings) {
             try {
-                return mappings.idSet()
+                return mappings.nameSet()
                         .stream()
                         .filter(id -> id.equalsIgnoreCase(String.format(OIDC_RELIANT_PARTY_CONFIG_TRUST_STORE,
                                 configName)))

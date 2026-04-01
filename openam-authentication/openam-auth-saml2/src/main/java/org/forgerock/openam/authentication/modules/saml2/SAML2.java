@@ -11,9 +11,74 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2025 Ping Identity Corporation.
+ * Copyright 2015-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.saml2;
+
+import com.iplanet.sso.SSOException;
+import com.sun.identity.authentication.AuthContext;
+import com.sun.identity.authentication.client.AuthClientUtils;
+import com.sun.identity.authentication.spi.AMLoginModule;
+import com.sun.identity.authentication.spi.AuthLoginException;
+import com.sun.identity.authentication.spi.AuthenticationException;
+import com.sun.identity.authentication.spi.PagePropertiesCallback;
+import com.sun.identity.authentication.util.ISAuthConstants;
+import com.sun.identity.common.DNUtils;
+import com.sun.identity.saml2.assertion.Assertion;
+import com.sun.identity.saml2.assertion.Attribute;
+import com.sun.identity.saml2.assertion.EncryptedID;
+import com.sun.identity.saml2.assertion.NameID;
+import com.sun.identity.saml2.assertion.Subject;
+import com.sun.identity.saml2.common.AccountUtils;
+import com.sun.identity.saml2.common.NameIDInfo;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.common.SAMLDataAccessor;
+import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
+import com.sun.identity.saml2.meta.SAML2MetaException;
+import com.sun.identity.saml2.meta.SAML2MetaManager;
+import com.sun.identity.saml2.plugins.DefaultLibrarySPAccountMapper;
+import com.sun.identity.saml2.plugins.SAML2PluginsUtils;
+import com.sun.identity.saml2.plugins.SPAttributeMapper;
+import com.sun.identity.saml2.profile.ResponseInfo;
+import com.sun.identity.saml2.profile.SPACSUtils;
+import com.sun.identity.saml2.profile.SPSSOFederate;
+import com.sun.identity.shared.datastruct.CollectionHelper;
+import com.sun.identity.shared.encode.CookieUtils;
+import com.sun.identity.shared.locale.L10NMessageImpl;
+import com.sun.identity.sm.DNMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.forgerock.am.saml2.api.AuthComparison;
+import org.forgerock.am.saml2.api.Saml2Options;
+import org.forgerock.am.saml2.api.Saml2SsoException;
+import org.forgerock.am.saml2.api.Saml2SsoInitiator;
+import org.forgerock.am.saml2.impl.Saml2ClientConstants;
+import org.forgerock.guice.core.InjectorHolder;
+import org.forgerock.openam.core.realms.RealmLookupException;
+import org.forgerock.openam.core.realms.Realms;
+import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
+import org.forgerock.openam.saml2.SAMLData;
+import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.JsonValueBuilder;
+import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.util.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.login.LoginException;
+import java.security.Principal;
+import java.security.PrivateKey;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.sun.identity.shared.Constants.UNIVERSAL_IDENTIFIER;
 import static com.sun.identity.shared.datastruct.CollectionHelper.getBooleanMapAttr;
@@ -37,74 +102,6 @@ import static org.forgerock.openam.authentication.modules.saml2.Constants.SLO_RE
 import static org.forgerock.openam.authentication.modules.saml2.Constants.START;
 import static org.forgerock.openam.authentication.modules.saml2.Constants.STATE_ERROR;
 import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
-
-import java.security.Principal;
-import java.security.PrivateKey;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.security.auth.callback.Callback;
-import javax.security.auth.login.LoginException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
-import com.sun.identity.saml2.profile.SPCache;
-import org.forgerock.am.saml2.api.AuthComparison;
-import org.forgerock.am.saml2.api.Saml2Options;
-import org.forgerock.am.saml2.api.Saml2SsoException;
-import org.forgerock.am.saml2.api.Saml2SsoInitiator;
-import org.forgerock.am.saml2.impl.Saml2ClientConstants;
-import org.forgerock.am.saml2.impl.Saml2ResponseData;
-import org.forgerock.guice.core.InjectorHolder;
-import org.forgerock.openam.core.realms.RealmLookupException;
-import org.forgerock.openam.core.realms.Realms;
-import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
-import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
-import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.JsonValueBuilder;
-import org.forgerock.openam.utils.StringUtils;
-import org.forgerock.util.Options;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.iplanet.sso.SSOException;
-import com.sun.identity.authentication.AuthContext;
-import com.sun.identity.authentication.client.AuthClientUtils;
-import com.sun.identity.authentication.spi.AMLoginModule;
-import com.sun.identity.authentication.spi.AuthLoginException;
-import com.sun.identity.authentication.spi.AuthenticationException;
-import com.sun.identity.authentication.spi.PagePropertiesCallback;
-import com.sun.identity.authentication.util.ISAuthConstants;
-import com.sun.identity.common.DNUtils;
-import com.sun.identity.saml2.assertion.Assertion;
-import com.sun.identity.saml2.assertion.Attribute;
-import com.sun.identity.saml2.assertion.EncryptedID;
-import com.sun.identity.saml2.assertion.NameID;
-import com.sun.identity.saml2.assertion.Subject;
-import com.sun.identity.saml2.common.AccountUtils;
-import com.sun.identity.saml2.common.NameIDInfo;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2FailoverUtils;
-import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
-import com.sun.identity.saml2.meta.SAML2MetaException;
-import com.sun.identity.saml2.meta.SAML2MetaManager;
-import com.sun.identity.saml2.plugins.DefaultLibrarySPAccountMapper;
-import com.sun.identity.saml2.plugins.SAML2PluginsUtils;
-import com.sun.identity.saml2.plugins.SPAttributeMapper;
-import com.sun.identity.saml2.profile.ResponseInfo;
-import com.sun.identity.saml2.profile.SPACSUtils;
-import com.sun.identity.saml2.profile.SPSSOFederate;
-import com.sun.identity.shared.datastruct.CollectionHelper;
-import com.sun.identity.shared.encode.CookieUtils;
-import com.sun.identity.shared.locale.L10NMessageImpl;
-import com.sun.identity.sm.DNMapper;
 
 /**
  * SAML2 Authentication Module, acting from the SP's POV. Will redirect to a SAML2 IdP for authentication, then
@@ -203,14 +200,16 @@ public class SAML2 extends AMLoginModule {
                     DEBUG.debug("SAML2 :: process() : Handling error from redirect.");
                     return handleRedirectError(request, response);
                 }
+                final String samlObjectKey = getSamlObjectKey(request);
                 final String responseKey = getResponseKey(request);
-                if (StringUtils.isEmpty(responseKey)) {
-                    DEBUG.debug("SAML2 :: process() : Response key is empty, restarting SSO flow.");
+                if (StringUtils.isEmpty(samlObjectKey) && StringUtils.isEmpty(responseKey)) {
+                    DEBUG.debug("SAML2 :: process() : Both samlObjectKey and responseKey are empty, restarting SSO"
+                            + " flow.");
                     // Flow has been restarted before authn has successfully completed at IdP.
                     return initiateSAMLLoginAtIDP(response, request);
                 }
-                DEBUG.debug("SAML2 :: process() : Response key is populated, handling redirect.");
-                return handleReturnFromRedirect(state, request, spName, response, responseKey);
+                DEBUG.debug("SAML2 :: process() : At least one key (samlObjectKey or responseKey), handling redirect.");
+                return handleReturnFromRedirect(state, request, spName, response, samlObjectKey, responseKey);
             case LOGIN_STEP:
                 return stepLogin(realCallbacks, state);
             default:
@@ -255,40 +254,38 @@ public class SAML2 extends AMLoginModule {
      * locally linked, we need to look up the already-linked username.
      */
     private int handleReturnFromRedirect(final int state, final HttpServletRequest request, final String spName,
-            final HttpServletResponse response, final String responseKey) throws AuthLoginException {
+            final HttpServletResponse response, final String samlObjectKey, final String responseKey)
+            throws AuthLoginException {
 
         //first make sure to delete the cookie
         removeCookiesForRedirects(request, response);
 
         final String username;
-        Saml2ResponseData data = null;
-
-        if (!StringUtils.isBlank(responseKey)) {
-            try {
-                data = (Saml2ResponseData) SAML2FailoverUtils.retrieveSAML2Token(responseKey);
-            } catch (SAML2TokenRepositoryException e) {
-                return processError(bundle.getString("samlFailoverError"),
-                        "SAML2.handleReturnFromRedirect : Error reading from failover map.", e);
+        SAMLData samlData = null;
+        String keyUsed = samlObjectKey;
+        try {
+            if (!StringUtils.isEmpty(samlObjectKey)) {
+                samlData = SAMLDataAccessor.getSAMLData(samlObjectKey);
             }
+            if (samlData == null && !StringUtils.isEmpty(responseKey)) {
+                samlData = SAMLDataAccessor.getSAMLData(responseKey);
+                keyUsed = responseKey;
+            }
+        } catch (SAML2TokenRepositoryException e) {
+            return processError(bundle.getString("samlFailoverError"),
+                    "SAML2.handleReturnFromRedirect : Error reading from failover map.", e);
         }
 
-        if (data == null) {
+        if (samlData == null) {
             return processError(bundle.getString("localLinkError"), "SAML2 :: handleReturnFromRedirect() : "
                     + "Unable to perform local linking - response data not found");
-        } else {
-            try {
-                SAML2FailoverUtils.deleteSAML2Token(responseKey);
-            } catch (SAML2TokenRepositoryException e) {
-                logger.error("Failed to remove data for responseKey {}", responseKey, e);
-            }
-            SPCache.samlResponseDataHash.put(responseKey, data);
         }
 
-        storageKey = responseKey;
-        assertionSubject = data.getSubject();
-        authnAssertion = data.getAssertion();
-        sessionIndex = data.getSessionIndex();
-        respInfo = data.getResponseInfo();
+        storageKey = keyUsed;
+        assertionSubject = samlData.getRawSubject();
+        authnAssertion = samlData.getRawAssertion();
+        sessionIndex = samlData.getSessionIndex();
+        respInfo = samlData.getRawResponseInfo();
 
         try { //you're already linked or we auto looked up user
             username = SPACSUtils.getSsoResultWithoutLocalLogin(assertionSubject, authnAssertion,
@@ -321,16 +318,19 @@ public class SAML2 extends AMLoginModule {
         return injectCallbacks(null, state);
     }
 
-    /**
-     * Retrieve the response key from the request.
-     * @param request The Http Servlet Request.
-     * @return The response key returned from the IdP, or null if not present.
-     */
+    private String getSamlObjectKey(final HttpServletRequest request) {
+        return getRequestValue(request, Saml2ClientConstants.SAML_OBJECT_KEY_PARAM);
+    }
+
     private String getResponseKey(final HttpServletRequest request) {
+        return getRequestValue(request, Saml2ClientConstants.RESPONSE_KEY);
+    }
+
+    private String getRequestValue(final HttpServletRequest request, final String fieldName) {
         if (request.getParameter("jsonContent") != null) {
-            return JsonValueBuilder.toJsonValue(request.getParameter("jsonContent")).get("responsekey").asString();
+            return JsonValueBuilder.toJsonValue(request.getParameter("jsonContent")).get(fieldName).asString();
         } else {
-            return request.getParameter(Saml2ClientConstants.RESPONSE_KEY);
+            return request.getParameter(fieldName);
         }
     }
 

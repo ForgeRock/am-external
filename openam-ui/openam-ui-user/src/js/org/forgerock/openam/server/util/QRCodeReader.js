@@ -29,7 +29,7 @@ const getCode = function (options) {
 };
 
 /**
- * Creates QRCode and places it on in the target id.
+ * Creates QRCode and places it in the target id.
  *
  * This method is called by <strong>org.forgerock.openam.utils.qr</strong> via the
  * ScriptTextOutputCallback in the RestLoginView.
@@ -38,18 +38,24 @@ const getCode = function (options) {
  * @param  {string} options.code - used to generate QR code.
  * @param  {string} options.text - used to generate QR code.
  * @param  {string} options.id - used to select target.
+ * @param  {string} options.showDeviceOption - if true, shows the option to login on a mobile device.
  */
 QRCodeReader.createCode = function (options) {
     const code = getCode(options);
-    const element = $("<div class='text-center'/>");
-    element.append(code);
     const container = $(`#${options.id}`);
-    container.append(element);
-    container.append(
-        `<div class="form-group">
-            <a href="${options.text}" class="btn btn-lg btn-block btn-uppercase btn-default"
-            >${$.t("templates.user.LoginTemplate.onMobileDevice")}</a>
-        </div>`);
+    const qrElement = $("<div class='text-center'/>").append(code);
+    container.append(qrElement);
+
+    const showDeviceOption = options.showDeviceOption === undefined || options.showDeviceOption;
+
+    if (showDeviceOption) {
+        container.append(
+            `<div class="form-group">
+                <a href="${options.text}" class="btn btn-lg btn-block btn-uppercase btn-default"
+                >${$.t("templates.user.LoginTemplate.onMobileDevice")}</a>
+            </div>`
+        );
+    }
 };
 
 export default QRCodeReader;

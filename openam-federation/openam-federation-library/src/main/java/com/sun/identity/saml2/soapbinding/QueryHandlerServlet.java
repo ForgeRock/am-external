@@ -39,14 +39,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPMessage;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPMessage;
 
-import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.saml2.Saml2EntityRole;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
@@ -87,10 +89,17 @@ public class QueryHandlerServlet extends HttpServlet {
     static final String METAALIAS_KEY = "/metaAlias" ;
     private static Logger debug = LoggerFactory.getLogger(QueryHandlerServlet.class);
 
-    private SOAPCommunicator soapCommunicator;
+    private final SOAPCommunicator soapCommunicator;
+    private final Provider<Saml2CredentialResolver> credentialResolverProvider;
+
+    @Inject
+    QueryHandlerServlet(SOAPCommunicator soapCommunicator, Provider<Saml2CredentialResolver> credentialResolverProvider) {
+        this.soapCommunicator = soapCommunicator;
+        this.credentialResolverProvider = credentialResolverProvider;
+    }
     
     public void init() throws ServletException {
-        soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        debug.debug("QueryHandlerServlet: Initializing...");
     }
     
     /**
@@ -107,7 +116,6 @@ public class QueryHandlerServlet extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response)
             throws ServletException, IOException {
-        
         processRequest(request,response);
     }
     
@@ -233,9 +241,9 @@ public class QueryHandlerServlet extends HttpServlet {
      * @param assertion the <code>Assertion</code> to be signed.
      * @throws SAML2Exception It there is an error signing the assertion.
      */
-    static void signAssertion(String realm, String pdpEntityID, String pepEntityId, Assertion assertion)
+    private void signAssertion(String realm, String pdpEntityID, String pepEntityId, Assertion assertion)
             throws SAML2Exception {
-        Saml2SigningCredentials credentials = InjectorHolder.getInstance(Saml2CredentialResolver.class)
+        Saml2SigningCredentials credentials = credentialResolverProvider.get()
                 .resolveActiveSigningCredential(realm, pdpEntityID, Saml2EntityRole.XACML_PDP);
         Key signingKey = credentials.getSigningKey();
         X509Certificate signingCert = credentials.getSigningCertificate();
@@ -465,7 +473,7 @@ public class QueryHandlerServlet extends HttpServlet {
      * @param pdpEntityID Policy Decision Point Entity Identifier.
      * @exception <code>SAML2Exception</code> if there is an exception.
      */
-    static void signResponse(Response response,
+    private void signResponse(Response response,
                                String realm, String pepEntityID,
                                String pdpEntityID)
         throws SAML2Exception {
@@ -501,7 +509,7 @@ public class QueryHandlerServlet extends HttpServlet {
                                                 wantResponseSigned);
                 debug.debug(classMethod + "Cert Alias:" + pdpSignCertAlias);
             }
-            Saml2SigningCredentials credentials = InjectorHolder.getInstance(Saml2CredentialResolver.class)
+            Saml2SigningCredentials credentials = credentialResolverProvider.get()
                     .resolveActiveSigningCredential(realm, pdpEntityID, Saml2EntityRole.XACML_PDP);
             Key signingKey = credentials.getSigningKey();
             if (signingKey == null) {

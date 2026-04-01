@@ -11,9 +11,9 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
-import { debounce, get, has, max, pull, reduce, without } from "lodash";
+import { debounce, get, has, max, omit, reduce, without } from "lodash";
 import { DragDropContext } from "react-dnd";
 import { Grid, Row } from "react-bootstrap";
 import classnames from "classnames";
@@ -22,7 +22,7 @@ import Measure from "react-measure";
 import PropTypes from "prop-types";
 import React, { Component, Fragment } from "react";
 
-import EditTreeNodeTypesContainer from "./nodeTypes/EditTreeNodeTypesContainer";
+import EditTreeNodeTypes from "./nodeTypes/EditTreeNodeTypes";
 import EditTreeNodeProperties from "./EditTreeNodeProperties";
 import EditTreeToolbar from "./toolbar/EditTreeToolbar";
 import Fullscreen from "components/Fullscreen";
@@ -34,7 +34,10 @@ import {
 import SubNav from "components/SubNav";
 import SubNavRealmHomeLink from "org/forgerock/openam/ui/admin/views/realms/SubNavRealmHomeLink";
 import Tree from "./tree/Tree";
-import { TREE_PADDING } from "./tree/TreePadding";
+import UpdateNodeModal from "./modals/UpdateNodeModal";
+import RevertNodeModal from "./modals/RevertNodeModal";
+import { TREE_PADDING } from "org/forgerock/openam/ui/admin/utils/treeUtils";
+import { isHigherVersion } from "org/forgerock/openam/ui/admin/utils/nodeVersioningUtils";
 
 const calculateTreeContainerHeight = (isFullscreen) => {
     const NAVBAR_HEIGHT = 76;
@@ -61,16 +64,20 @@ const calculateCanvasDimensions = (dimensions, nodes, containerHeight, container
     return { canvasWidth, canvasHeight };
 };
 
-const debouncedNodePropertiesChange = debounce((onNodePropertiesChange, id, type, properties) => {
+const debouncedNodePropertiesChange = debounce((onNodePropertiesChange, id, type, properties, nodeVersion) => {
     // The need to have instant feedback upon changing an input, is greater than the need to debounce when entering
     // multiple characters into an input. The compromise for usability is to set the leading flag to true.
-    onNodePropertiesChange(id, type, properties);
+    onNodePropertiesChange(id, type, properties, nodeVersion);
 }, 500, { leading: true });
 
 class EditTree extends Component {
     constructor (props) {
         super(props);
-        this.state = { containerWidth: 0 };
+        this.state = {
+            containerWidth: 0,
+            updateNodeModalVisible: false,
+            revertNodeModalVisible: false
+        };
     }
 
     UNSAFE_componentWillMount () {
@@ -98,7 +105,27 @@ class EditTree extends Component {
     };
 
     handleNodePropertiesChange = (id, type, properties) => {
-        debouncedNodePropertiesChange(this.props.onNodePropertiesChange, id, type, properties);
+        debouncedNodePropertiesChange(this.props.onNodePropertiesChange, id, type, properties, properties.version);
+    };
+
+    handleUpdateNodeVersionClicked = (node, toVersion) => {
+        this.props.onUpdateNodeVersion(node, toVersion);
+
+        const isUpgrading = isHigherVersion(toVersion, node.version);
+
+        if (isUpgrading) {
+            this.setState({ updateNodeModalVisible: true });
+        } else {
+            this.setState({ revertNodeModalVisible: true });
+        }
+    };
+
+    handleHideUpdateModal = () => {
+        this.setState({ updateNodeModalVisible: false });
+    };
+
+    handleHideRevertModal = () => {
+        this.setState({ revertNodeModalVisible: false });
     };
 
     render () {
@@ -116,22 +143,37 @@ class EditTree extends Component {
             }
         };
 
-        const removeCurrentTreeFromInnerNodeSchema = ({ ...schema }) => {
-            schema.properties.tree.enumNames =
-                without(schema.properties.tree.enumNames, this.props.treeId);
-            schema.properties.tree.enum =
-                without(schema.properties.tree.enum, this.props.treeId);
-            return schema;
-        };
-
-        const removeNodesFromPageNodeSchema = ({ ...schema }) => {
-            delete schema.properties.nodes;
-            if (schema.required) {
-                return {
-                    ...schema,
-                    required: pull(schema.required, "nodes")
-                };
+        const removeCurrentTreeFromInnerNodeSchema = (schema) => ({
+            ...schema,
+            properties: {
+                ...schema.properties,
+                tree: {
+                    ...schema.properties.tree,
+                    enumNames: without(schema.properties.tree.enumNames, this.props.treeId),
+                    "enum": without(schema.properties.tree.enum, this.props.treeId)
+                }
             }
+        });
+
+        const removeNodesFromPageNodeSchema = (schema) => {
+            const newSchema = {
+                ...schema,
+                properties: omit(schema.properties, "nodes")
+            };
+
+            if (newSchema.required) {
+                newSchema.required = without(newSchema.required, "nodes");
+            }
+
+            if (newSchema["ui:order"]) {
+                newSchema["ui:order"] = without(newSchema["ui:order"], "nodes");
+            }
+
+            if (newSchema.order) {
+                newSchema.order = without(newSchema.order, "nodes");
+            }
+
+            return newSchema;
         };
 
         const getSchema = (selectedNodeType) => {
@@ -154,6 +196,7 @@ class EditTree extends Component {
             const selectedNodeType = get(this.props.selectedNode, "type");
             const schema = this.props.selectedNodeSchema ? getSchema(selectedNodeType) : undefined;
             const collapsedRight = !!(this.props.selectedNodeSchema && this.props.selectedNode.id);
+
             return (
                 <Fragment>
                     <SubNav fluid>
@@ -163,7 +206,10 @@ class EditTree extends Component {
                         <Row>
                             <Fullscreen isFullscreen={ this.props.isFullscreen }>
                                 <div className="authtree-container">
-                                    <EditTreeNodeTypesContainer />
+                                    <EditTreeNodeTypes
+                                        groupedNodeTypes={ this.props.groupedNodeTypes }
+                                        nodeTypes={ this.props.nodeTypes }
+                                    />
                                     <div
                                         className={ classnames({
                                             "authtree-content-centre": true,
@@ -207,6 +253,7 @@ class EditTree extends Component {
                                         onDisplayNameChange={ this.props.onNodeDisplayNameChange }
                                         onFieldChange={ this.props.onNodePropertiesFieldChange }
                                         onPropertiesChange={ this.handleNodePropertiesChange }
+                                        onUpdateNodeVersion={ this.handleUpdateNodeVersionClicked }
                                         properties={ this.props.selectedNodeProperties }
                                         schema={ schema }
                                     />
@@ -214,6 +261,18 @@ class EditTree extends Component {
                             </Fullscreen>
                         </Row>
                     </Grid>
+                    <UpdateNodeModal
+                        isVisible={ this.state.updateNodeModalVisible }
+                        onClose={ this.handleHideUpdateModal }
+                        onUpdateNode={ this.props.onUpdateNode }
+                        updateData={ this.props.nodeUpdate }
+                    />
+                    <RevertNodeModal
+                        isVisible={ this.state.revertNodeModalVisible }
+                        onClose={ this.handleHideRevertModal }
+                        onRevertNode={ this.props.onUpdateNode }
+                        updateData={ this.props.nodeUpdate }
+                    />
                 </Fragment>
             );
         }
@@ -222,6 +281,7 @@ class EditTree extends Component {
 
 EditTree.propTypes = {
     dimensions: PropTypes.objectOf(PropTypes.object).isRequired,
+    groupedNodeTypes: PropTypes.objectOf(PropTypes.array),
     isFetching: PropTypes.bool.isRequired,
     isFullscreen: PropTypes.bool.isRequired,
     localNodeProperties: PropTypes.objectOf(PropTypes.shape({
@@ -232,6 +292,8 @@ EditTree.propTypes = {
             _id: PropTypes.string
         }))
     })).isRequired,
+    nodeTypes: PropTypes.arrayOf(PropTypes.object).isRequired,
+    nodeUpdate: PropTypes.objectOf(PropTypes.any),
     nodes: PropTypes.objectOf(PropTypes.object).isRequired,
     nodesInPages: PropTypes.objectOf(PropTypes.string).isRequired,
     onAutoLayout: PropTypes.func.isRequired,
@@ -247,9 +309,12 @@ EditTree.propTypes = {
     onNodePropertiesFieldChange: PropTypes.func.isRequired,
     onNodeSelect: PropTypes.func.isRequired,
     onTreeSave: PropTypes.func.isRequired,
+    onUpdateNode: PropTypes.func.isRequired,
+    onUpdateNodeVersion: PropTypes.func.isRequired,
     selectedNode: PropTypes.shape({
         id: PropTypes.string,
-        type: PropTypes.string
+        type: PropTypes.string,
+        version: PropTypes.string
     }),
     selectedNodeIsNew: PropTypes.bool.isRequired,
     selectedNodeProperties: PropTypes.objectOf(PropTypes.any),

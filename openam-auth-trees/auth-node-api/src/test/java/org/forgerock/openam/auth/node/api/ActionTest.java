@@ -11,12 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.node.api;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -26,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Optional;
 
 import org.forgerock.json.JsonValue;
@@ -39,8 +39,10 @@ public class ActionTest {
         String nodeType = "SOME_NODE_TYPE";
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
-        TreeContext context = new TreeContext(sharedState, transientState, new ExternalRequestContext.Builder().build(),
-                emptyList(), Optional.empty());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .build();
 
         //When
         Action action = Action.goTo("successOutcome")
@@ -51,6 +53,49 @@ public class ActionTest {
         assertTrue(action.sharedState.isDefined(NODE_TYPE));
         assertFalse(action.sharedState.contains(NODE_TYPE));
         assertThat(action.sharedState.get(NODE_TYPE).asString()).contains(nodeType);
+    }
+
+    @Test
+    void testAddNodeTypeDuplication() {
+        //Given
+        String nodeType = "NodeType";
+        JsonValue sharedState = json(object());
+        JsonValue transientState = json(object());
+        TreeContext context = TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .build();
+
+        // As nodeType is a String of items, we need to ensure non-duplicate entries that contain the string aren't
+        // mistaken for entries
+        String prefixNodeType = "Pre" + nodeType;
+        String suffixNodeType = nodeType + "Post";
+        Action action1 = Action.goTo("successOutcome")
+                .addNodeType(context, prefixNodeType)
+                .addNodeType(context, nodeType)
+                .addNodeType(context, nodeType)
+                .addNodeType(context, suffixNodeType)
+                .addNodeType(context, nodeType)
+                .build();
+
+        Action action2 = Action.goTo("successOutcome")
+                .addNodeType(context, nodeType)
+                .addNodeType(context, prefixNodeType)
+                .addNodeType(context, nodeType)
+                .build();
+
+        //Then
+        assertThat(elementCount(action1, nodeType)).isEqualTo(1L);
+        assertThat(elementCount(action2, nodeType)).isEqualTo(1L);
+        assertThat(elementCount(action1, prefixNodeType)).isEqualTo(1L);
+        assertThat(elementCount(action1, suffixNodeType)).isEqualTo(1L);
+        assertThat(elementCount(action2, prefixNodeType)).isEqualTo(1L);
+    }
+
+    private long elementCount(Action action, String nodeType) {
+        String nodeTypesString = action.sharedState.get(NODE_TYPE).asString();
+        String[] nodeTypes = nodeTypesString.split("\\|");
+        return Arrays.stream(nodeTypes).filter(nodeType::equals).count();
     }
 
     @Test

@@ -31,6 +31,7 @@ package com.sun.identity.saml2.servlet;
 
 import java.io.IOException;
 
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,6 +49,7 @@ import com.sun.identity.saml2.profile.SPSSOFederate;
  * This class <code>SPSingleLogoutServiceSOAP</code> receives and processes 
  * single logout request using SOAP binding on SP side.
  */
+@Singleton
 public class SPECPService extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(SPECPService.class);

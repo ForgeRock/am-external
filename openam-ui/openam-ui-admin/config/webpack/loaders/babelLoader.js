@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 const babelLoader = () => ({
@@ -41,7 +41,8 @@ const babelLoader = () => ({
         plugins: [
             "@babel/plugin-proposal-class-properties",
             "@babel/plugin-proposal-object-rest-spread",
-            "@babel/plugin-syntax-dynamic-import"
+            "@babel/plugin-syntax-dynamic-import",
+            "@babel/transform-optional-chaining"
         ]
     }
 });

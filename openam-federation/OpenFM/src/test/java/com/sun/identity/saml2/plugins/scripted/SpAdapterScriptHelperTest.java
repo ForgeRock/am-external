@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
@@ -39,17 +39,17 @@ import com.sun.identity.saml2.common.SAML2Utils;
 
 public class SpAdapterScriptHelperTest {
 
-    private static final String realm = "myRealm";
-    private static final String spEntityId = "mySp";
-    private static final List<String> SpAdapterEnvList = List.of("key1=value1", "key2=value2", "key3=value3");
-    private static MockedStatic<SAML2Utils> saml2UtilsMockedStatic;
+    private static final String REALM_VALUE = "myRealm";
+    private static final String SP_ENTITY_ID_VALUE = "mySp";
+    private static final List<String> SP_ADAPTER_ENV_LIST = List.of("key1=value1", "key2=value2", "key3=value3");
+    private MockedStatic<SAML2Utils> saml2UtilsMockedStatic;
 
-    // Class under test
-    SpAdapterScriptHelper scriptHelper = new SpAdapterScriptHelper();
+    private SpAdapterScriptHelper scriptHelper;
 
     @BeforeEach
     void setup() {
         saml2UtilsMockedStatic = mockStatic(SAML2Utils.class);
+        scriptHelper = new SpAdapterScriptHelper();
     }
 
     @AfterEach
@@ -60,26 +60,26 @@ public class SpAdapterScriptHelperTest {
     @Test
     void shouldReturnEnvEntriesWhenSpAdapterEnvIsSet() {
         // When
-        when(SAML2Utils.getAllAttributeValueFromSSOConfig(realm, spEntityId, SP_ROLE, SP_ADAPTER_ENV))
-                .thenReturn(SpAdapterEnvList);
+        when(SAML2Utils.getAllAttributeValueFromSSOConfig(REALM_VALUE, SP_ENTITY_ID_VALUE, SP_ROLE, SP_ADAPTER_ENV))
+                .thenReturn(SP_ADAPTER_ENV_LIST);
 
         // Then
-        Map<String, String> spAdapterEnv = scriptHelper.getSpAdapterEnv(realm, spEntityId);
+        Map<String, String> spAdapterEnv = scriptHelper.getSpAdapterEnv(REALM_VALUE, SP_ENTITY_ID_VALUE);
         assertThat(spAdapterEnv).contains(entry("key1", "value1"),
                 entry("key2", "value2"),
                 entry("key3", "value3"),
-                entry(REALM, realm),
-                entry(HOSTED_ENTITY_ID, spEntityId));
+                entry(REALM, REALM_VALUE),
+                entry(HOSTED_ENTITY_ID, SP_ENTITY_ID_VALUE));
     }
 
     @Test
     void shouldReturnDefaultsOnlyWhenSpAdapterEnvIsNotSet() {
         // When
-        when(SAML2Utils.getAllAttributeValueFromSSOConfig(realm, spEntityId, SP_ROLE, SP_ADAPTER_ENV))
+        when(SAML2Utils.getAllAttributeValueFromSSOConfig(REALM_VALUE, SP_ENTITY_ID_VALUE, SP_ROLE, SP_ADAPTER_ENV))
                 .thenReturn(emptyList());
 
         // Then
-        Map<String, String> spAdapterEnv = scriptHelper.getSpAdapterEnv(realm, spEntityId);
-        assertThat(spAdapterEnv).contains(entry(REALM, realm), entry(HOSTED_ENTITY_ID, spEntityId));
+        Map<String, String> spAdapterEnv = scriptHelper.getSpAdapterEnv(REALM_VALUE, SP_ENTITY_ID_VALUE);
+        assertThat(spAdapterEnv).contains(entry(REALM, REALM_VALUE), entry(HOSTED_ENTITY_ID, SP_ENTITY_ID_VALUE));
     }
 }

@@ -19,9 +19,12 @@ package org.forgerock.openam.examples;
 import org.forgerock.openam.entitlement.EntitlementModule;
 import org.forgerock.openam.entitlement.EntitlementRegistry;
 
+import com.google.auto.service.AutoService;
+
 /**
  * Register custom policy types with OpenAM.
  */
+@AutoService(EntitlementModule.class)
 public class SampleEntitlementModule implements EntitlementModule {
     @Override
     public void registerCustomTypes(EntitlementRegistry entitlementRegistry) {

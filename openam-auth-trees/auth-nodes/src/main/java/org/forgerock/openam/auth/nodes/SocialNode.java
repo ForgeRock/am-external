@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -28,8 +28,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.http.Handler;
 import org.forgerock.oauth.OAuthClientConfiguration;
 import org.forgerock.oauth.clients.oauth2.OAuth2ClientConfiguration;
@@ -42,7 +43,6 @@ import org.forgerock.openam.auth.nodes.oauth.AbstractSocialAuthLoginNode;
 import org.forgerock.openam.auth.nodes.oauth.ProfileNormalizer;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.sm.annotations.adapters.Password;
 import org.forgerock.openam.sm.validation.URLValidator;
 
@@ -56,7 +56,7 @@ import com.sun.identity.sm.RequiredValueValidator;
  * @deprecated Use {@link org.forgerock.openam.auth.nodes.SelectIdPNode} and
  * {@link org.forgerock.openam.auth.nodes.SocialProviderHandlerNode} instead.
  */
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 @Node.Metadata(outcomeProvider = AbstractSocialAuthLoginNode.SocialAuthOutcomeProvider.class,
         configClass = SocialNode.Config.class,
         tags = {"social", "federation"})

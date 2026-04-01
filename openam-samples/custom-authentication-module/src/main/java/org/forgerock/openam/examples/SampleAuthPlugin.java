@@ -27,12 +27,14 @@ import org.forgerock.openam.plugins.AmPlugin;
 import org.forgerock.openam.plugins.PluginException;
 import org.forgerock.openam.plugins.PluginTools;
 
-import com.google.inject.Inject;
+import com.google.auto.service.AutoService;
+import jakarta.inject.Inject;
 
 /**
  * Plugin which installs the SampleAuth implementation and the amAuthSampleAuth.xml service schema when AM is started
  * for the first time after adding this plugin.
  */
+@AutoService(AmPlugin.class)
 public class SampleAuthPlugin implements AmPlugin {
 
     private PluginTools pluginTools;

@@ -23,11 +23,13 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
 import java.security.PrivilegedAction;
 
-import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
+import jakarta.inject.Inject;
+
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
@@ -36,7 +38,6 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.idrepo.ldap.IdentityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,34 +99,40 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
         passwordCallback.setPassword(getPassword(context, username));
         logger.debug("NameCallback and PasswordCallback set");
         Callback[] callbacks = new Callback[]{nameCallback, passwordCallback};
-        Action.ActionBuilder action = goTo(true);
-        if (username != null) {
-            action.withIdentifiedIdentity(username, getIdentityType());
-        }
+        return getAction(username, nameCallback, passwordCallback, identityStore, callbacks)
+                .withUniversalId(identityService.getUniversalId(username, realm, getIdentityType()))
+                .replaceSharedState(context.sharedState.copy())
+                .replaceTransientState(context.transientState.copy()).build();
+    }
+
+    private Action.ActionBuilder getAction(String username, NameCallback nameCallback,
+                                           PasswordCallback passwordCallback, IdentityStore identityStore,
+                                           Callback[] callbacks) throws NodeProcessException {
         try {
             logger.debug("authenticating {} ", nameCallback.getName());
             if (String.valueOf(passwordCallback.getPassword()).isBlank()) {
                 logger.debug("password is blank outcome is false for user {} ", nameCallback.getName());
-                action = goTo(false);
+                return goTo(false);
             } else {
                 boolean isAuthenticationFailed = !identityStore.authenticate(getIdentityType(), callbacks);
                 if (isAuthenticationFailed) {
-                    action = goTo(false);
+                    return goTo(false);
                 }
             }
         } catch (InvalidPasswordException e) {
             logger.warn("invalid password error");
-            action = goTo(false);
+            return goTo(false);
         } catch (IdentityNotFoundException e) {
             logger.warn("invalid username error");
-            action = goTo(false);
+            return goTo(false);
         } catch (IdRepoException | AuthLoginException e) {
             logError(e, "Exception in data store decision node");
         }
-        return action
-                .withUniversalId(identityService.getUniversalId(username, realm, getIdentityType()))
-                .replaceSharedState(context.sharedState.copy())
-                .replaceTransientState(context.transientState.copy()).build();
+        if (username != null) {
+            return goTo(true).withIdentifiedIdentity(username, getIdentityType());
+        } else {
+            return goTo(true);
+        }
     }
 
     private void logError(Exception e, String logMessage) throws NodeProcessException {

@@ -24,7 +24,7 @@ import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
 import org.forgerock.util.Reject;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
 

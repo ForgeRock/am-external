@@ -24,7 +24,7 @@
  *
  * $Id: SAML2SDKUtils.java,v 1.12 2008/08/31 05:49:48 bina Exp $
  *
- * Portions copyright 2014-2025 Ping Identity Corporation.
+ * Portions copyright 2014-2026 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.common;
 
@@ -523,7 +523,7 @@ public class SAML2SDKUtils {
      * @param byteArray Byte Array to be converted.
      * @return result of the conversion.
      */
-    @Deprecated(since = "7.3.0")
+    @Deprecated(since = "7.3.0", forRemoval = true)
     public static String byteArrayToHexString(byte[] byteArray) {
         return Hex.encode(byteArray);
     }
@@ -535,7 +535,7 @@ public class SAML2SDKUtils {
      * @param hexString <code>Hex</code> String to be converted.
      * @return result of the conversion.
      */
-    @Deprecated(since = "7.3.0")
+    @Deprecated(since = "7.3.0", forRemoval = true)
     public static byte[] hexStringToByteArray(String hexString) {
         return Hex.decode(hexString);
     }

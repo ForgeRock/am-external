@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.mail.internet.MimeUtility;
 
 import org.forgerock.json.JsonValue;

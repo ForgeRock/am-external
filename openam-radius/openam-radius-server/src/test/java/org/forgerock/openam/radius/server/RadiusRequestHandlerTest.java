@@ -29,6 +29,7 @@ import java.util.Optional;
 
 import org.forgerock.openam.radius.common.AccessAccept;
 import org.forgerock.openam.radius.common.AccessReject;
+import org.forgerock.openam.radius.common.MessageAuthenticatorCalculator;
 import org.forgerock.openam.radius.common.Packet;
 import org.forgerock.openam.radius.common.Utils;
 import org.forgerock.openam.radius.server.config.ClientConfig;

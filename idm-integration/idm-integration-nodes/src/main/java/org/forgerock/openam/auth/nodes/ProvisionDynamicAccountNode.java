@@ -46,7 +46,7 @@ import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.sm.RequiredValueValidator;

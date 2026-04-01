@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2025 Ping Identity Corporation.
+ * Copyright 2011-2026 Ping Identity Corporation.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -75,6 +75,7 @@ import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.LoginException;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -117,7 +118,7 @@ import com.sun.identity.shared.encode.CookieUtils;
  * This module is deprecated from OpenAM version 14.5.0 onwards.
  * Please use SocialAuthOAuth2 and SocialAuthOpenID instead.
  */
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 public class OAuth extends AMLoginModule {
 
     public static final String PROFILE_SERVICE_RESPONSE = "ATTRIBUTES";

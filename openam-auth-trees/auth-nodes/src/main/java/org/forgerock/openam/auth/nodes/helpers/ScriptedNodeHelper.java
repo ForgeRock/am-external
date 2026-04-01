@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.helpers;
 
@@ -33,11 +33,10 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 import javax.script.Bindings;
-import javax.validation.constraints.NotNull;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.forgerock.am.cts.CTSPersistentStore;
 import org.forgerock.am.cts.api.tokens.Token;
@@ -62,12 +61,14 @@ import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.session.Session;
 import org.forgerock.util.Reject;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Provider;
 import com.iplanet.dpro.session.SessionException;
 import com.iplanet.dpro.session.service.SessionService;
-import com.sun.identity.saml2.common.SAML2FailoverUtils;
+import com.sun.identity.saml2.common.SAMLDataAccessor;
 
 /**
  * Utilities for running scripts in authentication nodes.
@@ -83,7 +84,7 @@ public class ScriptedNodeHelper implements AuthScriptUtilities {
      * @deprecated Use {@link #STATE_IDENTIFIER} instead as this method does not leak implementation detail
      * of the specific type of state.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public static final String SHARED_STATE_IDENTIFIER = "sharedState";
     /**
      * Transient state identifier for scripts bindings.
@@ -91,7 +92,7 @@ public class ScriptedNodeHelper implements AuthScriptUtilities {
      * @deprecated Use {@link #STATE_IDENTIFIER} instead as this method does not leak implementation detail
      * of the specific type of state.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public static final String TRANSIENT_STATE_IDENTIFIER = "transientState";
 
     private final ScriptHttpClientFactory httpClientFactory;
@@ -243,7 +244,7 @@ public class ScriptedNodeHelper implements AuthScriptUtilities {
      * @return SAML application object, or <pre>Optional.empty</pre> if not found.
      * @throws NodeProcessException If the SAML application object could not be retrieved.
      */
-    public Optional<SAMLScriptedBindingObject> getSamlDecisionNodeApplication(TreeContext context)
+    public Optional<SAMLScriptedBindingObject> getSAMLData(TreeContext context)
             throws NodeProcessException {
         var requestParams = context.request.parameters;
         String storageKey = getFirstItem(requestParams.get(SAML_OBJECT_KEY_PARAM));
@@ -252,7 +253,7 @@ public class ScriptedNodeHelper implements AuthScriptUtilities {
         }
         try {
             SAMLScriptedBindingObject application =
-                    (SAMLScriptedBindingObject) SAML2FailoverUtils.retrieveSAML2Token(storageKey);
+                    SAMLDataAccessor.getSAMLData(storageKey);
             if  (application == null) {
                 throw new NodeProcessException("Failed to retrieve SAML application object from CTS store");
             } else {

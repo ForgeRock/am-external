@@ -292,6 +292,13 @@
                 "type": "string",
                 "default": "com.sun.identity.saml2.plugins.DefaultSPAccountMapper"
               },
+              "spAccountMapperScript": {
+                "attributeKey": "spAccountMapperScript",
+                "title": "Account Mapper Script",
+                "description": "Script to locate the local user, based on the incoming assertion. If no script is selected, the specified attribute mapper Java Class is used.",
+                "type": "string",
+                "default": "[Empty]"
+              },
               "useNameIDAsSPUserID": {
                 "attributeKey": "useNameIDAsSPUserID",
                 "title": "Use Name ID as User ID",
@@ -332,6 +339,20 @@
                 "title": "External Application Logout URL",
                 "description": "This is the logout URL for an external application. Once the server receives logout request from the remote partner, a request will be sent to the logout URL using back channel HTTP POST with all cookies. Optionally, a user session property could be sent as HTTP header and POST parameter if a query parameter \"appsessionproperty\" (set to the session property name) is included in the URL. e.g. \"http://www.app.domain.com/uri/logout?appsessionproperty=mail\"",
                 "type": "string"
+              }
+            }
+          },
+          "redirectTreeConfiguration": {
+            "traverseObject": true,
+            "title": "Redirect Tree",
+            "type": "object",
+            "properties": {
+              "redirectTreeName": {
+                "attributeKey": "redirectTreeName",
+                "title": "Redirect Tree Name",
+                "type": "string",
+                "default": "[Empty]",
+                "description": "If specified, AM redirects to this tree after validating the SAML2 assertion from the IdP. If both a `Local Authentication URL` and a `Redirect Tree Name` are specified, AM prioritizes the `Local Authentication URL`."
               }
             }
           },

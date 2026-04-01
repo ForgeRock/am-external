@@ -11,10 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
+import static org.forgerock.am.trees.api.NodeRegistry.DEFAULT_VERSION;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -24,7 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -36,6 +37,8 @@ import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.treehook.FailureDetailsTreeHook;
+import org.forgerock.openam.auth.nodes.validators.ReservedCookieValidator;
+import org.forgerock.openam.auth.nodes.validators.ReservedHeaderValidator;
 import org.forgerock.openam.core.realms.Realm;
 
 import com.google.inject.assistedinject.Assisted;
@@ -68,7 +71,7 @@ public class SetFailureDetailsNode extends SingleOutcomeNode {
             data = json(object(field("message", message)));
         }
         return goToNext().addSessionHook(FailureDetailsTreeHook.class, nodeId,
-                SetFailureDetailsNode.class.getSimpleName(), data)
+                SetFailureDetailsNode.class.getSimpleName(), DEFAULT_VERSION, data)
                        .build();
     }
 
@@ -99,5 +102,12 @@ public class SetFailureDetailsNode extends SingleOutcomeNode {
          */
         @Attribute(order = 200)
         Map<String, String> failureDetails();
+
+        /**
+         * The headers to set on tree failure.
+         * @return the headers
+         */
+        @Attribute(order = 300, validators = { ReservedHeaderValidator.class, ReservedCookieValidator.class })
+        Map<String, String> headerControl();
     }
 }

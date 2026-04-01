@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import javax.security.auth.Subject;
 
 import org.forgerock.openam.annotations.EvolvingAll;

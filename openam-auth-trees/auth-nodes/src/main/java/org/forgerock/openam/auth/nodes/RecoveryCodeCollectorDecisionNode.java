@@ -24,7 +24,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
 import java.util.ResourceBundle;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.callback.NameCallback;
 
 import org.forgerock.json.JsonValue;

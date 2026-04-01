@@ -52,8 +52,8 @@ public class RadiusRequest {
     private volatile String userName;
 
     /**
-     * A unique ID associated with the request. Formed from a UUID with -rid-<id> appended, where <id> is the requestId
-     * from the radius packet.
+     * A unique ID associated with the request. Formed from a UUID with -rid-&lt;id&gt; appended, where &lt;id&gt;
+     * is the requestId from the radius packet.
      */
     private final String requestId;
 

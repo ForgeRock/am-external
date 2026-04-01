@@ -20,7 +20,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;

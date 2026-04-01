@@ -31,6 +31,7 @@ package com.sun.identity.saml2.servlet;
 
 import java.io.IOException;
 
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +52,7 @@ import com.sun.identity.saml2.profile.AssertionIDRequestUtil;
  * This class <code>AssertionIDRequestServiceURI</code> receives and processes
  * assertion ID request using URI binding.
  */
+@Singleton
 public class AssertionIDRequestServiceURI extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(AssertionIDRequestServiceURI.class);

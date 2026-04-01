@@ -11,37 +11,43 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.framework.script;
 
 import java.util.Collections;
 import java.util.List;
 
-import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptContext;
-import org.forgerock.openam.scripting.domain.nextgen.NextGenScriptContext;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
-import com.google.auto.service.AutoService;
-import com.google.inject.Singleton;
+import org.forgerock.openam.scripting.domain.OAuthScriptedBindingObject;
+import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
+import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.nextgen.NextGenScriptContext;
 
 /**
  * A {@link NextGenScriptContext} for ConfigProviderNode.
  */
 @Singleton
-@AutoService(ScriptContext.class)
 public class ConfigProviderNodeContext extends NextGenScriptContext<ConfigProviderNodeBindings> {
 
     /**
      * The name of the ConfigProviderNode script context.
      */
     public static final String CONFIG_PROVIDER_NEXT_GEN_NAME = "CONFIG_PROVIDER_NODE_NEXT_GEN";
+    private final SAMLScriptedBindingObject exampleSamlObject;
+    private final OAuthScriptedBindingObject exampleOauthObject;
 
     /**
      * Constructs a new {@link ConfigProviderNodeContext}.
      */
-    public ConfigProviderNodeContext() {
+    @Inject
+    ConfigProviderNodeContext(@SAMLScriptedBindingObject.ExampleObject SAMLScriptedBindingObject exampleSamlObject,
+            @OAuthScriptedBindingObject.ExampleObject OAuthScriptedBindingObject exampleOauthObject) {
         super(ConfigProviderNodeBindings.class);
+        this.exampleSamlObject = exampleSamlObject;
+        this.exampleOauthObject = exampleOauthObject;
     }
 
     @Override
@@ -57,14 +63,21 @@ public class ConfigProviderNodeContext extends NextGenScriptContext<ConfigProvid
     @Override
     public ConfigProviderNodeBindings getExampleBindings() {
         return ConfigProviderNodeBindings.builder()
-                .withNodeState(null)
                 .withIdRepo(null)
                 .withSecrets(null)
-                .withHeaders(Collections.emptyMap())
                 .withHttpClient(null)
+                .withNodeState(null)
+                .withCallbacks(Collections.emptyList())
+                .withHeaders(Collections.emptyMap())
                 .withQueryParameters(Collections.emptyMap())
-                .withExistingSession(Collections.emptyMap())
                 .withScriptedIdentityRepository(null)
+                .withResumedFromSuspend(false)
+                .withExistingSession(Collections.emptyMap())
+                .withRequestCookies(Collections.emptyMap())
+                .withTree(null)
+                .withSamlApplication(exampleSamlObject)
+                .withOauthApplication(exampleOauthObject)
+                .withScriptedLocalizedMessage(null)
                 .build();
     }
 

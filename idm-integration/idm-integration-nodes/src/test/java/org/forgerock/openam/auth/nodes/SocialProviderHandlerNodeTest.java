@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -23,11 +23,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class SocialProviderHandlerNodeTest extends SocialProviderHandlerNodeTestBase {
     protected void setConfigField() {
-        config = mock(SocialProviderHandlerNode.Config.class);
+        config = mock(SocialProviderHandlerNodeV2.Config.class);
     }
 
     protected void setNodeField() {
         node = new SocialProviderHandlerNode(config, authModuleHelper, providerConfigStore, identityService, realm,
-                scriptEvaluatorFactory, idmIntegrationService, authScriptUtilities);
+                scriptEvaluatorFactory, idmIntegrationService, authScriptUtilities, transformationScriptContext,
+                nodeScriptContext);
     }
 }

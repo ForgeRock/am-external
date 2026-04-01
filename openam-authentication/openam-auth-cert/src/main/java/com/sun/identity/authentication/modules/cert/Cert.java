@@ -56,7 +56,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.am.identity.application.model.LdapConnectionParameters;
 import org.forgerock.http.util.Uris;
-import org.forgerock.openam.ldap.LDAPUtils;
+import org.forgerock.openam.ldap.LdapUtils;
 import org.forgerock.opendj.io.Asn1;
 import org.forgerock.opendj.ldap.LdapUrl;
 import org.slf4j.Logger;
@@ -320,7 +320,7 @@ public class Cert extends AMLoginModule {
             }
 
             if (amAuthCert_startSearchLoc != null) {
-                if (!LDAPUtils.isDN(amAuthCert_startSearchLoc)) {
+                if (!LdapUtils.isDN(amAuthCert_startSearchLoc)) {
                     throw new AuthLoginException(amAuthCert, "wrongStartDN", null);
                 }
             }
@@ -509,7 +509,7 @@ public class Cert extends AMLoginModule {
      */
         try {
             ldapParam = LdapConnectionParameters.builder()
-                    .ldapServers(LDAPUtils.getLdapUrls(amAuthCert_serverHost, amAuthCert_serverPort,
+                    .ldapServers(LdapUtils.getLdapUrls(amAuthCert_serverHost, amAuthCert_serverPort,
                             amAuthCert_useSSL.equalsIgnoreCase("true")))
                     .ldapUser(amAuthCert_principleUser)
                     .ldapPassword(amAuthCert_principlePasswd.toCharArray())

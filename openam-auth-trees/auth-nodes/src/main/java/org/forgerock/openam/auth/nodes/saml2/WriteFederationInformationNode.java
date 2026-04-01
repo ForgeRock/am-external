@@ -30,7 +30,7 @@ import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.sun.identity.saml2.common.AccountUtils;
 import com.sun.identity.saml2.common.SAML2Exception;
 

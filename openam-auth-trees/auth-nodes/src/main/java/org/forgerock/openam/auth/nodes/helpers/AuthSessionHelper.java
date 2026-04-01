@@ -17,9 +17,9 @@ package org.forgerock.openam.auth.nodes.helpers;
 
 import static org.forgerock.openam.authentication.api.AuthenticationConstants.SESSION_ID;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import com.google.inject.Provider;
+import jakarta.inject.Singleton;
 
 import org.forgerock.json.jose.builders.JwtBuilderFactory;
 import org.forgerock.json.jose.exceptions.JwtRuntimeException;

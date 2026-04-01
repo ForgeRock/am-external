@@ -16,9 +16,13 @@
 
 package org.forgerock.openam.auth.nodes.oidc;
 
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
-import com.sun.identity.authentication.spi.AuthLoginException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
+
+import jakarta.inject.Inject;
 
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.exceptions.FailedToLoadJWKException;
@@ -36,15 +40,11 @@ import org.forgerock.secrets.GenericSecret;
 import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.secrets.SecretReference;
 import org.forgerock.util.Strings;
-import org.forgerock.util.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import com.google.inject.assistedinject.Assisted;
+import com.sun.identity.authentication.spi.AuthLoginException;
 
 /**
  * The logic required to validate the integrity of an OIDC ID token JWT.
@@ -101,8 +101,7 @@ class OidcIdTokenJwtHandler {
         List<String> audience = jwt.getClaimsSet().getAudience();
         String authorizedParties = jwt.getClaimsSet().get(OAuth2Constants.JWTTokenParams.AZP).asString();
         JwsAlgorithm algorithm = jwt.getHeader().getAlgorithm();
-        Duration unreasonableLifetimeLimit = Duration.duration(nodeConfig.unreasonableLifetimeLimit(),
-                TimeUnit.MINUTES);
+        Duration unreasonableLifetimeLimit = Duration.ofMinutes(nodeConfig.unreasonableLifetimeLimit());
 
         JwtClaimsValidationOptions<AuthLoginException> validationOptions =
                 new JwtClaimsValidationOptions<>(AuthLoginException::new)

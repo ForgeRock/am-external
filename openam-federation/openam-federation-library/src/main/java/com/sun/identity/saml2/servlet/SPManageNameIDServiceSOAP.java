@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,6 +53,7 @@ import com.sun.identity.saml2.profile.DoManageNameID;
  * This class <code>SPManageNameIDServiceSOAP</code> receives and processes 
  * Manage NameID request using SOAP binding on SP side.
  */
+@Singleton
 public class SPManageNameIDServiceSOAP extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(SPManageNameIDServiceSOAP.class);

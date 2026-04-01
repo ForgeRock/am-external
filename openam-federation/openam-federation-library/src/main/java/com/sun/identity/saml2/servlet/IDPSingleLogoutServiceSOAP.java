@@ -35,15 +35,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPMessage;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPMessage;
 
-import org.forgerock.guice.core.InjectorHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -68,14 +69,20 @@ import com.sun.identity.saml2.protocol.ProtocolFactory;
  * This class <code>IDPSingleLogoutServiceSOAP</code> receives and processes 
  * single logout request using SOAP binding on IDP side.
  */
+@Singleton
 public class IDPSingleLogoutServiceSOAP extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(IDPSingleLogoutServiceSOAP.class);
 
-    private SOAPCommunicator soapCommunicator;
+    private final SOAPCommunicator soapCommunicator;
+
+    @Inject
+    IDPSingleLogoutServiceSOAP(SOAPCommunicator soapCommunicator) {
+        this.soapCommunicator = soapCommunicator;
+    }
 
     public void init() throws ServletException {
-        soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        logger.debug("IDPSingleLogoutServiceSOAP: Initializing...");
     }
 
     public void doPost(

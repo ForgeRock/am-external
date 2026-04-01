@@ -24,7 +24,7 @@
  *
  * $Id: LogException.java,v 1.2 2008/06/25 05:47:27 qcheng Exp $
  *
- * Portions Copyrighted 2017-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2017-2026 Ping Identity Corporation.
  */
 
 package com.sun.identity.plugin.log;
@@ -38,7 +38,7 @@ import com.sun.identity.shared.locale.L10NMessageImpl;
  *
  */
 @SupportedAll
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 public class LogException extends L10NMessageImpl {
     
     /**

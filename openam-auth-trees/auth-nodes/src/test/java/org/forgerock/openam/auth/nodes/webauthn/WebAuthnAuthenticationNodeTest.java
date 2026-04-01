@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2025 Ping Identity Corporation.
+ * Copyright 2020-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
@@ -56,6 +56,7 @@ import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
@@ -64,7 +65,6 @@ import org.forgerock.am.identity.application.IdentityStoreFactory;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
@@ -85,6 +85,9 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -102,6 +105,9 @@ import com.sun.identity.idm.IdType;
 @MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 @ExtendWith(MockitoExtension.class)
 public class WebAuthnAuthenticationNodeTest {
+
+    private static final String DEFAULT_RESULT = "{\"legacyData\":\"dummy\",\"authenticatorAttachment\":\"platform\"}";
+    private static final String CHALLENGE = "web-authn-challenge";
 
     @Mock
     WebAuthnAuthenticationNode.Config config;
@@ -132,7 +138,6 @@ public class WebAuthnAuthenticationNodeTest {
     @Mock
     UserDeviceSettingsDao userDeviceSettingsDao;
 
-    @Mock
     WebAuthnOutcomeDeserializer webAuthnOutcomeDeserializer;
 
     @Mock
@@ -155,12 +160,12 @@ public class WebAuthnAuthenticationNodeTest {
         given(config.requiresResidentKey()).willReturn(false);
         given(config.timeout()).willReturn(100);
         given(config.relyingPartyDomain()).willReturn(Optional.of("example.com"));
+        given(config.mediation()).willReturn(WebAuthnAuthenticationNode.Config.Mediation.DEFAULT);
 
         given(webAuthnDeviceProfileManager.getDeviceProfiles(any(), any())).willReturn(
                 Collections.singletonList(generateDevice()));
 
-        given(webAuthnOutcomeDeserializer.deserialize("object"))
-                .willReturn(new WebAuthnOutcome("dummy", Optional.of("platform")));
+        webAuthnOutcomeDeserializer = new WebAuthnOutcomeDeserializer();
 
         mockNode();
     }
@@ -179,7 +184,8 @@ public class WebAuthnAuthenticationNodeTest {
     @Test
     void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
         // Given
-        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root"),
+                field(CHALLENGE, "challenge")));
         JsonValue transientState = json(object());
         AttestationFlags flags = mock(AttestationFlags.class);
         AuthData authData = new AuthData(null, flags, 0, null, null);
@@ -194,8 +200,6 @@ public class WebAuthnAuthenticationNodeTest {
 
         doReturn(response).when(mockClientScriptUtilities).parseClientAuthenticationResponse(anyString(), anyBoolean());
         given(mockAuthDataDecoder.decode(any())).willReturn(authData);
-        given(webAuthnOutcomeDeserializer.deserialize(any()))
-                .willAnswer(invocation -> new WebAuthnOutcome(invocation.getArgument(0), Optional.empty()));
 
         // When
         Action result = node.process(getContext(sharedState, transientState, List.of(hvc)));
@@ -214,6 +218,19 @@ public class WebAuthnAuthenticationNodeTest {
     }
 
     @Test
+    public void assertWebAuthnDomExceptionInSharedState() throws Exception {
+        String error = "NotAllowedError:None of the allowed credentials can be authenticated";
+        String transferredError = "ERROR::" + error;
+        Callback callback = new HiddenValueCallback("webAuthnOutcome", transferredError);
+
+        Action result = node.process(getContext(json(object()), json(object()), Collections.singletonList(callback)));
+        String sharedStateError = result.sharedState.get("WebAuthenticationDOMException").asString();
+
+        assertThat(result.outcome).isEqualTo("error");
+        assertThat(sharedStateError).isEqualTo(transferredError);
+    }
+
+    @Test
     void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
         // Given
         JsonValue sharedState = json(object(field(USERNAME, "bob-2"), field(REALM, "root")));
@@ -229,13 +246,14 @@ public class WebAuthnAuthenticationNodeTest {
     @Test
     void testProcessAddsAssertionInfoWhenWebAuthnObjectIsValid() throws Exception {
         // Given
-        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root"),
+                field(CHALLENGE, "challenge")));
         JsonValue transientState = json(object());
         AttestationFlags flags = mock(AttestationFlags.class);
         given(flags.isUserPresent()).willReturn(true);
         AuthData authData = new AuthData(null, flags, 0, null, null);
 
-        HiddenValueCallback outcome = new HiddenValueCallback("webAuthnOutcome", "output");
+        HiddenValueCallback outcome = new HiddenValueCallback("webAuthnOutcome", DEFAULT_RESULT);
         ClientAuthenticationScriptResponse response = mock(ClientAuthenticationScriptResponse.class);
         given((response.getCredentialId())).willReturn(EncodingUtilities.base64UrlEncode("test"));
 
@@ -244,8 +262,6 @@ public class WebAuthnAuthenticationNodeTest {
 
         doReturn(response).when(mockClientScriptUtilities).parseClientAuthenticationResponse(anyString(), anyBoolean());
         given(mockAuthDataDecoder.decode(any())).willReturn(authData);
-        given(webAuthnOutcomeDeserializer.deserialize(any()))
-                .willAnswer(invocation -> new WebAuthnOutcome(invocation.getArgument(0), Optional.of("platform")));
 
         // When
         node.process(getContext(sharedState, transientState, List.of(outcome)));
@@ -311,7 +327,7 @@ public class WebAuthnAuthenticationNodeTest {
         assertThat(result.callbacks.get(0)).isInstanceOf(ScriptTextOutputCallback.class);
         ScriptTextOutputCallback callback = (ScriptTextOutputCallback) result.callbacks.get(0);
         assertThat(callback.getMessage()).contains("document.getElementById(\"loginButton_0\").click()",
-                "var allowRecoveryCode = 'true' === \"true\"");
+                "var allowRecoveryCode = 'true' === scriptContext.allowRecoveryCode");
 
         assertThat(result.callbacks.get(2)).isInstanceOf(HiddenValueCallback.class);
         assertThat(result.callbacks.get(3)).isInstanceOf(ConfirmationCallback.class);
@@ -334,7 +350,7 @@ public class WebAuthnAuthenticationNodeTest {
         assertThat(result.callbacks).hasSize(3);
         assertThat(result.callbacks.get(0)).isInstanceOf(ScriptTextOutputCallback.class);
         String message = ((ScriptTextOutputCallback) result.callbacks.get(0)).getMessage();
-        String options = message.substring(message.indexOf("options = {"), message.indexOf("};") + 1)
+        String options = message.substring(message.indexOf("options = {"), message.indexOf("}\n};") + 3)
                 .substring(10).replaceAll(" ", "").replaceAll("\n", "");
         assertThat(options.contains(",,")).isFalse();
     }
@@ -355,15 +371,13 @@ public class WebAuthnAuthenticationNodeTest {
         assertThat(result.callbacks).hasSize(4);
         assertThat(result.callbacks.get(0)).isInstanceOf(ScriptTextOutputCallback.class);
         String message = ((ScriptTextOutputCallback) result.callbacks.get(0)).getMessage();
-        String options = message.substring(message.indexOf("options = {"), message.indexOf("};") + 1)
+        String options = message.substring(message.indexOf("options = {"), message.indexOf("}\n};") + 3)
                 .substring(10).replaceAll(" ", "").replaceAll("\n", "");
 
-        assertThat(options.contains("{rpId")).isTrue();
-        assertThat(options.contains(",challenge")).isTrue();
+        assertThat(options.contains("challenge")).isTrue();
         assertThat(options.contains(",timeout")).isTrue();
         assertThat(options.contains(",userVerification")).isTrue();
         assertThat(options.contains(",extensions")).isTrue();
-        assertThat(options.contains(",allowCredentials")).isTrue();
     }
 
     @Test
@@ -379,8 +393,6 @@ public class WebAuthnAuthenticationNodeTest {
         String credentialId = EncodingUtilities.base64UrlEncode("dummy");
         hiddenValueCallback.setValue("dummy::1,2,3,4::1,2,3,4::" + credentialId);
         treeContext = treeContext.copyWithCallbacks(Collections.singletonList(hiddenValueCallback));
-        given(webAuthnOutcomeDeserializer.deserialize(any()))
-                .willAnswer(invocation -> new WebAuthnOutcome(invocation.getArgument(0), Optional.empty()));
 
         //When
         Action result = node.process(treeContext);
@@ -427,7 +439,11 @@ public class WebAuthnAuthenticationNodeTest {
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private WebAuthnDeviceSettings generateDevice() {
@@ -513,6 +529,33 @@ public class WebAuthnAuthenticationNodeTest {
                 FAILURE_OUTCOME_ID,
                 ERROR_OUTCOME_ID
         );
+    }
+
+    private static Stream<Arguments> getIncompleteResults() {
+        return Stream.of(
+                Arguments.of("false"),
+                Arguments.of("webAuthnOutcome"),
+                Arguments.of((Object) null),
+                Arguments.of(""),
+                Arguments.of("{\"legacyData\":\"false\"}"),
+                Arguments.of("{\"legacyData\":\"webAuthnOutcome\"}")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getIncompleteResults")
+    void shouldIgnoreIncompleteCallbacks(String result) throws Exception {
+
+        JsonValue sharedState = json(object());
+        JsonValue transientState = json(object());
+        TreeContext context = getContext(sharedState, transientState,
+                List.of(new HiddenValueCallback("webAuthnOutcome", result)));
+
+        Action action = node.process(context);
+
+        assertThat(action.callbacks).hasSize(2);
+        assertThat(action.callbacks.get(0)).isInstanceOf(MetadataCallback.class);
+        assertThat(action.callbacks.get(1)).isInstanceOf(HiddenValueCallback.class);
     }
 
 }

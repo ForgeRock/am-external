@@ -31,7 +31,7 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.validators.PercentageValidator;
 import org.forgerock.util.i18n.PreferredLocales;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 
 /**

@@ -24,7 +24,7 @@
  *
  * $Id: IFSConstants.java,v 1.12 2008/08/29 04:57:15 exu Exp $
  *
- * Portions Copyrights 2014-2025 Ping Identity Corporation.
+ * Portions Copyrights 2014-2026 Ping Identity Corporation.
  */
 package com.sun.identity.federation.common;
 
@@ -32,13 +32,13 @@ import org.forgerock.openam.annotations.SupportedAll;
 
 /**
  * This interface represents a collection of common constants used by
- * the classes in Federation Service.  
+ * the classes in Federation Service.
  */
 @SupportedAll
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 public interface IFSConstants {
     /**
-     * Status code: <code>samlp:Responder</code>  
+     * Status code: <code>samlp:Responder</code>
      */
     String SAML_RESPONDER = "samlp:Responder";
     /**
@@ -66,4 +66,3 @@ public interface IFSConstants {
      */
     String SAML_ART = "SAMLart";
 }
-

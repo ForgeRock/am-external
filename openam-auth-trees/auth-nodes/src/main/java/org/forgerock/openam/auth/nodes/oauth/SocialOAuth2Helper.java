@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.oauth;
 
@@ -43,6 +43,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.http.client.utils.URIBuilder;
@@ -77,7 +78,6 @@ import org.forgerock.util.Reject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
 import com.sun.identity.authentication.service.AuthD;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
@@ -155,7 +155,7 @@ public class SocialOAuth2Helper {
      *
      * @deprecated Use overloaded method with {@link OAuthClientConfig}
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public OAuthClient newOAuthClient(Realm realm, OAuthClientConfiguration config, Handler handler) {
         try {
             final Class<? extends OAuthClient> oauthClient =

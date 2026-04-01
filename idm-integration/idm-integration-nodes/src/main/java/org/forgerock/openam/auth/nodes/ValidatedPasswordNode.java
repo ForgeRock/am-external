@@ -32,9 +32,10 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.PasswordCallback;
+
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -205,13 +206,11 @@ public class ValidatedPasswordNode extends SingleOutcomeNode {
      */
     private boolean checkPassword(TreeContext context, String password) throws NodeProcessException {
         logger.debug("Validating new password");
-        final JsonValue id = context.getStateFor(this).get(FIELD_CONTENT_ID);
-        final String fullIdentityResource = (id != null) && id.isNotNull()
-                ? context.identityResource + "/" + id.asString()
-                : context.identityResource;
         JsonValue result = validateInput(idmIntegrationService, realm, context.request.locales,
-                fullIdentityResource, mapContextToObject(context).put(config.passwordAttribute(), password),
-                new HashSet<>(Collections.singletonList(config.passwordAttribute())));
+                context.identityResource,
+                mapContextToObject(context).put(config.passwordAttribute(), password),
+                new HashSet<>(Collections.singletonList(config.passwordAttribute())),
+                getId(context));
         if (!result.isDefined("result")) {
             throw new NodeProcessException("Communication failure");
         }
@@ -227,6 +226,14 @@ public class ValidatedPasswordNode extends SingleOutcomeNode {
             return callback.failedPolicies().isEmpty();
         }
         return true;
+    }
+
+    private Optional<String> getId(TreeContext context) {
+        JsonValue value = context.getStateFor(this).get(FIELD_CONTENT_ID);
+        if (value == null || value.isNull()) {
+            return Optional.empty();
+        }
+        return Optional.of(value.asString());
     }
 
     @Override

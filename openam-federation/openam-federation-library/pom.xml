@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2025 Ping Identity Corporation.
+ * Copyright 2011-2026 Ping Identity Corporation.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>8.0.2</version>
+        <version>8.1.0</version>
     </parent>
 
     <!-- Component Definition -->
@@ -100,7 +100,9 @@
                         claimObjects,requestedTypedClaims,accessToken,token,session</predefinedVars>
                     <excludes>
                         <exclude>**/saml2-idp-attribute-mapper.js</exclude>
+                        <exclude>**/saml2-idp-attribute-mapper-next-gen.js</exclude>
                         <exclude>**/saml2-nameid-mapper.js</exclude>
+                        <exclude>**/saml2-sp-account-mapper.js</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -243,6 +245,7 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>scripting-api</artifactId>
+            <scope>compile</scope> <!-- intentionally compile for IG dep -->
         </dependency>
 
         <dependency>
@@ -254,6 +257,11 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-ldap-utils</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>features</artifactId>
         </dependency>
 
         <dependency>

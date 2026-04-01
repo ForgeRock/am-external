@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
@@ -39,13 +39,13 @@ import com.sun.identity.saml2.plugins.SAML2PluginsUtils;
 public class IdpAttributeMapperScriptHelper {
 
     private final AttributeMapperPluginHelper attributeMapperPluginHelper;
-
+    
     /**
      * Construct a new instance of {@link IdpAttributeMapperScriptHelper}.
      */
     public IdpAttributeMapperScriptHelper() {
         this.attributeMapperPluginHelper = new AttributeMapperPluginHelper();
-    }
+   }
 
     /**
      * Check if a session is valid.

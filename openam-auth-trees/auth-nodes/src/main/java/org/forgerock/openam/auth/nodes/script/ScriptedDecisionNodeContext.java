@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -41,20 +41,19 @@ import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PSource;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import org.forgerock.json.JsonValue;
-import org.forgerock.oauth2.core.application.tree.OAuthScriptedBindingObjectImpl;
-import org.forgerock.openam.saml2.SAMLScriptedBindingObjectImpl;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
+import org.forgerock.openam.scripting.domain.OAuthScriptedBindingObject;
+import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContext;
 import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.domain.nextgen.NextGenScriptContext;
-import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
 import org.forgerock.util.promise.NeverThrowsException;
-
-import com.google.auto.service.AutoService;
-import com.google.inject.Singleton;
 
 import ch.qos.logback.classic.Logger;
 
@@ -62,7 +61,6 @@ import ch.qos.logback.classic.Logger;
  * Definition of {@link ScriptContext} for scripted decision nodes.
  */
 @Singleton
-@AutoService({ScriptContext.class, GlobalScriptsProvider.class})
 public class ScriptedDecisionNodeContext extends NextGenScriptContext<ScriptedDecisionNodeBindings> {
 
     /**
@@ -75,13 +73,20 @@ public class ScriptedDecisionNodeContext extends NextGenScriptContext<ScriptedDe
     public static final String SCRIPTED_DECISION_NODE_DEFAULT_SCRIPT_ID = "11e1a3c0-038b-4c16-956a-6c9d89328cff";
 
     private final Script defaultScript;
+    private final SAMLScriptedBindingObject exampleSamlObject;
+    private final OAuthScriptedBindingObject exampleOauthObject;
 
     /**
      * Constructs a new instance of the scripted decision node context.
      * Do not call this constructor directly, use Guice to inject the Singleton instance of this class.
      */
-    public ScriptedDecisionNodeContext() throws ScriptException {
+    @Inject
+    ScriptedDecisionNodeContext(@SAMLScriptedBindingObject.ExampleObject SAMLScriptedBindingObject exampleSamlObject,
+            @OAuthScriptedBindingObject.ExampleObject OAuthScriptedBindingObject exampleOauthObject)
+            throws ScriptException {
         super(ScriptedDecisionNodeBindings.class);
+        this.exampleSamlObject = exampleSamlObject;
+        this.exampleOauthObject = exampleOauthObject;
         this.defaultScript = createDefaultScript();
     }
 
@@ -158,8 +163,7 @@ public class ScriptedDecisionNodeContext extends NextGenScriptContext<ScriptedDe
                 .withHttpClient(null)
                 .withSecrets(null)
                 .withScriptIdentityRepository(null)
-                .withSamlApplication(SAMLScriptedBindingObjectImpl.getExampleObject())
-                .withOauthApplication(OAuthScriptedBindingObjectImpl.getExampleObject())
+                .withCacheManager(null)
                 .withNodeState(null)
                 .withCallbacks(new ArrayList<>())
                 .withHeaders(new HashMap<>())
@@ -168,6 +172,10 @@ public class ScriptedDecisionNodeContext extends NextGenScriptContext<ScriptedDe
                 .withResumedFromSuspend(false)
                 .withExistingSession(null)
                 .withRequestCookies(new HashMap<>())
+                .withTree(null)
+                .withSamlApplication(exampleSamlObject)
+                .withOauthApplication(exampleOauthObject)
+                .withScriptedLocalizedMessage(null)
                 .build();
     }
 

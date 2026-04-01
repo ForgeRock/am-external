@@ -32,14 +32,13 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.am.identity.application.IdentityService;
 import org.forgerock.am.identity.application.IdentityStoreFactory;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.am.identity.persistence.IdentityStore;
-import org.forgerock.i18n.LocalizedIllegalArgumentException;
-import org.forgerock.openam.ldap.LDAPUtils;
+import org.forgerock.openam.ldap.LdapUtils;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.opendj.ldap.Dn;
 import org.slf4j.Logger;
@@ -317,7 +316,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
     @Override
     public boolean isUsernameUniversalId(String username) throws DataStoreProviderException {
         try {
-            return LDAPUtils.isDN(username) && AMIdentity.isUniversalIdOrSpecialUserDn(Dn.valueOf(username));
+            return LdapUtils.isDN(username) && AMIdentity.isUniversalIdOrSpecialUserDn(Dn.valueOf(username));
         } catch (IdRepoException e) {
             throw new DataStoreProviderException(e);
         }
@@ -355,7 +354,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
     @Override
     public String convertUserIdToUniversalId(String userId, String realm) {
         try {
-            if (LDAPUtils.isDN(userId) && legacyIdentityService.getIdentityName(userId) != null) {
+            if (LdapUtils.isDN(userId) && legacyIdentityService.getIdentityName(userId) != null) {
                 return userId;
             } else {
                 return legacyIdentityService.getUniversalId(userId, IdType.USER, realm);

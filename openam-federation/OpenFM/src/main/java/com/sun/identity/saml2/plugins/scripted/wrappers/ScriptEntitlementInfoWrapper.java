@@ -169,17 +169,6 @@ public class ScriptEntitlementInfoWrapper {
     }
 
     /**
-     * Returns application for this entitlement.
-     *
-     * @param adminSubject Admin Subject.
-     * @param realm        Realm Name
-     * @return application for this entitlement.
-     */
-    public Application getApplication(Subject adminSubject, String realm) throws EntitlementException {
-        return wrappedEntitlementInfo.getApplication(adminSubject, realm);
-    }
-
-    /**
      * Returns non normalised resource names. If this has not been set the resource names (which is most
      * probably normalised) will be returned.
      *

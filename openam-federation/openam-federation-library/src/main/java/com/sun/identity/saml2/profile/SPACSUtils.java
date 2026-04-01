@@ -51,9 +51,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPConnection;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
@@ -68,6 +65,7 @@ import org.forgerock.openam.saml2.Saml2EntityRole;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.saml2.soap.SOAPConnectionFactory;
 import org.forgerock.openam.utils.ClientUtils;
@@ -126,7 +124,6 @@ import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.SAML2PluginsUtils;
 import com.sun.identity.saml2.plugins.SPAccountMapper;
-import org.forgerock.openam.saml2.plugins.SPAdapter;
 import com.sun.identity.saml2.plugins.SPAdapterHttpServletResponseWrapper;
 import com.sun.identity.saml2.plugins.SPAttributeMapper;
 import com.sun.identity.saml2.protocol.Artifact;
@@ -136,8 +133,13 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.Response;
 import com.sun.identity.saml2.protocol.Status;
+import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.xml.XMLUtils;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * This class is used by a service provider (SP) to process the response from
@@ -1209,7 +1211,7 @@ public class SPACSUtils {
             // map the user to the existing session.
             if (session != null) {
                 try {
-                    sessionProvider.invalidateSession(session, request, response);
+                    sessionProvider.invalidateSession(session, request, response, realm);
                 } catch (SessionException se) {
                     logger.error("An error occurred while trying to invalidate session", se);
                 }
@@ -1389,7 +1391,8 @@ public class SPACSUtils {
                     SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(
                             assertionID,
                             SAML2Constants.ONETIME,
-                            ((Long) smap.get(SAML2Constants.NOTONORAFTER)).longValue() / 1000);
+                            // Milliseconds since epoch
+                            (Long) smap.get(SAML2Constants.NOTONORAFTER));
                 }
             } catch (SAML2TokenRepositoryException se) {
                 logger.error(classMethod +
@@ -2128,6 +2131,23 @@ public class SPACSUtils {
         // write fed info into data store
         SPCache.fedAccountHash.put(storageKey, "true");
         AccountUtils.setAccountFederation(info, universalId);
+    }
+
+    /**
+     * Returns the service (aka tree, journey) that has been configured on the supplied hosted SP.
+     *
+     * @param realm      Realm to find the SP in.
+     * @param hostEntityId The hosted SP entity ID.
+     * @param metaManager The SAML2MetaManager instance to retrieve metadata.
+     * @return           Specified service.  Could also be null, an empty string,
+     * or the "empty dropdown selection" string
+     * {@value Constants#EMPTY_DROPDOWN_SELECTION}
+     */
+    public static String getConfiguredServiceForHostedSP(String realm,
+            String hostEntityId,
+            SAML2MetaManager metaManager,
+            String attrName) {
+        return getAttributeValueFromSPSSOConfig(realm, hostEntityId, metaManager, attrName);
     }
 
     private static void validateNameId(NameID nameId, DataStoreProvider dataStoreProvider) throws SAML2Exception {

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.commons.lang3.StringUtils;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -35,6 +35,8 @@ import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.treehook.SuccessDetailsTreeHook;
+import org.forgerock.openam.auth.nodes.validators.ReservedCookieValidator;
+import org.forgerock.openam.auth.nodes.validators.ReservedHeaderValidator;
 
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.sm.ServiceAttributeValidator;
@@ -88,6 +90,13 @@ public class SetSuccessDetailsNode extends SingleOutcomeNode {
          */
         @Attribute(order = 200, validators = {ResponseBodyPredefinedKeysValidator.class})
         Map<String, String> sessionProperties();
+
+        /**
+         * The headers to set on tree success.
+         * @return the headers
+         */
+        @Attribute(order = 300, validators = { ReservedHeaderValidator.class, ReservedCookieValidator.class })
+        Map<String, String> headerControl();
     }
 
     /**
@@ -108,4 +117,5 @@ public class SetSuccessDetailsNode extends SingleOutcomeNode {
             return PREDEFINED_KEYS.contains(string);
         }
     }
+
 }

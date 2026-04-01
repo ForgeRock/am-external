@@ -20,7 +20,7 @@ import static org.forgerock.openam.services.push.PushNotificationConstants.ACCEP
 
 import java.nio.charset.StandardCharsets;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.am.cts.CTSPersistentStore;

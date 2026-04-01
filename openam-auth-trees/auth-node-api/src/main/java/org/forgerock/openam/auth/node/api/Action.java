@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -32,12 +32,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.inject.Inject;
-import javax.inject.Named;
 import javax.security.auth.callback.Callback;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.auth.logouthook.LogoutHookData;
+import org.forgerock.openam.auth.logouthook.api.LogoutHook;
 import org.forgerock.util.Reject;
 
 import com.sun.identity.idm.AMIdentity;
@@ -59,18 +62,20 @@ public final class Action {
     public static final String DESCRIPTION = "description";
     /** Key for the stage return property. */
     public static final String STAGE = "stage";
+    /** Default version for nodes. */
+    public static final int DEFAULT_VERSION = 1;
 
     /**
      * The output state of the node.
      * @deprecated use {@link NodeState} instead, setting state in the action is no longer required.
      */
-    @Deprecated(since = "8.0.0")
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public final JsonValue sharedState;
     /**
      * The transient state of the node.
      * @deprecated use {@link NodeState} instead, setting state in the action is no longer required.
      */
-    @Deprecated(since = "8.0.0")
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public final JsonValue transientState;
     /**
      * Result of the node. May be null.
@@ -113,6 +118,10 @@ public final class Action {
      */
     public final List<String> webhooks;
     /**
+     * List of logout hooks that run synchronously after logout.
+     */
+    public final List<LogoutHookData> logoutHooks;
+    /**
      * The {@link SuspensionHandler} to call when the authentication process is suspended by the authentication
      * framework.
      */
@@ -121,7 +130,7 @@ public final class Action {
      * The universal id of the identity object.
      * @deprecated use {@link #identifiedIdentity} instead.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     public final Optional<String> universalId;
     /**
      * Optionally the identity confirmed to exist as part of this action.
@@ -202,7 +211,7 @@ public final class Action {
                    List<? extends Callback> callbacks,
                    Map<String, String> sessionProperties,
                    List<JsonValue> sessionHooks,
-                   List<String> webhooks,
+                   List<String> webhooks, List<LogoutHookData> logoutHooks,
                    SuspensionHandler suspensionHandler,
                    Optional<String> universalId,
                    Optional<IdentifiedIdentity> identifiedIdentity,
@@ -220,6 +229,7 @@ public final class Action {
         this.sessionProperties = Collections.unmodifiableMap(sessionProperties);
         this.sessionHooks = sessionHooks;
         this.webhooks = webhooks;
+        this.logoutHooks = Collections.unmodifiableList(logoutHooks);
         this.suspensionHandler = suspensionHandler;
         this.universalId = universalId;
         this.identifiedIdentity = identifiedIdentity;
@@ -264,6 +274,7 @@ public final class Action {
         private final Map<String, String> sessionProperties = new HashMap<>();
         private final List<JsonValue> sessionHooks = new ArrayList<>();
         private final List<String> webhooks = new ArrayList<>();
+        private final List<LogoutHookData> logoutHooks = new ArrayList<>();
         private final SuspensionHandler suspensionHandler;
         private Duration suspendDuration;
 
@@ -293,7 +304,7 @@ public final class Action {
          * @return the same instance of the ActionBuilder.
          * @deprecated use {@link NodeState} instead, setting state in the action is no longer required.
          */
-        @Deprecated(since = "8.0.0")
+        @Deprecated(since = "8.0.0", forRemoval = true)
         public ActionBuilder replaceSharedState(JsonValue sharedState) {
             Reject.ifNull(sharedState);
             this.sharedState = sharedState;
@@ -307,7 +318,7 @@ public final class Action {
          * @return the same instance of the ActionBuilder.
          * @deprecated use {@link NodeState} instead, setting state in the action is no longer required.
          */
-        @Deprecated(since = "8.0.0")
+        @Deprecated(since = "8.0.0", forRemoval = true)
         public ActionBuilder replaceTransientState(JsonValue transientState) {
             Reject.ifNull(transientState);
             this.transientState = transientState;
@@ -401,7 +412,7 @@ public final class Action {
          * @return the same instance of the ActionBuilder.
          * @deprecated use {@link #withIdentifiedIdentity} instead.
          */
-        @Deprecated
+        @Deprecated(since = "8.0.0", forRemoval = true)
         public ActionBuilder withUniversalId(String universalId) {
             if (isNotEmpty(universalId)) {
                 this.universalId = universalId;
@@ -418,7 +429,7 @@ public final class Action {
          * @return the same instance of the ActionBuilder.
          * @deprecated use {@link #withIdentifiedIdentity} instead.
          */
-        @Deprecated
+        @Deprecated(since = "8.0.0", forRemoval = true)
         public ActionBuilder withUniversalId(Optional<String> universalId) {
             universalId.ifPresent(this::withUniversalId);
             return this;
@@ -440,6 +451,18 @@ public final class Action {
         }
 
         /**
+         * Registers a logout hook.
+         * @param logoutHook The logout hook to register, must extend LogoutHook
+         * @param data The data
+         * @return The same instance of the ActionBuilder
+         */
+        public ActionBuilder registerLogoutHook(Class<? extends LogoutHook> logoutHook, JsonValue data) {
+            Reject.ifNull(data);
+            logoutHooks.add(new LogoutHookData(logoutHook, data.asMap()));
+            return this;
+        }
+
+        /**
          * Remove a previously set session property.
          *
          * @param key The key for the property.
@@ -454,16 +477,18 @@ public final class Action {
         }
 
         /**
-         * Sets a class that will be run after successful login.
+         * Sets a class that will be run after successful login. A node version is also specified.
          * The class has to implement {@link TreeHook}.
          *
          * @param sessionHook The class to be run.
          * @param nodeId The ID of the node.
          * @param nodeType The type of the node.
+         * @param nodeVersion The version of the node
          * @return the same instance of ActionBuilder
          */
-        public ActionBuilder addSessionHook(Class<? extends TreeHook> sessionHook, UUID nodeId, String nodeType) {
-            return addSessionHook(sessionHook, nodeId, nodeType, null);
+        public ActionBuilder addSessionHook(Class<? extends TreeHook> sessionHook, UUID nodeId, String nodeType,
+                int nodeVersion) {
+            return addSessionHook(sessionHook, nodeId, nodeType, nodeVersion, null);
         }
 
         /**
@@ -473,17 +498,32 @@ public final class Action {
          * @param sessionHook The class to be run.
          * @param nodeId The ID of the node.
          * @param nodeType The type of the node.
+         * @return the same instance of ActionBuilder
+         */
+        public ActionBuilder addSessionHook(Class<? extends TreeHook> sessionHook, UUID nodeId, String nodeType) {
+            return addSessionHook(sessionHook, nodeId, nodeType, DEFAULT_VERSION, null);
+        }
+
+        /**
+         * Sets a class that will be run after successful login.
+         * The class has to implement {@link TreeHook}.
+         *
+         * @param sessionHook The class to be run.
+         * @param nodeId The ID of the node.
+         * @param nodeType The type of the node.
+         * @param nodeVersion The version of the node
          * @param data The additional data for session hook.
          * @return the same instance of ActionBuilder
          */
         public ActionBuilder addSessionHook(Class<? extends TreeHook> sessionHook, UUID nodeId, String nodeType,
-                JsonValue data) {
+                int nodeVersion, JsonValue data) {
             Reject.ifNull(sessionHook);
             sessionHooks.add(
                     json(object(
                             field(TreeHook.SESSION_HOOK_CLASS_KEY, sessionHook.getName()),
                             field(TreeHook.NODE_ID_KEY, nodeId.toString()),
                             field(TreeHook.NODE_TYPE_KEY, nodeType),
+                            field(TreeHook.NODE_VERSION_KEY, nodeVersion),
                             fieldIfNotNull(TreeHook.HOOK_DATA, data))));
             return this;
         }
@@ -534,28 +574,22 @@ public final class Action {
          * @return the same instance of ActionBuilder.
          */
         public ActionBuilder addNodeType(TreeContext context, String authName) {
-
-            String authType = null;
-
             if (sharedState == null) {
                 replaceSharedState(context.sharedState.copy());
             }
 
+            String newAuthType = "";
             if (sharedState.isDefined(NODE_TYPE)) {
-                authType = sharedState.get(NODE_TYPE).asString();
+                newAuthType = sharedState.get(NODE_TYPE).asString();
             }
 
-            StringBuilder newAuthType = new StringBuilder();
-
-            if (authType != null) {
-                newAuthType.append(authType);
+            String newAuthName = authName + "|";
+            if (!newAuthType.startsWith(newAuthName) && !newAuthType.contains("|" + newAuthName)) {
+                newAuthType += newAuthName;
             }
 
-            newAuthType.append(authName);
-            newAuthType.append("|");
-
-            replaceSharedState(sharedState.put(NODE_TYPE, newAuthType.toString()));
-            putSessionProperty(NODE_TYPE, newAuthType.toString());
+            replaceSharedState(sharedState.put(NODE_TYPE, newAuthType));
+            putSessionProperty(NODE_TYPE, newAuthType);
 
             return this;
         }
@@ -627,9 +661,9 @@ public final class Action {
         public Action build() {
             return new Action(this.sharedState, this.transientState, this.outcome, this.returnProperties,
                     this.errorMessage, this.lockoutMessage, maxSessionTime, maxIdleTime, this.callbacks,
-                    sessionProperties, sessionHooks, webhooks, suspensionHandler, Optional.ofNullable(this.universalId),
-                    Optional.ofNullable(identifiedIdentity), Optional.ofNullable(suspendDuration),
-                    Optional.ofNullable(maxTreeDuration));
+                    sessionProperties, sessionHooks, webhooks, logoutHooks, suspensionHandler,
+                    Optional.ofNullable(this.universalId), Optional.ofNullable(identifiedIdentity),
+                    Optional.ofNullable(suspendDuration), Optional.ofNullable(maxTreeDuration));
         }
     }
 }

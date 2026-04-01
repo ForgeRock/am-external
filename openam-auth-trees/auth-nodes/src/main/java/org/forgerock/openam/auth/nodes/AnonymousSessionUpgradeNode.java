@@ -21,7 +21,7 @@ import static com.sun.identity.authentication.util.ISAuthConstants.NODE_TYPE;
 
 import java.security.PrivilegedAction;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;

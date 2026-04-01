@@ -43,7 +43,6 @@ import org.mockito.quality.Strictness;
 
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.entitlement.Entitlement;
-import com.sun.identity.entitlement.EntitlementConfiguration;
 import com.sun.identity.entitlement.EntitlementException;
 import com.sun.identity.entitlement.Evaluator;
 import com.sun.identity.entitlement.opensso.SubjectUtils;

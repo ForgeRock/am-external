@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.framework;
@@ -22,10 +22,10 @@ import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.openam.auth.nodes.framework.PageNode.ChildNodeConfig.DISPLAY_NAME_FIELD;
-import static org.forgerock.openam.auth.nodes.framework.PageNode.ChildNodeConfig.ID_FIELD;
-import static org.forgerock.openam.auth.nodes.framework.PageNode.ChildNodeConfig.NODE_TYPE_FIELD;
-import static org.forgerock.openam.auth.nodes.framework.PageNode.ChildNodeConfig.NODE_VERSION_FIELD;
+import static org.forgerock.openam.auth.nodes.framework.AbstractPageNode.ChildNodeConfig.DISPLAY_NAME_FIELD;
+import static org.forgerock.openam.auth.nodes.framework.AbstractPageNode.ChildNodeConfig.ID_FIELD;
+import static org.forgerock.openam.auth.nodes.framework.AbstractPageNode.ChildNodeConfig.NODE_TYPE_FIELD;
+import static org.forgerock.openam.auth.nodes.framework.AbstractPageNode.ChildNodeConfig.NODE_VERSION_FIELD;
 import static org.forgerock.openam.auth.nodes.framework.PageNode.PageDecisionOutcomeProvider.PROPERTIES_FIELD;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -37,13 +37,14 @@ import static org.mockito.Mockito.verify;
 import java.util.List;
 
 import org.forgerock.am.trees.api.NodeFactory;
+import org.forgerock.am.trees.api.NodeRegistry;
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.util.i18n.PreferredLocales;
-
-import com.iplanet.am.util.SystemPropertiesWrapper;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,15 +59,15 @@ public class PageNodePageDecisionOutcomeProviderTest {
     @Mock
     private NodeFactory nodeFactory;
     @Mock
-    private Realm realm;
+    private NodeRegistry nodeRegistry;
     @Mock
-    private SystemPropertiesWrapper systemProperties;
+    private Realm realm;
 
     private PageNode.PageDecisionOutcomeProvider outcomeProvider;
 
     @BeforeEach
     void setup() throws Exception {
-        outcomeProvider = new PageNode.PageDecisionOutcomeProvider(realm, nodeFactory, systemProperties);
+        outcomeProvider = new PageNode.PageDecisionOutcomeProvider(realm, nodeFactory, nodeRegistry);
     }
 
     @Test
@@ -119,6 +120,7 @@ public class PageNodePageDecisionOutcomeProviderTest {
     @Test
     void shouldReturnOutcomesForDynamicOutcomesNodes() throws Exception {
         // Given
+        given(nodeRegistry.getNodeType("LastNodeType", 1)).willReturn((Class) LastNode.class);
         given(nodeFactory.getNodeOutcomes(any(), eq(realm), eq("lastNode"), eq("LastNodeType"), eq(1))).willReturn(
                 asList(
                         new OutcomeProvider.Outcome("outcome1", "Outcome One"),
@@ -145,5 +147,54 @@ public class PageNodePageDecisionOutcomeProviderTest {
         // Then
         assertThat(result).extracting(outcome -> outcome.id).containsExactly("outcome1", "outcome2");
         verify(nodeFactory).getNodeOutcomes(any(), eq(realm), eq("lastNode"), eq("LastNodeType"), eq(1));
+    }
+
+    @Test
+    void shouldReturnOutcomesForLastVersionedNode() throws Exception {
+        // Given
+        OutcomeProvider childOutcomeProvider = mock(OutcomeProvider.class);
+        given(nodeFactory.getOutcomeProvider(realm, "LastNodeType", 2)).willReturn(childOutcomeProvider);
+        given(childOutcomeProvider.getOutcomes(any(), any())).willReturn(asList(
+                new OutcomeProvider.Outcome("outcome1", "Outcome One"),
+                new OutcomeProvider.Outcome("outcome2", "Outcome Two")
+        ));
+        PreferredLocales locales = new PreferredLocales();
+        JsonValue lastNodeProperties = json(object(field("_id", "lastNode")));
+        JsonValue json = json(object(field("nodes", array(
+                object(
+                        field(ID_FIELD, "node1"),
+                        field(DISPLAY_NAME_FIELD, "Node One"),
+                        field(NODE_TYPE_FIELD, "MyNodeType"),
+                        field(PROPERTIES_FIELD, object())),
+                object(
+                        field(ID_FIELD, "lastNode"),
+                        field(DISPLAY_NAME_FIELD, "Node Two"),
+                        field(NODE_TYPE_FIELD, "LastNodeType"),
+                        field(NODE_VERSION_FIELD, 2),
+                        field(PROPERTIES_FIELD, lastNodeProperties.getObject()))
+        ))));
+
+        // When
+        List<OutcomeProvider.Outcome> result = outcomeProvider.getOutcomes(locales, json);
+
+        // Then
+        assertThat(result).extracting(outcome -> outcome.id).containsExactly("outcome1", "outcome2");
+        ArgumentCaptor<JsonValue> propertiesCaptor = ArgumentCaptor.forClass(JsonValue.class);
+        verify(childOutcomeProvider).getOutcomes(eq(locales), propertiesCaptor.capture());
+        assertThat(propertiesCaptor.getValue().getObject()).isEqualTo(lastNodeProperties.getObject());
+        verify(nodeFactory, times(0)).getNodeOutcomes(any(), any(), any(), any(), any());
+    }
+
+    @Node.Metadata(outcomeProvider = PageNodeV2.PageDecisionV2OutcomeProvider.class,
+            configClass = PageNodeV2.ConfigV2.class,
+            configValidator = PageNodeV2.PageNodeV2Validator.class,
+            tags = {"utilities"})
+    @Node.VersionMetadata(name = "LastNode", version = 1)
+    private class LastNode implements Node {
+
+        @Override
+        public Action process(TreeContext context) {
+            throw new IllegalStateException("This should not be called.");
+        }
     }
 }

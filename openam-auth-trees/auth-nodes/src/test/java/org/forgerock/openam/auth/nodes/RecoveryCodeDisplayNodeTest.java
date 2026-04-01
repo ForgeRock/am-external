@@ -26,14 +26,12 @@ import static org.mockito.BDDMockito.given;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.TextOutputCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.webauthn.ClientScriptUtilities;
@@ -139,9 +137,12 @@ public class RecoveryCodeDisplayNodeTest {
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, JsonValue secureState,
             List<? extends Callback> callbacks) {
-        return new TreeContext(sharedState, transientState, secureState,
-                new ExternalRequestContext.Builder().build(), callbacks,
-                Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .secureState(secureState)
+                .callbacks(callbacks)
+                .build();
     }
 
 }

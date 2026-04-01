@@ -50,7 +50,7 @@ public class CacheCleanUpScheduler {
         pool.schedule(SPCache.logoutRequestIDHash, nextRun);
         pool.schedule(SPCache.reqParamHash, nextRun);
         pool.schedule(SPCache.fedAccountHash, nextRun);
-        pool.schedule(SPCache.samlResponseDataHash, nextRun);
+        pool.schedule(SPCache.samlDataHash, nextRun);
         pool.schedule(SPCache.assertionByIDCache, nextRun);
         pool.schedule(IDPCache.authnRequestCache, nextRun);
         pool.schedule(IDPCache.assertionByIDCache, nextRun);

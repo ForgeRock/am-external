@@ -15,7 +15,6 @@
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
@@ -25,10 +24,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 import java.util.Map;
-import java.util.Optional;
 
 import org.forgerock.am.saml2.impl.Saml2SsoResponseUtils;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
@@ -80,6 +77,9 @@ public class WriteFederationInformationNodeTest {
     }
 
     private TreeContext context(Map<String, Object> content) {
-        return new TreeContext(json(content), new Builder().build(), emptyList(), Optional.of("username"));
+        return TreeContext.builder()
+                .sharedState(json(content))
+                .universalId("username")
+                .build();
     }
 }

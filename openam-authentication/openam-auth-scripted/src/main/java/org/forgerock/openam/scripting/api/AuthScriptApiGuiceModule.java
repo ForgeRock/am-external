@@ -19,13 +19,15 @@ import static org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory.SC
 
 import org.forgerock.http.Client;
 import org.forgerock.http.client.ChfHttpClient;
+import org.forgerock.openam.authentication.service.AuthModuleGlobalScriptsProvider;
 import org.forgerock.openam.authentication.service.AuthModuleScriptContextProvider;
-import org.forgerock.openam.scripting.domain.ScriptingLanguage;
+import org.forgerock.openam.http.CloseableHttpClientProvider;
 import org.forgerock.openam.scripting.api.http.GroovyHttpClient;
 import org.forgerock.openam.scripting.api.http.JavaScriptHttpClient;
+import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
+import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
-import org.forgerock.openam.http.CloseableHttpClientProvider;
 
 import com.google.auto.service.AutoService;
 import com.google.inject.AbstractModule;
@@ -59,5 +61,8 @@ public class AuthScriptApiGuiceModule extends AbstractModule {
 
         Multibinder.newSetBinder(binder(), ScriptContextDetailsProvider.class)
                 .addBinding().to(AuthModuleScriptContextProvider.class);
+
+        Multibinder.newSetBinder(binder(), GlobalScriptsProvider.class)
+                .addBinding().to(AuthModuleGlobalScriptsProvider.class);
     }
 }

@@ -22,6 +22,7 @@ import org.forgerock.util.thread.listener.ShutdownListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.auto.service.AutoService;
 import com.sun.identity.common.ShutdownManager;
 import com.sun.identity.setup.SetupListener;
 
@@ -35,6 +36,7 @@ import com.sun.identity.setup.SetupListener;
  * from LDS checks that AM is up and config is available, but this entry point should mean that everything is good to go
  * when that code runs.
  */
+@AutoService(SetupListener.class)
 public class RadiusServiceManager implements SetupListener, ShutdownListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(RadiusServiceManager.class);

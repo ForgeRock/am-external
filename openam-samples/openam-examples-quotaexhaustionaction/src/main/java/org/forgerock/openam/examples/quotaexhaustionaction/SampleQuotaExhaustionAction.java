@@ -18,7 +18,7 @@ package org.forgerock.openam.examples.quotaexhaustionaction;
 
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.session.Session;

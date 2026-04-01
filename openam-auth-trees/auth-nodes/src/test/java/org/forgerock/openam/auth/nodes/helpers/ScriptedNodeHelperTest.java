@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.AUDIT_ENTRY_DETAIL;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,7 @@ import java.util.TreeMap;
 
 import javax.script.Bindings;
 
+import com.sun.identity.saml2.common.SAMLDataAccessor;
 import org.forgerock.am.cts.CTSPersistentStore;
 import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.http.client.ChfHttpClient;
@@ -37,6 +40,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.nodes.script.ActionWrapper;
 import org.forgerock.openam.auth.nodes.script.ScriptedCallbacksBuilder;
+import org.forgerock.openam.saml2.SAMLData;
 import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.Script;
@@ -48,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mozilla.javascript.ConsString;
 
@@ -303,5 +308,28 @@ public class ScriptedNodeHelperTest {
         String result = scriptedNodeHelper.getOutcome(outcome, List.of("true"));
 
         assertThat(result).isEqualTo(outcome.toString());
+    }
+
+    @Test
+    void shouldRetrieveDataWhenGetSAMLDataGivenDataExists() {
+        // Given
+        try (MockedStatic<SAMLDataAccessor> samlDataAccessorMockedStatic = mockStatic(SAMLDataAccessor.class)) {
+            String key = "testKey";
+            SAMLData expectedData = mock(SAMLData.class);
+
+            samlDataAccessorMockedStatic.when(() ->
+                    SAMLDataAccessor.<SAMLData>getSAMLData(key)).thenReturn(expectedData);
+
+            // When
+            SAMLData actualData = SAMLDataAccessor.getSAMLData(key);
+
+            // Then
+            assertThat(actualData).isEqualTo(expectedData);
+            samlDataAccessorMockedStatic.verify(() -> SAMLDataAccessor.getSAMLData(key));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+
+        }
+
     }
 }

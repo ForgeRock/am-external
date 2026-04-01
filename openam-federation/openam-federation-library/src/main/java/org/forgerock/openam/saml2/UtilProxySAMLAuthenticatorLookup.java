@@ -17,12 +17,14 @@ package org.forgerock.openam.saml2;
 
 import static com.sun.identity.saml2.common.SAML2Constants.SAML2_REQUEST_JWT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject.FlowInitiator;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.text.ParseException;
+import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -30,7 +32,6 @@ import java.util.logging.Level;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import com.sun.identity.saml2.assertion.AuthnContext;
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.jwe.EncryptedJwt;
 import org.forgerock.json.jose.jwt.Jwt;
@@ -47,7 +48,6 @@ import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.keys.DataDecryptionKey;
-import org.forgerock.util.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +58,7 @@ import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.saml2.assertion.AssertionFactory;
+import com.sun.identity.saml2.assertion.AuthnContext;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
@@ -218,12 +219,14 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
         NameIDPolicy policy = data.getAuthnRequest().getNameIDPolicy();
         String nameIDFormat = (policy == null) ? null : policy.getFormat();
 
-        SAML2Utils.addConfiguredServiceToAuditMessage(eventAuditor, data.getRealm(), data.getSpEntityID(), data.getIdpEntityID());
+        SAML2Utils.addConfiguredServiceToAuditMessage(
+                eventAuditor, data.getRealm(), data.getSpEntityID(), data.getIdpEntityID());
+        eventAuditor.setFlowInitiator(FlowInitiator.SP);
 
         try {
             IDPSSOUtil.sendResponseToACS(request, response, out, data.getSession(), data.getAuthnRequest(),
                     data.getSpEntityID(), data.getIdpEntityID(), data.getIdpMetaAlias(), data.getRealm(), nameIDFormat,
-                    data.getRelayState(), data.getMatchingAuthnContext());
+                    data.getRelayState(), data.getMatchingAuthnContext(), eventAuditor);
         } catch (SAML2Exception se) {
             logger.error(classMethod + "Unable to do sso or federation.", se);
             throw new ServerFaultException(data.getIdpAdapter(), SSO_OR_FEDERATION_ERROR, se.getMessage());
@@ -244,11 +247,12 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
                         new ClientFaultException(data.getIdpAdapter(), "Invalid SAML2 request jwt"))
                         .setIssuer(data.getIdpEntityID())
                         .setType(SAML2_REQUEST_JWT_TYPE)
-                        .setUnreasonableLifetimeLimit(Duration.duration(SPCache.interval, TimeUnit.SECONDS))
+                        .setUnreasonableLifetimeLimit(Duration.ofSeconds(SPCache.interval))
                         .setIssuerRequired(false)
                         .addClaimValidator(JwtClaimsSetKey.ISS.value(), v -> v.isNotNull() && v.isString() &&
                                 (data.getIdpEntityID().equals(v.asString()) || data.getIdpEntityID()
-                                        .equals(URLDecoder.decode(v.asString(), UTF_8))));
+                                        .equals(URLDecoder.decode(v.asString(), UTF_8))))
+                        .setExpirationTimeRequired(false);
         JwtClaimsValidationHandler<ClientFaultException> claimsValidator =
                 new JwtClaimsValidationHandler<>(validationOptions, claimsSet);
         claimsValidator.validateClaims();

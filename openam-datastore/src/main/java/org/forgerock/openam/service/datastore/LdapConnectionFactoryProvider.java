@@ -16,23 +16,23 @@
 package org.forgerock.openam.service.datastore;
 
 import static com.sun.identity.shared.Constants.LDAP_CONN_IDLE_TIME_IN_SECS;
-import static org.forgerock.openam.ldap.LDAPUtils.CACHED_POOL_OPTIONS;
-import static org.forgerock.openam.ldap.LDAPUtils.newFailoverConnectionFactory;
+import static org.forgerock.openam.ldap.LdapUtils.CACHED_POOL_OPTIONS;
+import static org.forgerock.openam.ldap.LdapUtils.newFailoverConnectionFactory;
 import static org.forgerock.opendj.ldap.LdapClients.LDAP_CLIENT_REQUEST_TIMEOUT;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.forgerock.openam.ldap.ConnectionConfig;
-import org.forgerock.openam.ldap.LDAPUtils;
-import org.forgerock.openam.ldap.LDAPUtils.CachedPoolOptions;
+import org.forgerock.openam.ldap.LdapUtils;
+import org.forgerock.openam.ldap.LdapUtils.CachedPoolOptions;
 import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.openam.sm.datalayer.api.DataLayerConstants;
 import org.forgerock.opendj.ldap.ConnectionFactory;
 import org.forgerock.opendj.ldap.LdapConnectionFactory;
 import org.forgerock.util.Options;
-import org.forgerock.util.time.Duration;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.iplanet.am.util.SystemProperties;
 
 /**
@@ -71,10 +71,10 @@ public class LdapConnectionFactoryProvider {
         int idleTimeout = SystemProperties.getAsInt(LDAP_CONN_IDLE_TIME_IN_SECS, 0);
         int timeout = SystemProperties.getAsInt(DataLayerConstants.DATA_LAYER_TIMEOUT, 10);
         return Options.defaultOptions()
-                .set(LDAP_CLIENT_REQUEST_TIMEOUT, Duration.duration(timeout, TimeUnit.SECONDS))
+                .set(LDAP_CLIENT_REQUEST_TIMEOUT, Duration.ofSeconds((long)timeout))
                 .set(CACHED_POOL_OPTIONS, new CachedPoolOptions(config.getMinConnections(),
                         config.getMaxConnections(), idleTimeout, TimeUnit.SECONDS))
-                .set(LDAPUtils.AFFINITY_ENABLED, config.isAffinityEnabled())
+                .set(LdapUtils.AFFINITY_ENABLED, config.isAffinityEnabled())
                 .set(LdapConnectionFactory.SSL_USE_STARTTLS, config.isStartTLSEnabled());
     }
 }

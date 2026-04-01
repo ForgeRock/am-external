@@ -11,18 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
+import java.util.List;
 import java.util.ResourceBundle;
 
 import javax.security.auth.callback.NameCallback;
 
+import jakarta.inject.Inject;
+
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.OutputState;
@@ -32,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
+import com.google.inject.assistedinject.Assisted;
 
 /**
  * A node which collects a username from the user via a name callback.
@@ -47,10 +52,26 @@ public class UsernameCollectorNode extends SingleOutcomeNode {
      * Configuration for the username collector node.
      */
     public interface Config {
+
+        /**
+         * Used to populate the callback autocomplete attribute with these values for autocomplete.
+         * @return The values to use for autocomplete.
+         */
+        @Attribute(order = 100)
+        default List<String> autocompleteValues() {
+            return List.of();
+        }
     }
 
     private static final String BUNDLE = UsernameCollectorNode.class.getName();
     private final Logger logger = LoggerFactory.getLogger(UsernameCollectorNode.class);
+
+    private final Config config;
+
+    @Inject
+    UsernameCollectorNode(@Assisted Config config) {
+        this.config = config;
+    }
 
     @Override
     public Action process(TreeContext context) {
@@ -66,7 +87,8 @@ public class UsernameCollectorNode extends SingleOutcomeNode {
     private Action collectUsername(TreeContext context) {
         ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
         logger.debug("collecting username");
-        return send(new NameCallback(bundle.getString("callback.username"))).build();
+        return send(new AutoCompleteNameCallback(bundle.getString("callback.username"),
+                config.autocompleteValues())).build();
     }
 
     @Override

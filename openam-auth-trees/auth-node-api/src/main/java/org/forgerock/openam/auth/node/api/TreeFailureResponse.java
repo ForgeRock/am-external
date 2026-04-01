@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -38,6 +38,15 @@ public interface TreeFailureResponse {
      */
     @Supported
     void setCustomFailureMessage(String failureMessage);
+
+    /**
+     * Adds a header to the response.
+     *
+     * @param key   The header key.
+     * @param value The header value.
+     */
+    @Supported
+    void addHeader(String key, String value);
 
     /**
      * Returns the HTTP response code that will be sent back to the client.

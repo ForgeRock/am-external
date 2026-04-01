@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#listOutcomes.response.title",
+  "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#listOutcomes.response.description",
+  "patternProperties": {
+    ".+": {
+      "type": "string",
+      "title": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#listOutcomes.value.title",
+      "description": "i18n:api-descriptor/AuthTreeNodeCollectionProvider#listOutcomes.value.description"
+    }
+  }
+}

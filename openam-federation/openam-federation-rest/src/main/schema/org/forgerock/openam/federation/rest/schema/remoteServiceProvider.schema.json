@@ -365,9 +365,38 @@
                 "description": "Tree to which this remote SP should be redirected. <strong>Note:</strong> If you specify a tree here, the configured Authentication Context Mapper is not executed. Instead, AM redirects to the specified tree, and makes the requested authentication context and configured mappings available to that tree through a scripted decision node binding."
               }
             }
+          },
+          "applicationContext": {
+            "traverseObject": true,
+            "title": "Application Context",
+            "javaType": "org.forgerock.openam.federation.rest.schema.remote.service.ApplicationContext",
+            "type": "object",
+            "properties": {
+              "applicationContextEnabled": {
+                "attributeKey": {
+                  "value": "applicationContextEnabled",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.ApplicationContextEnabledMapper"
+                },
+                "title": "Application Context Enabled",
+                "description": "Makes the application context available in all SAML flows as the <code>samlApplication</code> binding in scripted decision node scripts. <br /><strong>Default</strong> Use the setting specified in the hosted identity provider. <br/><strong>Enabled</strong> Always enable the application context. <br/><strong>Disabled</strong> Always disable the application context.",
+                "type": "string",
+                "enum": [
+                  "DEFAULT",
+                  "ENABLED",
+                  "DISABLED"
+                ],
+                "enumNames": [
+                  "Default",
+                  "Enabled",
+                  "Disabled"
+                ],
+                "default": "DEFAULT"
+              }
+            }
           }
         }
       }
     }
   }
 }
+

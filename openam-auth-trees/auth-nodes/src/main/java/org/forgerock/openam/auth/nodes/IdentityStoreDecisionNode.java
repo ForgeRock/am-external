@@ -44,7 +44,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Node;
@@ -182,7 +182,7 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
     private static final class LdapConfig implements LdapDecisionNode.Config {
 
         private static final Set<String> ALLOWED_ID_REPO_TYPES = Set.of(
-                "LDAPv3", "LDAPv3ForAMDS", "LDAPv3ForOpenDS", "LDAPv3ForForgeRockIAM"
+                "LDAPv3", "LDAPv3ForAMDS", "LDAPv3ForOpenDS", "LDAPv3ForForgeRockIAM", "LDAPv3ForPingDirectory"
         );
 
         private final ServiceConfigManager configManager;

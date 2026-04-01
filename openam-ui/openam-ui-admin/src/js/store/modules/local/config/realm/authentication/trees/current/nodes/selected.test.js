@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 import { expect } from "chai";
@@ -20,7 +20,8 @@ import reducer, { remove, set } from "./selected";
 
 const selected = {
     id: "id",
-    type: "MyType"
+    type: "MyType",
+    version: "1.0"
 };
 
 describe("store/modules/local/config/realm/authentication/trees/current/nodes/selected", () => {

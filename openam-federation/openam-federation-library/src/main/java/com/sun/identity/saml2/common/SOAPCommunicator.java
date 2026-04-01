@@ -21,7 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequest;
 import javax.xml.soap.Detail;
 import javax.xml.soap.MessageFactory;
@@ -35,7 +35,7 @@ import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPFault;
 import javax.xml.soap.SOAPMessage;
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import org.forgerock.http.protocol.Response;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;

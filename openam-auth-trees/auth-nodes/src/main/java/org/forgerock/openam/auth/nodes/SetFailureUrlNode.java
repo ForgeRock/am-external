@@ -18,16 +18,18 @@ package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.FAILURE_URL;
 
+import jakarta.inject.Inject;
+
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.sm.validation.OutcomeURLValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.sm.RequiredValueValidator;
 
@@ -50,7 +52,7 @@ public class SetFailureUrlNode extends SingleOutcomeNode {
          *
          * @return THe failure URL.
          */
-        @Attribute(order = 100, validators = RequiredValueValidator.class)
+        @Attribute(order = 100, validators = {RequiredValueValidator.class, OutcomeURLValidator.class})
         String failureUrl();
     }
 

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2025 Ping Identity Corporation.
+ * Copyright 2019-2026 Ping Identity Corporation.
  */
 
 import { Button, Collapse } from "react-bootstrap";
@@ -45,15 +45,18 @@ class GroupedList extends Component {
     render () {
         const { group, groupKey } = this.props;
 
-        const nodeTypeItems = map(sortBy(group, (node) => node.name.toUpperCase()), ({ _id, icon, name, tags }) => (
-            <NodeTypeItem
-                displayName={ name }
-                icon={ icon }
-                key={ _id }
-                nodeType={ _id }
-                tags={ tags }
-            />
-        ));
+        const nodeTypeItems = map(
+            sortBy(group, (node) => node.name.toUpperCase()),
+            ({ _id, icon, name, tags, version }) => (
+                <NodeTypeItem
+                    displayName={ name }
+                    icon={ icon }
+                    key={ _id }
+                    nodeType={ _id }
+                    tags={ tags }
+                    version={ version }
+                />
+            ));
 
         return isEmpty(group)
             ? ""

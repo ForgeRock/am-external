@@ -11,9 +11,8 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2025 Ping Identity Corporation.
+ * Copyright 2020-2026 Ping Identity Corporation.
  */
-
 
 package org.forgerock.openam.auth.nodes;
 
@@ -28,9 +27,11 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.UUID;
 
-import javax.inject.Inject;
 import javax.script.Bindings;
 
+import jakarta.inject.Inject;
+
+import org.forgerock.am.trees.api.Tree;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.audit.validation.PositiveIntegerValidator;
@@ -40,6 +41,7 @@ import org.forgerock.openam.auth.node.api.AuthScriptUtilities;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.auth.node.api.ScriptedLocalizedMessage;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript;
 import org.forgerock.openam.auth.nodes.script.DeviceMatchNodeBindings;
@@ -89,6 +91,8 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
     private final AuthScriptUtilities authScriptUtils;
     private final ScriptedIdentityRepository scriptedIdentityRepository;
     private final UUID nodeId;
+    private final Tree tree;
+    private final ScriptedLocalizedMessage.Factory scriptedLocalizedMessageFactory;
 
 
     /**
@@ -104,6 +108,8 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
      * @param scriptedIdentityRepository   The scripted identity repository
      * @param nodeId                       The node ID
      * @param authScriptUtils              utilities for scripted nodes
+     * @param tree                         The tree
+     * @param scriptedLocalizedMessageFactory The scripted localized message factory
      */
     @Inject
     public DeviceMatchNode(DeviceProfilesDao deviceProfilesDao,
@@ -111,7 +117,8 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
             DeviceMatchNodeScriptContext deviceMatchNodeScriptContext,
             NodeUserIdentityProvider identityProvider, @Assisted Config config,
             @Assisted Realm realm, ScriptedIdentityRepository scriptedIdentityRepository,
-            @Assisted UUID nodeId, AuthScriptUtilities authScriptUtils) {
+            @Assisted UUID nodeId, AuthScriptUtilities authScriptUtils, @Assisted Tree tree,
+            ScriptedLocalizedMessage.Factory scriptedLocalizedMessageFactory) {
         this.deviceProfilesDao = deviceProfilesDao;
         this.scriptEvaluator = scriptEvaluatorFactory.create(AUTHENTICATION_TREE_DECISION_NODE,
                 deviceMatchNodeScriptContext);
@@ -122,6 +129,8 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
         this.scriptedIdentityRepository = scriptedIdentityRepository;
         this.nodeId = nodeId;
         this.authScriptUtils = authScriptUtils;
+        this.tree = tree;
+        this.scriptedLocalizedMessageFactory = scriptedLocalizedMessageFactory;
     }
 
     @Override
@@ -208,6 +217,10 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
                                     ? authScriptUtils.getSessionProperties(context.request.ssoTokenId)
                                     : null)
                     .withRequestCookies(context.request.cookies)
+                    .withTree(tree)
+                    .withSamlApplication(authScriptUtils.getSAMLData(context).orElse(null))
+                    .withOauthApplication(authScriptUtils.getOauthDecisionNodeApplication(context).orElse(null))
+                    .withScriptedLocalizedMessage(scriptedLocalizedMessageFactory.create(realm, context))
                     .build();
             Bindings binding = scriptEvaluator.evaluateScript(script, scriptBindings, realm).getBindings();
             logger.debug("script {} \n binding {}", script, binding);

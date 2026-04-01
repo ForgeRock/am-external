@@ -17,8 +17,8 @@ package org.forgerock.openam.services.push.dispatch;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.forgerock.am.cts.CTSPersistentStore;
 import org.forgerock.am.cts.api.tokens.TokenFactory;

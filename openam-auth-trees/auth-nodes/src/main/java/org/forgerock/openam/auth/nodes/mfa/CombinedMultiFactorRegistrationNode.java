@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.am.cts.exceptions.CoreTokenException;

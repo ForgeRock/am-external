@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 import { createAction } from "redux-actions";
 import PropTypes from "prop-types";
@@ -30,7 +30,8 @@ export const propType = {
         PropTypes.objectOf((_, key) => new Error(`Should be an empty object, but has property ${key}`)),
         PropTypes.shape({
             id: PropTypes.string.isRequired,
-            type: PropTypes.string.isRequired
+            type: PropTypes.string.isRequired,
+            version: PropTypes.string
         })
     ]).isRequired
 };
@@ -39,5 +40,5 @@ export const propType = {
 const initialState = {};
 export default checkedActionHandlers(propType, {
     [REMOVE]: () => initialState,
-    [SET]: (state, action) => action.payload
+    [SET]: (state, { payload: { id, type, version } }) => ({ id, type, version })
 }, initialState, (state) => ({ selected: state }));

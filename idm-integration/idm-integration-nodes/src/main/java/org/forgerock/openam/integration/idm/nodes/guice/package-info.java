@@ -14,4 +14,7 @@
  * Copyright 2024-2025 Ping Identity Corporation.
  */
 
+/**
+ * Guice classes for idm-integration-nodes.
+ */
 package org.forgerock.openam.integration.idm.nodes.guice;

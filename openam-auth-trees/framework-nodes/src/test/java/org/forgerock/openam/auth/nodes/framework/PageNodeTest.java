@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.framework;
@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.auth.nodes.framework.AbstractPageNode.ChildNodeConfig.NODE_VERSION_FIELD;
 import static org.forgerock.openam.auth.nodes.framework.PageNode.PAGE_NODE_CALLBACKS;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
@@ -37,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.security.auth.callback.NameCallback;
@@ -45,11 +45,14 @@ import javax.security.auth.callback.NameCallback;
 import org.forgerock.am.trees.api.NodeEventAuditor;
 import org.forgerock.am.trees.api.NodeFactory;
 import org.forgerock.am.trees.api.Tree;
+import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.util.Pair;
@@ -60,7 +63,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.iplanet.am.util.SystemPropertiesWrapper;
 import com.sun.identity.authentication.spi.IdentifiableCallback;
 
 @ExtendWith(MockitoExtension.class)
@@ -80,12 +82,10 @@ public class PageNodeTest {
     private NodeEventAuditor auditor;
     @Mock
     private LocalizedMessageProvider localizationHelper;
-    @Mock
-    private SystemPropertiesWrapper systemProperties;
 
     @BeforeEach
     void setup() throws Exception {
-        node = new PageNode(config, realm, tree, nodeFactory, auditor, realm -> localizationHelper, systemProperties);
+        node = new PageNode(config, realm, tree, nodeFactory, auditor, realm -> localizationHelper);
     }
 
     @Test
@@ -94,26 +94,71 @@ public class PageNodeTest {
         given(config.nodes()).willReturn(emptyList());
 
         // When/Then
-        assertThatThrownBy(() -> node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(),
-                Optional.empty()))).isInstanceOfSatisfying(NodeProcessException.class,
+        assertThatThrownBy(() -> node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build())).isInstanceOfSatisfying(NodeProcessException.class,
                         ex -> assertThat(ex.getMessage()).contains("page has no nodes"));
     }
 
     @Test
     void shouldReturnActionFromLastNode() throws Exception {
         // Given
-        given(config.nodes()).willReturn(singletonList(UUID.randomUUID() + ":Type:1:Display Name"));
         given(config.nodes()).willReturn(singletonList(LAST_NODE_UUID + ":Type:1:Display Name"));
         Node node2 = mock(Node.class);
         given(nodeFactory.createNode(eq("Type"), eq(1), eq(LAST_NODE_UUID), eq(realm), eq(tree))).willReturn(node2);
         given(node2.process(any())).willReturn(Action.goTo("result").build());
 
         // When
-        Action result = node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isFalse();
         assertThat(result.outcome).isEqualTo("result");
+        assertThat(result.sharedState.get(PAGE_NODE_CALLBACKS).isNull()).isTrue();
+    }
+
+    @Test
+    void shouldReturnActionFromVersionedLastNode() throws Exception {
+        // Given
+        given(config.nodes()).willReturn(singletonList(LAST_NODE_UUID + ":Type:2:Display Name"));
+        Node node2 = mock(Node.class);
+        given(nodeFactory.createNode(eq("Type"), eq(2), eq(LAST_NODE_UUID), eq(realm), eq(tree))).willReturn(node2);
+        given(node2.process(any())).willReturn(Action.goTo("result").build());
+
+        // When
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
+
+        // Then
+        assertThat(result.sendingCallbacks()).isFalse();
+        assertThat(result.outcome).isEqualTo("result");
+        assertThat(result.sharedState.get(PAGE_NODE_CALLBACKS).isNull()).isTrue();
+    }
+
+    @Test
+    void shouldReturnActionFromLastNodeWithExistingSharedState() throws Exception {
+        // Given
+        given(config.nodes()).willReturn(singletonList(LAST_NODE_UUID + ":Type:1:Display Name"));
+        Node node2 = mock(Node.class);
+        given(nodeFactory.createNode(eq("Type"), eq(1), eq(LAST_NODE_UUID), eq(realm), eq(tree))).willReturn(node2);
+        given(node2.process(any())).willReturn(Action.goTo("result").build());
+
+        JsonValue sharedState = json(object(field(PAGE_NODE_CALLBACKS, object(field("0", 0), field("1", 1)))));
+
+        // When
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .sharedState(sharedState)
+                .build());
+
+        // Then
+        assertThat(result.sendingCallbacks()).isFalse();
+        assertThat(result.outcome).isEqualTo("result");
+        assertThat(result.sharedState.get(PAGE_NODE_CALLBACKS).isNull()).isTrue();
+        assertThat(sharedState.get(PAGE_NODE_CALLBACKS).isNull()).isTrue();
     }
 
     @Test
@@ -129,7 +174,9 @@ public class PageNodeTest {
         given(node2.process(any())).willReturn(Action.send(new NameCallback("Node2")).build());
 
         // When
-        Action result = node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isTrue();
@@ -140,6 +187,7 @@ public class PageNodeTest {
             assertThat(callback).isInstanceOf(NameCallback.class);
             return ((NameCallback) callback).getPrompt();
         }).containsExactly("Node1", "Node2");
+        assertThat(result.sharedState.get(PAGE_NODE_CALLBACKS).asMap()).isEqualTo(Map.of("0", 0, "1", 1));
     }
 
     @Test
@@ -164,7 +212,9 @@ public class PageNodeTest {
         given(localizationHelper.getLocalizedMessage(any(), any(), eq(desc), eq(""))).willReturn("Node Description");
 
         // When
-        Action result = node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isTrue();
@@ -186,11 +236,11 @@ public class PageNodeTest {
                 Action.send(new NameCallback("Node3"), new NameCallback("Node4")).build());
 
         // When
-        Action result = node.process(new TreeContext(
-                json(object(field(PAGE_NODE_CALLBACKS, object(field("0", 0), field("1", 1))))),
-                REQUEST_CONTEXT,
-                asList(identifiableCallback(0, "Node1"), identifiableCallback(1, "Node2")
-                ), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .sharedState(json(object(field(PAGE_NODE_CALLBACKS, object(field("0", 0), field("1", 1))))))
+                .requestContext(REQUEST_CONTEXT)
+                .callbacks(asList(identifiableCallback(0, "Node1"), identifiableCallback(1, "Node2")))
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isTrue();
@@ -229,7 +279,9 @@ public class PageNodeTest {
         given(node2.process(any())).willReturn(Action.send(new NameCallback("Node2")).build());
 
         // When
-        Action result = node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isTrue();
@@ -256,7 +308,9 @@ public class PageNodeTest {
         given(node2.process(any())).willReturn(Action.goTo("localAuthentication").build());
 
         // When
-        Action result = node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isFalse();
@@ -278,10 +332,11 @@ public class PageNodeTest {
         given(node2.process(any())).willReturn(Action.goTo("localAuthentication").build());
 
         // When
-        Action result = node.process(new TreeContext(
-                json(object(field(PAGE_NODE_CALLBACKS, object(field("0", 0), field("1", 1))))),
-                REQUEST_CONTEXT,
-                asList(identifiableCallback(0, "Node1"), identifiableCallback(1, "Node2")), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .sharedState(json(object(field(PAGE_NODE_CALLBACKS, object(field("0", 0), field("1", 1))))))
+                .requestContext(REQUEST_CONTEXT)
+                .callbacks(asList(identifiableCallback(0, "Node1"), identifiableCallback(1, "Node2")))
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isTrue();
@@ -306,7 +361,9 @@ public class PageNodeTest {
         given(node2.process(any())).willReturn(Action.goTo("socialAuthentication").build());
 
         // When
-        Action result = node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isFalse();
@@ -324,7 +381,9 @@ public class PageNodeTest {
         given(node1.process(any())).willReturn(Action.goTo("localAuthentication").build());
 
         // When
-        Action result = node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isFalse();
@@ -342,7 +401,9 @@ public class PageNodeTest {
         given(node1.process(any())).willReturn(Action.send(new NameCallback("Node1")).build());
 
         // When
-        Action result = node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isTrue();
@@ -369,7 +430,9 @@ public class PageNodeTest {
         given(node2.process(any())).willReturn(Action.send(new NameCallback("Node2")).build());
 
         // When
-        Action result = node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(), Optional.empty()));
+        Action result = node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
 
         // Then
         assertThat(result.sendingCallbacks()).isTrue();
@@ -400,7 +463,9 @@ public class PageNodeTest {
         });
 
         // When
-        this.node.process(new TreeContext(json(object()), REQUEST_CONTEXT, emptyList(), Optional.empty()));
+        this.node.process(TreeContext.builder()
+                .requestContext(REQUEST_CONTEXT)
+                .build());
 
         // Then
         verify(auditor).logAuditEvent(
@@ -433,10 +498,90 @@ public class PageNodeTest {
         List<PageNode.ChildNodeConfig> children = node.getChildren();
 
         // Then
-        var expectedNode1 = new PageNode.ChildNodeConfig(uuid, "Type 1", 1, "Display Name 1", systemProperties);
-        var expectedNode2 = new PageNode.ChildNodeConfig(LAST_NODE_UUID.toString(), "Type 2", 1, "Display Name 2",
-                systemProperties);
+        var expectedNode1 = new PageNode.ChildNodeConfig(uuid, "Type 1", 1, "Display Name 1");
+        var expectedNode2 = new PageNode.ChildNodeConfig(LAST_NODE_UUID.toString(), "Type 2", 1, "Display Name 2");
         assertThat(children).containsExactly(expectedNode1, expectedNode2);
 
+    }
+
+    @Test
+    void shouldContainVersionInformationInRepresentations() {
+        PageNode.ChildNodeConfig childNodeConfig =
+                new PageNode.ChildNodeConfig("NodeId", "Type", 123, "DisplayName");
+        assertThat(childNodeConfig.asJson().asMap()).containsEntry(NODE_VERSION_FIELD, "123.0");
+        assertThat(childNodeConfig.toString()).isEqualTo("NodeId:Type:123:DisplayName");
+    }
+
+    @Test
+    void shouldGetInputsForContainedNodes() throws NodeProcessException {
+        // Given
+        var firstUUID = UUID.randomUUID();
+        given(config.nodes()).willReturn(List.of(firstUUID + ":Type:1:Display Name"));
+        Node node = mock(Node.class);
+        given(node.getInputs()).willReturn(new InputState[] { new InputState("banana") });
+        given(nodeFactory.createNode(eq("Type"), eq(1), eq(firstUUID), eq(realm), eq(tree)))
+                .willReturn(node);
+
+        // When
+        var inputs = this.node.getInputs();
+
+        // Then
+        assertThat(inputs).hasSize(1);
+        assertThat(inputs[0].name()).isEqualTo("banana");
+    }
+
+    @Test
+    void shouldGetInputsForContainedVersionedNodes() throws NodeProcessException {
+        // Given
+        var firstUUID = UUID.randomUUID();
+        given(config.nodes()).willReturn(List.of(firstUUID + ":Type:2:Display Name"));
+        Node node = mock(Node.class);
+        given(node.getInputs()).willReturn(new InputState[] { new InputState("banana") });
+        given(nodeFactory.createNode(eq("Type"), eq(2), eq(firstUUID), eq(realm), eq(tree)))
+                .willReturn(node);
+
+        // When
+        var inputs = this.node.getInputs();
+
+        // Then
+        assertThat(inputs).hasSize(1);
+        assertThat(inputs[0].name()).isEqualTo("banana");
+    }
+
+    @Test
+    void shouldGetOutputsForContainedNodes() throws NodeProcessException {
+        // Given
+        var firstUUID = UUID.randomUUID();
+        given(config.nodes()).willReturn(List.of(firstUUID + ":Type:1:Display Name"));
+        Node node = mock(Node.class);
+        given(node.getOutputs()).willReturn(new OutputState[] { new OutputState("banana") });
+        given(nodeFactory.createNode(eq("Type"), eq(1), eq(firstUUID), eq(realm), eq(tree)))
+                .willReturn(node);
+
+        // When
+        var outputs = this.node.getOutputs();
+
+        // Then
+        assertThat(outputs).hasSize(1);
+        assertThat(outputs[0].name()).isEqualTo("banana");
+    }
+
+
+    @Test
+    void shouldGetOutputsForContainedVersionedNodes() throws NodeProcessException {
+        // Given
+        var firstUUID = UUID.randomUUID();
+        given(config.nodes()).willReturn(List.of(firstUUID + ":Type:2:Display Name"));
+        Node node = mock(Node.class);
+        given(node.getOutputs()).willReturn(new OutputState[] { new OutputState("banana") });
+        given(nodeFactory.createNode(eq("Type"), eq(2), eq(firstUUID), eq(realm), eq(tree)))
+                .willReturn(node);
+
+        // When
+        var outputs = this.node.getOutputs();
+
+        // Then
+        assertThat(outputs).hasSize(1);
+        assertThat(outputs[0].name()).isEqualTo("banana");
     }
 }

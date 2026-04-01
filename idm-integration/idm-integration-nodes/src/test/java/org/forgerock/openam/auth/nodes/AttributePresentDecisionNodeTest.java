@@ -16,7 +16,6 @@
 package org.forgerock.openam.auth.nodes;
 
 import static java.lang.String.valueOf;
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
@@ -29,12 +28,9 @@ import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import java.util.Optional;
-
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.BadRequestException;
 import org.forgerock.json.resource.NotFoundException;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -73,8 +69,9 @@ public class AttributePresentDecisionNodeTest {
         when(config.identityAttribute()).thenReturn("userName");
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
 
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveSharedState(), json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(retrieveSharedState())
+                .build();
         node = new AttributePresentDecisionNode(config, realm, idmIntegrationService);
     }
 
@@ -90,8 +87,9 @@ public class AttributePresentDecisionNodeTest {
     @Test
     void shouldReturnTrueIfUsernameIdentityExists() throws Exception {
         // given
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveUsernameSharedState(),
-                json(object()), new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(retrieveUsernameSharedState())
+                .build();
         node = new AttributePresentDecisionNode(config, realm, idmIntegrationService);
 
         when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
@@ -126,8 +124,7 @@ public class AttributePresentDecisionNodeTest {
     void shouldThrowNodeProcessExceptionIfNoIdentityFound() throws Exception {
         // given
         when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, json(object()), json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder().build();
         node = new AttributePresentDecisionNode(config, realm, idmIntegrationService);
         when(config.presentAttribute()).thenReturn("password");
 

@@ -22,14 +22,11 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.forgerock.json.JsonValue.json;
-import static org.forgerock.json.JsonValue.object;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,11 +34,11 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.ServiceConfigException;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.junit.jupiter.api.Test;
 
 @ExtendWith(MockitoExtension.class)
 public class QueryParameterNodeTest {
@@ -68,8 +65,9 @@ public class QueryParameterNodeTest {
                 "emptyColors", new String[]{}
         );
 
-        context = new TreeContext(json(object()), new ExternalRequestContext.Builder().parameters(params).build(),
-                emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().parameters(params).build())
+                .build();
 
         // When
         queryParameterNode.process(context);
@@ -96,8 +94,9 @@ public class QueryParameterNodeTest {
                 "brandColorsDelimited", new String[]{"green,blue"}
         );
 
-        context = new TreeContext(json(object()), new ExternalRequestContext.Builder().parameters(params).build(),
-                emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().parameters(params).build())
+                .build();
 
         // When
         queryParameterNode.process(context);
@@ -116,8 +115,9 @@ public class QueryParameterNodeTest {
 
         Map<String, String[]> params = Map.of("brandingColor", new String[]{"green"});
 
-        context = new TreeContext(json(object()), new ExternalRequestContext.Builder().parameters(params).build(),
-                emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().parameters(params).build())
+                .build();
 
         // When
         queryParameterNode.process(context);
@@ -135,8 +135,9 @@ public class QueryParameterNodeTest {
 
         Map<String, String[]> params = emptyMap();
 
-        context = new TreeContext(json(object()), new ExternalRequestContext.Builder().parameters(params).build(),
-                emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().parameters(params).build())
+                .build();
 
         // When
         queryParameterNode.process(context);
@@ -162,8 +163,9 @@ public class QueryParameterNodeTest {
                 "brandColor", new String[]{"green%2Cred%2Cyellow,brown%2Bviolet+grey"},
                 "brandColorsDelimited", new String[]{"purple%2Corange%2Cpink%26cyan%2Fblue%5Emint"});
 
-        context = new TreeContext(json(object()), new ExternalRequestContext.Builder().parameters(params).build(),
-                emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .requestContext(new ExternalRequestContext.Builder().parameters(params).build())
+                .build();
 
         // When
         queryParameterNode.process(context);

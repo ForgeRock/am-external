@@ -22,6 +22,9 @@ import DashboardTasksView from "org/forgerock/openam/ui/admin/views/realms/dashb
 import DashboardTemplate from "templates/admin/views/realms/dashboard/DashboardTemplate";
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import StatusPartial from "partials/util/_Status";
+import store from "store";
+
+const featureFlags = store.getState().featureFlags.flags;
 
 export default AbstractView.extend({
     template: DashboardTemplate,
@@ -35,11 +38,12 @@ export default AbstractView.extend({
 
         realmPromise.then((realmData) => {
             const tasksData = [
-                {
+                // Only include trees link in dashboard if we are not in cloud
+                ...(!featureFlags.cloudOnlyFeaturesEnabled ? [{ // eslint-disable-line
                     route: "realmsAuthenticationTrees",
                     name: t("console.dashboard.tasks.authenticationTrees"),
                     icon: "fa-tree"
-                },
+                }] : []),
                 {
                     route: "realmsServices",
                     name: t("console.dashboard.tasks.services"),
@@ -76,6 +80,7 @@ export default AbstractView.extend({
                     icon: "fa-credit-card"
                 }
             ];
+
             this.data.realm = {
                 status: realmData.values.active ? t("common.form.active") : t("common.form.inactive"),
                 active: realmData.values.active,

@@ -17,7 +17,7 @@ package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.utils.StringUtils.isEmpty;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.monitoring.api.instrument.DistributionSummary;
 import org.forgerock.monitoring.api.instrument.MeterRegistry;

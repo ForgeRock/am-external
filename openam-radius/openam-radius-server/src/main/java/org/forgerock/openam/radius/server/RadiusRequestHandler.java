@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.forgerock.openam.audit.context.AuditRequestContext;
 import org.forgerock.openam.radius.common.AccessReject;
 import org.forgerock.openam.radius.common.AccessRequest;
+import org.forgerock.openam.radius.common.MessageAuthenticatorCalculator;
 import org.forgerock.openam.radius.common.Packet;
 import org.forgerock.openam.radius.common.PacketFactory;
 import org.forgerock.openam.radius.common.PacketType;

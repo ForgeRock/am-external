@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2025 Ping Identity Corporation.
+ * Copyright 2015-2026 Ping Identity Corporation.
  */
 
 /**
@@ -43,9 +43,17 @@ export const getAll = (realm) => {
     return resource(realm).queryFilter();
 };
 
-export const getAllByScriptType = (realm, scriptType) => {
+export const getAllByScriptType = (realm, ...scriptTypes) => {
+    let queryFilter;
+    if (scriptTypes.length === 1) {
+        queryFilter = `context eq "${encodeURIComponent(scriptTypes[0])}"`;
+    } else {
+        queryFilter = scriptTypes
+            .map((type) => `context eq "${encodeURIComponent(type)}"`)
+            .join(" or ");
+    }
     return obj.serviceCall({
-        url: fetchUrl(`/scripts?_queryFilter=context+eq+%22${encodeURIComponent(scriptType)}%22`, { realm }),
+        url: fetchUrl(`/scripts?_queryFilter=${queryFilter}`, { realm }),
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" }
     });
 };

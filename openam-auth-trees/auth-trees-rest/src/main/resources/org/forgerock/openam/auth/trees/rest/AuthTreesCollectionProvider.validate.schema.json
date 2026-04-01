@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "i18n:api-descriptor/AuthTreesCollectionProvider#validate.title",
+  "description": "i18n:api-descriptor/AuthTreesCollectionProvider#validate.description",
+  "properties": {
+    "valid": {
+      "type": "boolean",
+      "title": "i18n:api-descriptor/AuthTreesCollectionProvider#validate.valid.title",
+      "description": "i18n:api-descriptor/AuthTreesCollectionProvider#validate.valid.description"
+    },
+    "warnings": {
+      "type": "array",
+      "title": "i18n:api-descriptor/AuthTreesCollectionProvider#validate.warnings.title",
+      "description": "i18n:api-descriptor/AuthTreesCollectionProvider#validate.warnings.description",
+      "items": {
+        "type": "string"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "title": "i18n:api-descriptor/AuthTreesCollectionProvider#validate.errors.title",
+      "description": "i18n:api-descriptor/AuthTreesCollectionProvider#validate.errors.description",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["valid", "warnings"]
+}

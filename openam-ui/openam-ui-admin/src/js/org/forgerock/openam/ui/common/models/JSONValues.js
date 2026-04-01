@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2025 Ping Identity Corporation.
+ * Copyright 2016-2026 Ping Identity Corporation.
  */
 
 import _ from "lodash";
@@ -80,6 +80,9 @@ function ungroupCollectionProperties (raw, groupKey) {
     const collectionPropertiesKeys = _.keys(collectionProperties);
     const allPropertiesKeys = _.keys(raw.defaults);
     const nonGroupedProperties = _.difference(allPropertiesKeys, collectionPropertiesKeys);
+    // If there are any metadata properties (properties starting with "_"), then
+    // keep track of them to add them in later
+    const existingCollectionPropertiesKeys = raw[`_${groupKey}CollectionProperties`] || [];
 
     if (!_.isEmpty(nonGroupedProperties)) {
         console.warn(`Detected properties which do not belong to any group: [${nonGroupedProperties}]. ` +
@@ -88,7 +91,9 @@ function ungroupCollectionProperties (raw, groupKey) {
 
     const values = { ...raw, ...collectionProperties };
 
-    values[`_${groupKey}CollectionProperties`] = collectionPropertiesKeys;
+    // Combine new and existing metadata to ensure no properties are lost or
+    // overriden in subsequest runs
+    values[`_${groupKey}CollectionProperties`] = _.union(existingCollectionPropertiesKeys, collectionPropertiesKeys);
     values[groupKey] = _.omit(values[groupKey], collectionPropertiesKeys);
 
     if (_.isEmpty(values[groupKey])) {

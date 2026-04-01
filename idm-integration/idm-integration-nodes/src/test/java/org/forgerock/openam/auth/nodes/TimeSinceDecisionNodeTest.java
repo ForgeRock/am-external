@@ -16,10 +16,6 @@
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
@@ -31,7 +27,6 @@ import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
-import static org.forgerock.util.time.Duration.duration;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -42,14 +37,11 @@ import java.util.stream.Stream;
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.openam.utils.TimeTravelUtil;
-import org.forgerock.util.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,9 +60,6 @@ public class TimeSinceDecisionNodeTest {
     private TimeSinceDecisionNode.Config config;
 
     @Mock
-    private Realm realm;
-
-    @Mock
     private IdmIntegrationService idmIntegrationService;
 
     @InjectMocks
@@ -80,27 +69,27 @@ public class TimeSinceDecisionNodeTest {
         TimeTravelUtil.useFixedClock(1_000_000);
         return Stream.of(
                 // 1 day from now, should return false
-                Arguments.of(duration(1, DAYS), false, nowAsString()),
+                Arguments.of("1 day", false, nowAsString()),
                 // 1 hour from now, should return false
-                Arguments.of(duration(1, HOURS), false, nowAsString()),
+                Arguments.of("1 hour", false, nowAsString()),
                 // 1 minute from now, should return false
-                Arguments.of(duration(1, MINUTES), false, nowAsString()),
+                Arguments.of("1 minute", false, nowAsString()),
                 // 1 second from now, should return false
-                Arguments.of(duration(1, SECONDS), false, nowAsString()),
+                Arguments.of("1 second", false, nowAsString()),
                 // 1 day, 1 hour, 1 minute, 1 second from now, should return false
-                Arguments.of(duration("1 day and 1 hour and 1 minute and 1 second"), false, nowAsString()),
+                Arguments.of("1 day and 1 hour and 1 minute and 1 second", false, nowAsString()),
                 // zero time from now, should return true
-                Arguments.of(Duration.ZERO, true, nowAsString()),
+                Arguments.of("0 seconds", true, nowAsString()),
                 // zero minutes from a minute before, should return true
-                Arguments.of(Duration.ZERO, true, Time.zonedDateTime(ZoneOffset.UTC).minusMinutes(1).toString()),
+                Arguments.of("0 seconds", true, Time.zonedDateTime(ZoneOffset.UTC).minusMinutes(1).toString()),
                 // 1 hour from an hour ago, should return true
-                Arguments.of(duration(1, HOURS), true, Time.zonedDateTime(ZoneOffset.UTC).minusHours(1).toString()),
+                Arguments.of("1 hour", true, Time.zonedDateTime(ZoneOffset.UTC).minusHours(1).toString()),
                 // 1 day from a day ago, should return true
-                Arguments.of(duration(1, DAYS), true, Time.zonedDateTime(ZoneOffset.UTC).minusDays(1).toString()),
+                Arguments.of("1 day", true, Time.zonedDateTime(ZoneOffset.UTC).minusDays(1).toString()),
                 // 1 week from a week ago, should return true
-                Arguments.of(duration(1, MINUTES), true, Time.zonedDateTime(ZoneOffset.UTC).minusMinutes(1).toString()),
+                Arguments.of("1 minute", true, Time.zonedDateTime(ZoneOffset.UTC).minusMinutes(1).toString()),
                 // 1 month from a month ago, should return true
-                Arguments.of(duration(1, SECONDS), true, Time.zonedDateTime(ZoneOffset.UTC).minusSeconds(1).toString())
+                Arguments.of("1 second", true, Time.zonedDateTime(ZoneOffset.UTC).minusSeconds(1).toString())
         );
     }
 
@@ -155,7 +144,7 @@ public class TimeSinceDecisionNodeTest {
 
     @ParameterizedTest
     @MethodSource("timeSinceData")
-    public void shouldReturnExpectedValue(Duration elapsedTime, boolean expectedResult, String time)
+    public void shouldReturnExpectedValue(String elapsedTime, boolean expectedResult, String time)
             throws Exception {
 
         JsonValue sharedState = json(object(
@@ -169,7 +158,7 @@ public class TimeSinceDecisionNodeTest {
                 .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));
         when(idmIntegrationService.retrieveCreateDate(any(), any(), any(), any()))
                 .thenReturn(json(object(field("createDate", time))));
-        when(config.elapsedTime()).thenReturn(elapsedTime.toString());
+        when(config.elapsedTime()).thenReturn(elapsedTime);
 
         String outcome = timeSinceDecisionNode.process(getContext(emptyList(), sharedState)).outcome;
 
@@ -178,7 +167,7 @@ public class TimeSinceDecisionNodeTest {
 
     @ParameterizedTest
     @MethodSource("timeSinceData")
-    public void shouldReturnExpectedOutcomeWithUsernameAsIdentity(Duration elapsedTime, boolean expectedResult,
+    public void shouldReturnExpectedOutcomeWithUsernameAsIdentity(String elapsedTime, boolean expectedResult,
             String time) throws Exception {
         JsonValue sharedState = json(object(
                 field(USERNAME, "test-username")
@@ -190,7 +179,7 @@ public class TimeSinceDecisionNodeTest {
                 .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));
         when(idmIntegrationService.retrieveCreateDate(any(), any(), any(), any()))
                 .thenReturn(json(object(field("createDate", time))));
-        when(config.elapsedTime()).thenReturn(elapsedTime.toString());
+        when(config.elapsedTime()).thenReturn(elapsedTime);
 
         String outcome = timeSinceDecisionNode.process(getContext(emptyList(), sharedState)).outcome;
 
@@ -207,7 +196,6 @@ public class TimeSinceDecisionNodeTest {
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState,
-                new ExternalRequestContext.Builder().build(), callbacks);
+        return TreeContext.builder().sharedState(sharedState).callbacks(callbacks).build();
     }
 }

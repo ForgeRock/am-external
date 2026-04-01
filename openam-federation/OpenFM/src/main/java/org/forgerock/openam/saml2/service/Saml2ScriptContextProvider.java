@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.saml2.service;
@@ -33,6 +33,8 @@ import java.util.stream.Stream;
 
 import javax.xml.bind.JAXBElement;
 
+import jakarta.inject.Inject;
+
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.scripting.domain.LegacyScriptContextDetails;
 import org.forgerock.openam.scripting.domain.Script;
@@ -42,7 +44,6 @@ import org.forgerock.openam.utils.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
@@ -59,6 +60,10 @@ public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider 
 
     private static final Logger logger = LoggerFactory.getLogger(Saml2ScriptContextProvider.class);
     private final Saml2NameIdMapperContext saml2NameIdMapperContext;
+    private final Saml2AccountMapperScriptContext saml2AccountMapperScriptContext;
+    private final Saml2SpAdapterContext saml2SpAdapterContext;
+    private final Saml2IdpAdapterContext saml2IdpAdapterContext;
+    private final Saml2IdpAttributeMapperContext saml2IdpAttributeMapperContext;
 
     private static final String[] ADAPTER_WHITE_LIST = {
             "com.iplanet.am.sdk.AMHashMap",
@@ -79,6 +84,7 @@ public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider 
             "java.util.AbstractMap$SimpleImmutableEntry", "java.util.ArrayList", "java.util.ArrayList$Itr",
             "java.util.Collections$1", "java.util.Collections$EmptyList",
             "java.util.Collections$SingletonList",
+            "java.util.Collections$SingletonSet",
             "java.util.Collections$UnmodifiableRandomAccessList",
             "java.util.Collections$UnmodifiableCollection$1",
             "java.util.HashMap", "java.util.HashMap$Entry",
@@ -101,8 +107,17 @@ public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider 
             "sun.security.ec.ECPrivateKeyImpl"};
 
     @Inject
-    public Saml2ScriptContextProvider(Saml2NameIdMapperContext saml2NameIdMapperContext) {
+    public Saml2ScriptContextProvider(Saml2NameIdMapperContext saml2NameIdMapperContext,
+                                      Saml2AccountMapperScriptContext saml2AccountMapperScriptContext,
+                                      Saml2SpAdapterContext saml2SpAdapterContext,
+                                      Saml2IdpAdapterContext saml2IdpAdapterContext,
+                                      Saml2IdpAttributeMapperContext saml2IdpAttributeMapperContext
+                                      ) {
         this.saml2NameIdMapperContext = saml2NameIdMapperContext;
+        this.saml2AccountMapperScriptContext = saml2AccountMapperScriptContext;
+        this.saml2SpAdapterContext = saml2SpAdapterContext;
+        this.saml2IdpAdapterContext = saml2IdpAdapterContext;
+        this.saml2IdpAttributeMapperContext = saml2IdpAttributeMapperContext;        
     }
 
     @Override
@@ -139,7 +154,7 @@ public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider 
                         "com.sun.identity.saml2.common.SAML2Exception",
                         "java.util.Collections$UnmodifiableRandomAccessList",
                         "java.util.Collections$UnmodifiableCollection$1",
-                        "org.mozilla.javascript.JavaScriptException", "javax.servlet.http.Cookie", 
+                        "org.mozilla.javascript.JavaScriptException", "javax.servlet.http.Cookie",
                         "javax.xml.parsers.DocumentBuilder", "javax.xml.parsers.DocumentBuilderFactory",
                         "org.w3c.dom.Document", "org.w3c.dom.Element", "org.xml.sax.InputSource"
                 ).build());
@@ -157,6 +172,14 @@ public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider 
                 .overrideDefaultWhiteList(generateWhiteList(ADAPTER_WHITE_LIST, SpAdapterScriptHelper.class)).build());
 
         scriptContexts.add(saml2NameIdMapperContext);
+
+        scriptContexts.add(saml2AccountMapperScriptContext);
+
+        scriptContexts.add(saml2SpAdapterContext);
+
+        scriptContexts.add(saml2IdpAdapterContext);
+
+        scriptContexts.add(saml2IdpAttributeMapperContext);
 
         return scriptContexts;
     }

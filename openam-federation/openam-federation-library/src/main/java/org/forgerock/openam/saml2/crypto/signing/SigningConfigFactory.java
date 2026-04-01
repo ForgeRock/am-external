@@ -19,8 +19,8 @@ import java.security.Key;
 import java.security.cert.X509Certificate;
 import java.util.function.Function;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.saml2.Saml2EntityRole;

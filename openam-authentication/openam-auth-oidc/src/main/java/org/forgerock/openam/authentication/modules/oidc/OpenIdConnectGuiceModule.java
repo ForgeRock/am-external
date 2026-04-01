@@ -16,8 +16,8 @@
 
 package org.forgerock.openam.authentication.modules.oidc;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -28,7 +28,7 @@ import org.forgerock.http.Handler;
 import org.forgerock.oauth.resolvers.IssuerComparators;
 import org.forgerock.oauth.resolvers.OpenIdResolverFactory;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 public class OpenIdConnectGuiceModule extends AbstractModule {
     @Override

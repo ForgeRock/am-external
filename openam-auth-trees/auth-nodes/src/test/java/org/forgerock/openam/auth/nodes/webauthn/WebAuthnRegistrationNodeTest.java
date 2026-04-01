@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2025 Ping Identity Corporation.
+ * Copyright 2020-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
@@ -41,6 +41,7 @@ import static org.forgerock.openam.auth.nodes.webauthn.AbstractWebAuthnNode.USER
 import static org.forgerock.openam.auth.nodes.webauthn.AbstractWebAuthnNode.USER_VERIFIED;
 import static org.forgerock.openam.auth.nodes.webauthn.AbstractWebAuthnNode.WEB_AUTHN_ATTESTATION_INFO;
 import static org.forgerock.openam.auth.nodes.webauthn.AbstractWebAuthnNode.WEB_AUTHN_DEVICE_DATA;
+import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnRegistrationNode.FMT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -62,7 +63,6 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -97,6 +97,8 @@ import com.sun.identity.idm.AMIdentity;
  */
 @ExtendWith(MockitoExtension.class)
 public class WebAuthnRegistrationNodeTest {
+
+    private static final String CHALLENGE = "web-authn-challenge";
 
     @Mock
     WebAuthnRegistrationNode.Config config;
@@ -294,7 +296,8 @@ public class WebAuthnRegistrationNodeTest {
         //given
         given(config.relyingPartyDomain()).willReturn(Optional.of("example.com"));
         given(config.postponeDeviceProfileStorage()).willReturn(true);
-        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root"),
+                field(CHALLENGE, "challenge")));
         JsonValue transientState = json(object());
 
         TreeContext treeContext = getContext(sharedState, transientState, emptyList());
@@ -331,7 +334,8 @@ public class WebAuthnRegistrationNodeTest {
         //given
         given(config.relyingPartyDomain()).willReturn(Optional.of("example.com"));
         given(config.postponeDeviceProfileStorage()).willReturn(true);
-        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root"),
+                field(CHALLENGE, "challenge")));
         JsonValue transientState = json(object());
 
         TreeContext treeContext = getContext(sharedState, transientState, emptyList());
@@ -364,14 +368,31 @@ public class WebAuthnRegistrationNodeTest {
     }
 
     @Test
+    public void assertWebAuthnDomExceptionInSharedState() throws Exception {
+        String error = "NotAllowedError:None of the allowed credentials can be authenticated";
+        String transferredError = "ERROR::" + error;
+        Callback callback = new HiddenValueCallback("webAuthnOutcome", transferredError);
+        given(webAuthnOutcomeDeserializer.deserialize(transferredError))
+                .willReturn(WebAuthnOutcome.error(WebAuthnDomException.parse(error)));
+
+        Action result = node.process(getContext(json(object()), json(object()), Collections.singletonList(callback)));
+        String sharedStateError = result.sharedState.get("WebAuthenticationDOMException").asString();
+
+        assertThat(sharedStateError).isEqualTo(transferredError);
+        assertThat(result.outcome).isEqualTo("error");
+    }
+
+    @Test
     public void assertWebAuthnObjectProcessed() throws Exception {
         //given
         AttestationFlags flags = getAttestationFlags();
         String expectedAuthAttachment = "platform";
+        String attestationFormat = "packed";
 
         given(config.relyingPartyDomain()).willReturn(Optional.of("example.com"));
         given(config.postponeDeviceProfileStorage()).willReturn(true);
-        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root"),
+                field(CHALLENGE, "challenge")));
         JsonValue transientState = json(object());
 
         TreeContext treeContext = getContext(sharedState, transientState, emptyList());
@@ -385,7 +406,7 @@ public class WebAuthnRegistrationNodeTest {
         treeContext = treeContext.copyWithCallbacks(Arrays.asList(hiddenValueCallback, hiddenValueCallback2));
 
         final RsaJWK jwk = createRsaJwk();
-        AttestationObject attestationObject = new AttestationObject(null, new AuthData(null,
+        AttestationObject attestationObject = new AttestationObject(attestationFormat, new AuthData(null,
                 flags, 0,
                 new AttestedCredentialData(new Aaguid(UUID.randomUUID()), 0, "credentialId".getBytes(),
                         jwk, null), null), null);
@@ -408,6 +429,7 @@ public class WebAuthnRegistrationNodeTest {
         JsonValue jsonValue = result.transientState.get(WEB_AUTHN_ATTESTATION_INFO);
         assertThat(jsonValue.get(AUTHENTICATOR_ATTACHMENT).asString())
                 .isEqualTo(expectedAuthAttachment);
+        assertThat(jsonValue.get(FMT).asString()).isEqualTo(attestationFormat);
         JsonValue jsonFlags = jsonValue.get(FLAGS);
         assertThat(jsonFlags.get(USER_PRESENT).asBoolean()).isTrue();
         assertThat(jsonFlags.get(USER_VERIFIED).asBoolean()).isFalse();
@@ -499,7 +521,11 @@ public class WebAuthnRegistrationNodeTest {
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbacks, Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .callbacks(callbacks)
+                .build();
     }
 
     private WebAuthnDeviceSettings generateDevice() {

@@ -11,16 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 import { combineReducers } from "redux";
 
 import current from "./current";
-import nodeTypes from "./nodeTypes";
 import list from "./list";
 
 export default combineReducers({
     current,
-    nodeTypes,
     list
 });

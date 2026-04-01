@@ -192,7 +192,7 @@ public class ActiveRequest extends WSFederationAction {
         } finally {
             if (ssoToken != null) {
                 try {
-                    SessionManager.getProvider().invalidateSession(ssoToken, request, response);
+                    SessionManager.getProvider().invalidateSession(ssoToken, request, response, realm);
                 } catch (SessionException se) {
                     DEBUG.debug("Unable to invalidate temporary session", se);
                 }

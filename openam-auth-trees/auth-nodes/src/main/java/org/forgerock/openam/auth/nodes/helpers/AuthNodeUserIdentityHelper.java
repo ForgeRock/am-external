@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2025 Ping Identity Corporation.
+ * Copyright 2020-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.helpers;
@@ -24,19 +24,23 @@ import static org.forgerock.openam.utils.StringUtils.isEmpty;
 import java.util.Arrays;
 import java.util.Optional;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.am.identity.domain.Identity;
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.core.CoreServicesWrapper;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.core.realms.Realm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.IdType;
 
 /**
  * Helper methods to deal the fetching of AMIdentity.
@@ -47,11 +51,37 @@ public final class AuthNodeUserIdentityHelper implements NodeUserIdentityProvide
     private static final Logger logger = LoggerFactory.getLogger(AuthNodeUserIdentityHelper.class);
     private final LegacyIdentityService identityService;
     private final CoreWrapper coreWrapper;
+    private final CoreServicesWrapper coreServicesWrapper;
 
     @Inject
-    AuthNodeUserIdentityHelper(LegacyIdentityService identityService, CoreWrapper coreWrapper) {
+    AuthNodeUserIdentityHelper(LegacyIdentityService identityService, CoreWrapper coreWrapper,
+            CoreServicesWrapper coreServicesWrapper) {
         this.identityService = identityService;
         this.coreWrapper = coreWrapper;
+        this.coreServicesWrapper = coreServicesWrapper;
+    }
+
+    @Override
+    public Optional<Identity> getIdentity(Realm realm, IdentifiedIdentity identity, NodeState nodeState) {
+
+        String username;
+        IdType idType;
+
+        if (identity != null) {
+            username = identity.getUsername();
+            idType = identity.getIdentityType();
+        } else {
+            JsonValue usernameValue = nodeState.get(USERNAME);
+            if (usernameValue == null || usernameValue.isNull() || isEmpty(usernameValue.asString())) {
+                logger.warn("Could not identify the user as no user info in the tree context");
+                return Optional.empty();
+            }
+            username = usernameValue.asString();
+            // fall back to USER type if not known
+            idType = USER;
+        }
+        return coreServicesWrapper.getAuthD().getIdentity(idType, username, realm.asDN())
+                       .map(id -> (Identity) id);
     }
 
     @Override

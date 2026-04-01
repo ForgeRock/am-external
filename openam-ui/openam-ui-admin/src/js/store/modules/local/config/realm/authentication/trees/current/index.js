@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 import PropTypes from "prop-types";
 import { combineReducers } from "redux";
@@ -148,7 +148,7 @@ export default function current (state = {}, action) {
             return checkedActionResult(propType, action, state, {
                 nodes: {
                     ...state.nodes,
-                    dimensions: omit(state.nodes.dimensions, [action.payload]),
+                    dimensions: omit(state.nodes.dimensions, affectedNodes),
                     properties: mapValues(omit(state.nodes.properties, affectedNodes), (node) => {
                         return node._type._id === PAGE_NODE_TYPE ? ({
                             ...node,

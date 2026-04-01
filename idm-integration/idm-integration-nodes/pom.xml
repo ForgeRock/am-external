@@ -18,9 +18,13 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>idm-integration</artifactId>
-        <version>8.0.2</version>
+        <version>8.1.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+
+    <properties>
+        <checkstyleFailOnError>true</checkstyleFailOnError>
+    </properties>
 
     <artifactId>idm-integration-nodes</artifactId>
     <name>IDM Integration Nodes</name>

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2025 Ping Identity Corporation.
+ * Copyright 2021-2026 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.common;
@@ -67,7 +67,7 @@ public interface XmlSerializable {
      * @exception SAML2Exception if something went wrong during conversion
      * @deprecated Use {@link #toDocumentFragment(Document, boolean, boolean)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     default String toXMLString(boolean includeNSPrefix, boolean declareNS) throws SAML2Exception {
         try {
             Document document = XMLUtils.newDocument();
@@ -85,7 +85,7 @@ public interface XmlSerializable {
      * @exception SAML2Exception if something went wrong during conversion.
      * @deprecated Use {@link #toDocumentFragment(Document, boolean, boolean)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "8.0.0", forRemoval = true)
     default String toXMLString() throws SAML2Exception {
         // The old implementation defaulted to true, false here. The new implementation opts to always generate
         // namespace declarations because the XML processor will eliminate any redundant ones anyway.

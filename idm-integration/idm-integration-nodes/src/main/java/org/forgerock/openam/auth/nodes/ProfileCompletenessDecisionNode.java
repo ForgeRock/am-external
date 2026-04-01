@@ -22,7 +22,7 @@ import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getUs
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.stringAttribute;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;

@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Portions Copyright 2018-2025 Ping Identity Corporation.
+ * Portions Copyright 2018-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.guava.common.collect;
-
-import com.google.common.annotations.GwtCompatible;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +25,8 @@ import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+
+import com.google.common.annotations.GwtCompatible;
 
 /**
  * In order to maintain binary compatibility between product versions less than 6.5, which used forgerock-guava (a
@@ -92,7 +92,7 @@ import javax.annotation.Nullable;
  * @deprecated Use {@link com.google.common.collect.Multiset} instead.
  */
 @GwtCompatible
-@Deprecated
+@Deprecated(since = "8.0.0", forRemoval = true)
 public interface Multiset<E> extends Collection<E> {
     // Query Operations
 

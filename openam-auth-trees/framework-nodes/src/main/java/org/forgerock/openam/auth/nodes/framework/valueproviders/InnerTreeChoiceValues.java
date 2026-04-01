@@ -15,94 +15,27 @@
  */
 package org.forgerock.openam.auth.nodes.framework.valueproviders;
 
-import static com.sun.identity.shared.locale.Locale.getDefaultLocale;
-import static java.util.Collections.singletonMap;
-import static java.util.stream.Collectors.toMap;
-import static org.forgerock.openam.utils.StringUtils.isBlank;
-
-import java.text.MessageFormat;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TreeMap;
-
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.am.trees.api.Tree;
 import org.forgerock.am.trees.api.TreeProvider;
 import org.forgerock.openam.core.realms.RealmLookup;
-import org.forgerock.openam.core.realms.RealmLookupException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.sun.identity.shared.Constants;
-import com.sun.identity.shared.locale.AMResourceBundleCache;
-import com.sun.identity.sm.ChoiceValues;
-import com.sun.identity.sm.SMSEntry;
 
 /**
  * This class is used to retrieve the tree names and IDs from the auth tree service for display
- * in a drop down UI component.
+ * in a drop-down UI component. It filters out trees that are marked as transactional only.
  *
  * @since 13.0.0
  */
-public class InnerTreeChoiceValues extends ChoiceValues {
+public class InnerTreeChoiceValues extends TreeChoiceValues {
 
-    /**
-     * Default logger for the class.
-     */
-    protected static final Logger LOGGER = LoggerFactory.getLogger(InnerTreeChoiceValues.class);
-    private final TreeProvider treeProvider;
-    private final RealmLookup realmLookup;
-
-    /**
-     * Defaut empty constructor.
-     * @param treeProvider The tree provider.
-     * @param realmLookup The realm lookup.
-     */
     @Inject
-    public InnerTreeChoiceValues(TreeProvider treeProvider, RealmLookup realmLookup) {
-        this.treeProvider = treeProvider;
-        this.realmLookup = realmLookup;
+    InnerTreeChoiceValues(TreeProvider treeProvider, RealmLookup realmLookup) {
+        super(treeProvider, realmLookup);
     }
 
     @Override
-    public Map<String, String> getChoiceValues() {
-        return getChoiceValues(Map.of());
-    }
-
-    @Override
-    public Map<String, String> getChoiceValues(Map<String, Object> envParams) {
-        String realm = null;
-        if (envParams != null) {
-            realm = (String) envParams.get(Constants.ORGANIZATION_NAME);
-        }
-        if (isBlank(realm)) {
-            realm = SMSEntry.getRootSuffix();
-        }
-        Locale locale = envParams != null && envParams.containsKey(Constants.LOCALE)
-                ? (Locale) envParams.get(Constants.LOCALE)
-                : getDefaultLocale();
-
-        Map<String, String> choices = new LinkedHashMap<>(singletonMap(EMPTY_SCRIPT_SELECTION, "label.select.tree"));
-
-        try {
-            TreeMap<String, String> trees = treeProvider.getTrees(realmLookup.lookup(realm)).stream()
-                    .collect(toMap(Tree::getName, t -> treeDisplayName(t, locale), (a, b) -> a, TreeMap::new));
-            choices.putAll(trees);
-        } catch (RealmLookupException e) {
-            LOGGER.error("Error getting the list of available trees for the realm {}", realm, e);
-        }
-
-        return choices;
-    }
-
-    private String treeDisplayName(Tree tree, Locale locale) {
-        boolean enabled = tree.isEnabled();
-        String disabled = AMResourceBundleCache.getInstance().getResBundle("amConsole", locale)
-                .getString("label.disabled.tree");
-        return !enabled
-                ? MessageFormat.format(disabled, tree.getName())
-                : tree.getName();
+    protected boolean filterTree(Tree tree) {
+        return !tree.isTransactionalOnly();
     }
 }

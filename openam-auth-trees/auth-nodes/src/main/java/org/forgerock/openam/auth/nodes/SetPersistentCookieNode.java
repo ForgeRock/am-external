@@ -11,18 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
+import org.forgerock.http.protocol.Cookie;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
@@ -36,7 +38,6 @@ import org.forgerock.openam.sm.annotations.adapters.SecretPurpose;
 import org.forgerock.openam.sm.annotations.adapters.TimeUnit;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.keys.SigningKey;
-import org.forgerock.util.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +51,8 @@ import com.google.inject.assistedinject.Assisted;
         tags = {"contextual"})
 public class SetPersistentCookieNode extends SingleOutcomeNode implements PersistentCookieNodeConfig {
 
-    private static final Duration JWT_IDLE_TIMEOUT_IN_HOURS = Duration.duration(5, HOURS);
-    private static final Duration JWT_EXPIRY_TIME_IN_HOURS = Duration.duration(5, HOURS);
+    private static final Duration JWT_IDLE_TIMEOUT_IN_HOURS = Duration.ofHours(5);
+    private static final Duration JWT_EXPIRY_TIME_IN_HOURS = Duration.ofHours(5);
     private static final String DEFAULT_COOKIE_NAME = "session-jwt";
     private final Logger logger = LoggerFactory.getLogger(SetPersistentCookieNode.class);
 
@@ -104,7 +105,7 @@ public class SetPersistentCookieNode extends SingleOutcomeNode implements Persis
 
         @Attribute(order = 500, validators = {HmacSigningKeyValidator.class})
         @Password
-        @Deprecated
+        @Deprecated(since = "8.0.0", forRemoval = true)
         @Override
         Optional<char[]> hmacSigningKey();
 
@@ -121,6 +122,16 @@ public class SetPersistentCookieNode extends SingleOutcomeNode implements Persis
         @Attribute(order = 600)
         default String persistentCookieName() {
             return DEFAULT_COOKIE_NAME;
+        }
+
+        /**
+         * Same Site property of the persistent cookie.
+         *
+         * @return the same site flag of the persistent cookie.
+         */
+        @Attribute(order = 700)
+        default Cookie.SameSite sameSite() {
+            return Cookie.SameSite.LAX;
         }
     }
 

@@ -31,8 +31,10 @@ import static com.sun.identity.saml2.common.SAML2Constants.DEFAULT_IDP_ACCOUNT_M
 import static com.sun.identity.saml2.common.SAML2Constants.FEDLET_ADAPTER_CLASS;
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ACCOUNT_MAPPER;
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ROLE;
+import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_SP_ACCOUNT_MAPPER;
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_SP_ADAPTER;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ACCOUNT_MAPPER;
+import static com.sun.identity.saml2.common.SAML2Constants.SP_ACCOUNT_MAPPER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ADAPTER_CLASS;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ADAPTER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
@@ -82,10 +84,6 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBIntrospector;
 import javax.xml.soap.MimeHeader;
@@ -195,6 +193,11 @@ import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.encode.CookieUtils;
 import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * The <code>SAML2Utils</code> contains utility methods for SAML 2.0
@@ -602,6 +605,8 @@ public class SAML2Utils extends SAML2SDKUtils {
                 if (!((Boolean) bearerMap.get(SAML2Constants.IS_BEARER))) {
                     continue;
                 }
+
+                /** In this mode, we are looking for the {@link SAML2Constants#ONETIME} token stored in the CTS. */
 
                 boolean foundAssertion = false;
                 if ((SPCache.assertionByIDCache != null) &&
@@ -2749,12 +2754,18 @@ public class SAML2Utils extends SAML2SDKUtils {
      * @throws SAML2Exception if the operation is not successful
      */
     public static SPAccountMapper getSPAccountMapper(String realm, String spEntityID) throws SAML2Exception {
-        String spAccountMapperName = getAttributeValueFromSSOConfig(realm, spEntityID, SP_ROLE, SP_ACCOUNT_MAPPER);
-        if (spAccountMapperName == null) {
-            spAccountMapperName = SAML2Constants.DEFAULT_SP_ACCOUNT_MAPPER_CLASS;
+        if (isScriptConfigured(realm, spEntityID, SP_ACCOUNT_MAPPER_SCRIPT)) {
+            debug.debug("SAML2Utils.getSPAccountMapper:  using Scripted SP Account Mapper");
+            return InjectorHolder.getInstance(com.google.inject.Key.get(SPAccountMapper.class,
+                    Names.named(SCRIPTED_SP_ACCOUNT_MAPPER)));
+        } else {
+            String spAccountMapperName = getAttributeValueFromSSOConfig(realm, spEntityID, SP_ROLE, SP_ACCOUNT_MAPPER);
+            if (spAccountMapperName == null) {
+                spAccountMapperName = SAML2Constants.DEFAULT_SP_ACCOUNT_MAPPER_CLASS;
+            }
+            debug.debug("SAML2Utils.getSPAccountMapper:  uses " + spAccountMapperName);
+            return (SPAccountMapper) PluginRegistry.get(newKey(realm, spEntityID, SPAccountMapper.class, spAccountMapperName));
         }
-        debug.debug("SAML2Utils.getSPAccountMapper:  uses " + spAccountMapperName);
-        return (SPAccountMapper) PluginRegistry.get(newKey(realm, spEntityID, SPAccountMapper.class, spAccountMapperName));
     }
 
     /**
@@ -4351,30 +4362,66 @@ public class SAML2Utils extends SAML2SDKUtils {
     }
 
     /**
-     * Adds details of a configured service on a remote SP to an audit message. This can then be used to correlate with
-     * audit messages from the auth tree to verify that the configured service was the service used to authenticate.
+     * Returns the service (aka tree, journey) that has been configured on the supplied hosted SP.
+     *
+     * @param realm      Realm to find the SP in.
+     * @param spEntityID The hosted SP entity ID.
+     * @return           Specified service.  Could also be null, an empty string,
+     * or the "empty dropdown selection" string
+     * {@value Constants#EMPTY_DROPDOWN_SELECTION}
+     */
+    public static String getConfiguredServiceForHostedSP(String realm, String spEntityID) {
+        return getAttributeValueFromSSOConfig(realm, spEntityID, SP_ROLE, SAML2Constants.REDIRECT_TREE_NAME);
+    }
+
+    /**
+     * Adds the details of IDP entity ID and SP entity ID to the audit message.
+     * <p>
+     * If a service has been configured on a remote SP, it will also be added to the audit message.
+     * This can then be used to correlate with audit messages from the auth tree to verify that the configured service
+     * was the service used to authenticate.
      * <p>
      * NOTE: To avoid confusion for administrators, if there is no configured service for the SP this logs an empty
      * string (rather than the "empty string selection" of {@value Constants#EMPTY_DROPDOWN_SELECTION}
      *
-     * @param eventAuditor The auditor to append the details to.
-     * @param realm        Realm of the given SP - used to find a configured service for the SP.
-     * @param spEntityId   Remote SP entity ID
-     * @param idpEntityID  Hosted IDP entity ID.
+     *
+     * @param eventAuditor  The auditor to append the details to.
+     * @param realm         Realm of the given SP - used to find a configured service for the SP.
+     * @param spEntityId    Remote SP entity ID
+     * @param idpEntityID   Hosted IDP entity ID.
      */
     public static void addConfiguredServiceToAuditMessage(SAML2EventLogger eventAuditor, String realm,
         String spEntityId, String idpEntityID) {
-        if (StringUtils.isNotEmpty(getConfiguredServiceForSP(realm, spEntityId))) {
-            if (eventAuditor != null) {
-                eventAuditor.setSpEntity(spEntityId);
-                eventAuditor.setIdpEntity(idpEntityID);
-                String configuredServiceForSP = getConfiguredServiceForSP(realm, spEntityId);
-                if (StringUtils.isEmptyOrEmptySelection(configuredServiceForSP)) {
-                    configuredServiceForSP = "";
-                }
-                eventAuditor.setConfiguredService(configuredServiceForSP);
-            }
+        if (eventAuditor == null) {
+            return;
         }
+
+        eventAuditor.setSpEntity(spEntityId);
+        eventAuditor.setIdpEntity(idpEntityID);
+
+        String configuredServiceForSP = getConfiguredServiceForSP(realm, spEntityId);
+        if (StringUtils.isNotEmpty(configuredServiceForSP)) {
+            if (StringUtils.isEmptyOrEmptySelection(configuredServiceForSP)) {
+                configuredServiceForSP = "";
+            }
+            eventAuditor.setConfiguredService(configuredServiceForSP);
+        }
+    }
+
+    /**
+     * Adds details related to identity and user to an audit message.  This can then be used to correlate with
+     * audit messages from the auth tree to track the user and identity used to authenticate.
+     *
+     * @param eventAuditor The auditor to append the details to.
+     * @param subject The subject to extract the nameID from.
+     * @param userID The user ID to add to the audit message.
+     */
+    public static void addUserDetailsToAuditMessage(SAML2EventLogger eventAuditor, Subject subject, String userID) {
+        if (eventAuditor == null) {
+            return;
+        }
+        eventAuditor.setNameID(subject.getNameID().getValue());
+        eventAuditor.setUserID(userID);
     }
 
     /**
@@ -4471,6 +4518,7 @@ public class SAML2Utils extends SAML2SDKUtils {
                 .withAuthenticationStrategy(EntitlementConditionConstants.AUTH_TREE_CONDITION_ADVICE)
                 .withStrategySpecifier(service)
                 .withRealm(realm)
+                .withAllowRetry(true)
                 .build();
 
             transactionService.createTransaction(transaction);

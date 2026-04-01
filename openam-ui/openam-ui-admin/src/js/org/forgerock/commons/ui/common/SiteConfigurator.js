@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2025 Ping Identity Corporation.
+ * Copyright 2011-2026 Ping Identity Corporation.
  */
 
 import _ from "lodash";
@@ -21,6 +21,8 @@ import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import SiteConfigurationService from "org/forgerock/openam/ui/common/services/SiteConfigurationService";
+import store from "store";
+import { setOrUpdateFlag } from "store/modules/featureFlags/flags";
 
 const SiteConfigurator = {};
 
@@ -37,6 +39,18 @@ EventManager.registerListener(Constants.EVENT_READ_CONFIGURATION_REQUEST, () => 
 
         SiteConfigurationService.getConfiguration((config) => {
             SiteConfigurator.processConfiguration(config);
+            store.dispatch(setOrUpdateFlag({
+              name: 'cloudOnlyFeaturesEnabled',
+              value: config.cloudOnlyFeaturesEnabled,
+            }));
+            store.dispatch(setOrUpdateFlag({
+                name: 'nodeDesignerXuiEnabled',
+                value: config.nodeDesignerXuiEnabled,
+            }));
+            store.dispatch(setOrUpdateFlag({
+                name: 'oauth2AIAgentsEnabled',
+                value: config.oauth2AIAgentsEnabled
+            }));
             EventManager.sendEvent(Constants.EVENT_APP_INITIALIZED);
         }, () => {
             SiteConfigurator.processConfiguration({});

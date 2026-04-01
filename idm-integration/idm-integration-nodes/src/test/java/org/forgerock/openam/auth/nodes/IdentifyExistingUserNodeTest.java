@@ -16,7 +16,6 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
@@ -43,7 +42,6 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.ResourceException;
 import org.forgerock.json.test.assertj.AssertJJsonValueAssert;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -291,7 +289,7 @@ public class IdentifyExistingUserNodeTest {
         assertThat(process.identifiedIdentity).isNotPresent();
     }
 
-    private void assertIdAndAliasList(final JsonValue expectedSharedState, final JsonValue expectedTransientState, final Action process) {
+    private void assertIdAndAliasList(JsonValue expectedSharedState, JsonValue expectedTransientState, Action process) {
         assertThatJson(process.sharedState).hasPath("_id")
                 .isEqualTo(expectedSharedState.get("_id"));
         // currently the node updates the transient state with the IDM_IDPS attribute directly and doesn't set this on
@@ -313,8 +311,11 @@ public class IdentifyExistingUserNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, String universalId) {
-        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, transientState,
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.ofNullable(universalId));
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .universalId(Optional.ofNullable(universalId))
+                .build();
     }
 
 }

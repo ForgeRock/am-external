@@ -11,17 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.auth.nodes.x509.CertificateValidationNode.CertificateValidationOutcome.EXPIRED;
 import static org.forgerock.openam.auth.nodes.x509.CertificateValidationNode.CertificateValidationOutcome.TRUE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -52,15 +52,18 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.forgerock.am.identity.application.IdentityStoreLdapParametersProvider;
 import org.forgerock.am.identity.application.model.LdapConnectionParameters;
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.ldap.LDAPUtils;
+import org.forgerock.openam.feature.Features;
+import org.forgerock.openam.ldap.LdapUtils;
 import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.secrets.Purpose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
@@ -87,21 +90,27 @@ public class CertificateValidationNodeTest {
     @Mock
     private IdentityStoreLdapParametersProvider identityStoreLdapParametersProvider;
 
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private Features features;
+
     @InjectMocks
     private CertificateValidationNode certificateValidationNode;
 
-    @Test
-    void shouldValidateCertificateGivenServerFromNodeConfig() throws NodeProcessException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldValidateCertificateGivenServerFromNodeConfig(boolean featureFlagEnabled) throws NodeProcessException {
         // Given
+        given(features.validateEntireCertificateChain().isEnabled()).willReturn(featureFlagEnabled);
+        given(config.checkCertificateExpiry()).willReturn(true);
         given(config.matchCertificateInLdap()).willReturn(true);
         given(config.ldapCertificateAttribute()).willReturn(Optional.of("UID"));
         given(config.certificateLdapServers()).willReturn(Set.of(LDAP_HOST));
         given(config.ldapSearchStartDN()).willReturn(Set.of("ou=identities"));
         given(config.userBindDN()).willReturn(Optional.of(BIND_DN));
         given(config.userBindPassword()).willReturn(Optional.of(BIND_PASSWORD));
-        X509Certificate certificate = generateCertificate();
+        X509Certificate certificate = generateCertificate(false);
         LdapConnectionParameters ldapParameters = LdapConnectionParameters.builder()
-                .ldapServers(LDAPUtils.getLdapUrls("localhost", 1636, false))
+                .ldapServers(LdapUtils.getLdapUrls("localhost", 1636, false))
                 .ldapUser(BIND_DN)
                 .ldapPassword(BIND_PASSWORD)
                 .startSearchLocation("ou=identities")
@@ -118,8 +127,31 @@ public class CertificateValidationNodeTest {
     }
 
     @Test
+    void shouldFailToValidateExpiredCertificate() throws NodeProcessException {
+        // Given
+        given(config.checkCertificateExpiry()).willReturn(true);
+        X509Certificate certificate = generateCertificate(true); // Generate expired certificate
+        LdapConnectionParameters ldapParameters = LdapConnectionParameters.builder()
+                .ldapServers(LdapUtils.getLdapUrls("localhost", 1636, false))
+                .ldapUser(BIND_DN)
+                .ldapPassword(BIND_PASSWORD)
+                .startSearchLocation("ou=identities")
+                .realm(realm)
+                .build();
+        try (MockedConstruction<AMCertStore> ignored = mockCertificateInCertStore(certificate, ldapParameters)) {
+
+            // When
+            Action action = certificateValidationNode.process(treeContextWithCertificate(certificate));
+
+            // Then
+            assertThat(action.outcome).isEqualTo(EXPIRED.name());
+        }
+    }
+
+    @Test
     void shouldFailToValidateCertificateGivenServerFromNodeConfigWithMtlsEnabledButNoSecretLabelConfigured() {
         // Given
+        given(config.checkCertificateExpiry()).willReturn(true);
         given(config.matchCertificateInLdap()).willReturn(true);
         given(config.certificateLdapServers()).willReturn(Set.of(LDAP_HOST));
         given(config.ldapSearchStartDN()).willReturn(Set.of("ou=identities"));
@@ -127,7 +159,8 @@ public class CertificateValidationNodeTest {
         given(config.mtlsSecretLabel()).willReturn(Optional.empty());
 
         // When - Then
-        assertThatThrownBy(() -> certificateValidationNode.process(treeContextWithCertificate(generateCertificate())))
+        assertThatThrownBy(() -> certificateValidationNode
+                .process(treeContextWithCertificate(generateCertificate(false))))
                 .isInstanceOf(NodeProcessException.class)
                 .hasRootCauseInstanceOf(IllegalStateException.class)
                 .hasRootCauseMessage("Missing mTLS Secret Label Identifier");
@@ -137,6 +170,7 @@ public class CertificateValidationNodeTest {
     void shouldValidateCertificateGivenServerFromNodeConfigWhenMtlsEnabledAndSecretLabelPresent()
             throws NodeProcessException {
         // Given
+        given(config.checkCertificateExpiry()).willReturn(true);
         given(config.matchCertificateInLdap()).willReturn(true);
         given(config.ldapCertificateAttribute()).willReturn(Optional.of("UID"));
         given(config.certificateLdapServers()).willReturn(Set.of(LDAP_HOST));
@@ -144,9 +178,9 @@ public class CertificateValidationNodeTest {
         given(config.sslEnabled()).willReturn(true);
         given(config.mtlsEnabled()).willReturn(true);
         given(config.mtlsSecretLabel()).willReturn(Optional.of(Purpose.SIGN));
-        X509Certificate certificate = generateCertificate();
+        X509Certificate certificate = generateCertificate(false);
         LdapConnectionParameters ldapParameters = LdapConnectionParameters.builder()
-                .ldapServers(LDAPUtils.getLdapUrls("localhost", 1636, true))
+                .ldapServers(LdapUtils.getLdapUrls("localhost", 1636, true))
                 .startSearchLocation("ou=identities")
                 .mtlsEnabled(true)
                 .mtlsSecretLabel(Purpose.SIGN.getLabel())
@@ -165,18 +199,19 @@ public class CertificateValidationNodeTest {
     @Test
     void shouldValidateCertificateGivenIdentityStoreSelected() throws NodeProcessException, SMSException {
         // Given
+        given(config.checkCertificateExpiry()).willReturn(true);
         given(config.matchCertificateInLdap()).willReturn(true);
         given(config.ldapCertificateAttribute()).willReturn(Optional.of("UID"));
         given(config.certificateIdentityStore()).willReturn("realmIdentityStore");
         LdapConnectionParameters ldapParameters = LdapConnectionParameters.builder()
-                .ldapServers(LDAPUtils.getLdapUrls("localhost", 1636, false))
+                .ldapServers(LdapUtils.getLdapUrls("localhost", 1636, false))
                 .ldapUser(BIND_DN)
                 .ldapPassword(BIND_PASSWORD)
                 .startSearchLocation("ou=identities")
                 .build();
         given(identityStoreLdapParametersProvider.getLdapParams(realm, "realmIdentityStore"))
                 .willReturn(ldapParameters);
-        X509Certificate certificate = generateCertificate();
+        X509Certificate certificate = generateCertificate(false);
         try (MockedConstruction<AMCertStore> ignored = mockCertificateInCertStore(certificate, ldapParameters)) {
 
             // When
@@ -190,31 +225,34 @@ public class CertificateValidationNodeTest {
     @Test
     void shouldFailToValidateCertificateGivenSelectedIdentityStoreCannotBeRetrieved() throws SMSException {
         // Given
+        given(config.checkCertificateExpiry()).willReturn(true);
         given(config.matchCertificateInLdap()).willReturn(true);
         given(config.certificateIdentityStore()).willReturn("realmIdentityStore");
         given(identityStoreLdapParametersProvider.getLdapParams(realm, "realmIdentityStore"))
                 .willThrow(SMSException.class);
 
         // When - Then
-        assertThatThrownBy(() -> certificateValidationNode.process(treeContextWithCertificate(generateCertificate())))
+        assertThatThrownBy(() -> certificateValidationNode
+                .process(treeContextWithCertificate(generateCertificate(false))))
                 .isInstanceOf(NodeProcessException.class).hasMessage("Unable to set LDAP Server configuration");
     }
 
     @Test
     void shouldValidateCertificateGivenCertificateNotRevokedInCrl() throws SMSException, NodeProcessException {
         // Given
+        given(config.checkCertificateExpiry()).willReturn(true);
         given(config.matchCertificateToCRL()).willReturn(true);
         given(config.crlMatchingCertificateAttribute()).willReturn("UID");
         given(config.certificateIdentityStore()).willReturn("realmIdentityStore");
         LdapConnectionParameters ldapParameters = LdapConnectionParameters.builder()
-                .ldapServers(LDAPUtils.getLdapUrls("localhost", 1636, false))
+                .ldapServers(LdapUtils.getLdapUrls("localhost", 1636, false))
                 .ldapUser(BIND_DN)
                 .ldapPassword(BIND_PASSWORD)
                 .startSearchLocation("ou=identities")
                 .build();
         given(identityStoreLdapParametersProvider.getLdapParams(realm, "realmIdentityStore"))
                 .willReturn(ldapParameters);
-        X509Certificate certificate = generateCertificate();
+        X509Certificate certificate = generateCertificate(false);
         X509CRL crl = mock(X509CRL.class);
         try (MockedConstruction<AMCertPath> ignoredCertPath = mockConstruction(AMCertPath.class, (mock, context) -> {
             Vector<?> crls = (Vector<?>) context.arguments().get(0);
@@ -235,9 +273,9 @@ public class CertificateValidationNodeTest {
         }
     }
 
-    private X509Certificate generateCertificate() {
+    private X509Certificate generateCertificate(boolean expired) {
         KeyPair keyPair = generateKeyPair();
-        Date expiryDate = new Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(365));
+        Date expiryDate = new Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(expired ? -365 : 365));
         try {
             X500Principal subjectAndIssuer = new X500Principal("UID=user");
             BigInteger serial = new BigInteger(159, new SecureRandom());
@@ -264,12 +302,9 @@ public class CertificateValidationNodeTest {
     }
 
     private TreeContext treeContextWithCertificate(X509Certificate certificate) {
-        return new TreeContext(
-                json(object()),
-                json(object(field("X509Certificate", List.of(certificate)))),
-                new ExternalRequestContext.Builder().build(),
-                emptyList(),
-                Optional.empty());
+        return TreeContext.builder()
+                .transientState(json(object(field("X509Certificate", List.of(certificate)))))
+                .build();
     }
 
     private MockedConstruction<AMCertStore> mockCertificateInCertStore(X509Certificate certificate,

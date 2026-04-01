@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2013-2025 Ping Identity Corporation.
+  Copyright 2013-2026 Ping Identity Corporation.
 }}
 
 <div class="container">
@@ -30,7 +30,7 @@
             <legend class="sr-only">{{t 'common.user.login'}}</legend>
             {{#each reqs.callbacks}}
                 {{#equals type "ConfirmationCallback"}}
-                    {{#if ../showRememberLogin}}
+                    {{#if showRememberLogin}}
                         {{> login/_RememberLogin }}
                     {{/if}}
                 {{/equals}}

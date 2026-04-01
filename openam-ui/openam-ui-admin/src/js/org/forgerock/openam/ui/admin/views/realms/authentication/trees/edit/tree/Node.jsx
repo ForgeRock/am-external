@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 import { Clearfix } from "react-bootstrap";
@@ -23,7 +23,7 @@ import classNames from "classnames";
 
 import NodeOutcome from "./NodeOutcome";
 import NodeOutcomeWithLabel from "./NodeOutcomeWithLabel";
-import { TREE_PADDING } from "./TreePadding";
+import { TREE_PADDING } from "org/forgerock/openam/ui/admin/utils/treeUtils";
 import TreeComponent from "./TreeComponent";
 import { start } from "store/modules/local/config/realm/authentication/trees/current/nodes/static";
 
@@ -38,7 +38,7 @@ class Node extends Component {
 
     handleNodeMouseDown = () => {
         const selectedId = this.isStartNode() ? null : this.props.id;
-        this.props.onSelect(selectedId, this.props.node.nodeType);
+        this.props.onSelect(selectedId, this.props.node.nodeType, this.props.node.version);
     };
 
     handleNodeMouseUp = () => {
@@ -143,6 +143,7 @@ Node.propTypes = {
         connections: PropTypes.objectOf(PropTypes.string),
         displayName: PropTypes.string.isRequired,
         nodeType: PropTypes.string.isRequired,
+        version: PropTypes.string,
         x: PropTypes.number,
         y: PropTypes.number
     }).isRequired,

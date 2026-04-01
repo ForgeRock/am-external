@@ -1012,10 +1012,10 @@ ajv-keywords@^3.1.0, ajv-keywords@^3.4.1:
   resolved "https://maven.forgerock.org:443/artifactory/api/npm/npm-virtual/ajv-keywords/-/ajv-keywords-3.4.1.tgz#ef916e271c64ac12171fd8384eaae6b2345854da"
   integrity sha1-75FuJxxkrBIXH9g4TqrmsjRYVNo=
 
-ajv@6.12.3, ajv@^4.9.1, ajv@^6.1.0, ajv@^6.10.0, ajv@^6.10.2, ajv@^6.12.2, ajv@^6.5.5:
-  version "6.12.3"
-  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/ajv/-/ajv-6.12.3.tgz#18c5af38a111ddeb4f2697bd78d68abc1cabd706"
-  integrity sha1-GMWvOKER3etPJpe9eNaKvByr1wY=
+ajv@6.14.0, ajv@^4.9.1, ajv@^6.1.0, ajv@^6.10.0, ajv@^6.10.2, ajv@^6.12.2, ajv@^6.5.5:
+  version "6.14.0"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/ajv/-/ajv-6.14.0.tgz#fd067713e228210636ebb08c60bd3765d6dbe73a"
+  integrity sha512-IWrosm/yrn43eiKqkfkHis7QioDleaXQHdDVPKg0FSwwd/DuvyX79TZnFOnYpB7dcsFAMmtFztZuXPDvSePkFw==
   dependencies:
     fast-deep-equal "^3.1.1"
     fast-json-stable-stringify "^2.0.0"
@@ -4865,10 +4865,10 @@ lodash.upperfirst@4.3.1:
   resolved "https://maven.forgerock.org:443/artifactory/api/npm/npm-virtual/lodash.upperfirst/-/lodash.upperfirst-4.3.1.tgz#1365edf431480481ef0d1c68957a5ed99d49f7ce"
   integrity sha1-E2Xt9DFIBIHvDRxolXpe2Z1J984=
 
-lodash@4.17.21, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.13, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.3, lodash@^4.17.4, lodash@^4.3.0, lodash@^4.6.1:
-  version "4.17.21"
-  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
-  integrity sha1-Z5WRxWTDv/quhFTPCz3zcMPWkRw=
+lodash@4.17.23, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.13, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.3, lodash@^4.17.4, lodash@^4.3.0, lodash@^4.6.1:
+  version "4.17.23"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/lodash/-/lodash-4.17.23.tgz#f113b0378386103be4f6893388c73d0bde7f2c5a"
+  integrity sha512-LgVTMpQtIopCi79SJeDiP0TfWi5CNEc/L/aRdTh3yIvmZXTnheWpKjSZhnvMl8iXbC1tFg9gdHHDMLoV7CnG+w==
 
 log-symbols@2.2.0:
   version "2.2.0"
@@ -7514,10 +7514,10 @@ uglify-js@^3.1.4:
     commander "~2.20.3"
     source-map "~0.6.1"
 
-underscore@1.12.1, underscore@>=1.7.0, underscore@>=1.8.3, underscore@^1.8.0, underscore@^1.8.3, underscore@~1.9.1:
-  version "1.12.1"
-  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/underscore/-/underscore-1.12.1.tgz#7bb8cc9b3d397e201cf8553336d262544ead829e"
-  integrity sha1-e7jMmz05fiAc+FUzNtJiVE6tgp4=
+underscore@1.13.8, underscore@>=1.7.0, underscore@>=1.8.3, underscore@^1.8.0, underscore@^1.8.3, underscore@~1.9.1:
+  version "1.13.8"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/underscore/-/underscore-1.13.8.tgz#a93a21186c049dbf0e847496dba72b7bd8c1e92b"
+  integrity sha512-DXtD3ZtEQzc7M8m4cXotyHR+FAS18C64asBYY5vqZexfYryNNnDc02W4hKg3rdQuqOYas1jkseX0+nZXjTXnvQ==
 
 unicode-canonical-property-names-ecmascript@^1.0.4:
   version "1.0.4"

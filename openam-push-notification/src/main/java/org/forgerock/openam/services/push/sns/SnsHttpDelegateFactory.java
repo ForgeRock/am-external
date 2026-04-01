@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2025 Ping Identity Corporation.
+ * Copyright 2016-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.services.push.sns;
 
@@ -23,7 +23,7 @@ import org.forgerock.openam.services.push.PushNotificationServiceConfig;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcher;
 import org.forgerock.openam.services.push.sns.utils.SnsClientFactory;
 
-import com.amazonaws.services.sns.AmazonSNS;
+import software.amazon.awssdk.services.sns.SnsClient;
 
 /**
  * Produces SnsHttpDelegates matching the PushNotificationServiceFactory interface.
@@ -46,7 +46,7 @@ public class SnsHttpDelegateFactory implements PushNotificationDelegateFactory {
     @Override
     public SnsHttpDelegate produceDelegateFor(PushNotificationServiceConfig.Realm config, String realm,
                                               MessageDispatcher messageDispatcher) {
-        AmazonSNS service = new SnsClientFactory(secrets, realmLookup).produce(config, realm);
+        SnsClient service = new SnsClientFactory(secrets, realmLookup).produce(config, realm);
         return new SnsHttpDelegate(service, config, pushMessageConverter, realm, messageDispatcher);
     }
 

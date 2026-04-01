@@ -32,7 +32,7 @@ package com.sun.identity.authentication.modules.windowsdesktopsso;
 
 import java.util.HashMap;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 

@@ -22,8 +22,8 @@ import static org.forgerock.openam.auth.nodes.framework.script.FrameworkNodesGlo
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptException;

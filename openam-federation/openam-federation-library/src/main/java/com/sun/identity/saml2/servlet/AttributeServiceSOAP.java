@@ -32,15 +32,16 @@ package com.sun.identity.saml2.servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import javax.inject.Inject;
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPMessage;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPMessage;
 
-import org.forgerock.guice.core.InjectorHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -61,14 +62,20 @@ import com.sun.identity.saml2.protocol.Response;
  * This class <code>AttributeServiceSOAP</code> receives and processes 
  * attribute query request using SOAP binding.
  */
+@Singleton
 public class AttributeServiceSOAP extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(AttributeServiceSOAP.class);
 
-    private SOAPCommunicator soapCommunicator;
+    private final SOAPCommunicator soapCommunicator;
+
+    @Inject
+    AttributeServiceSOAP(SOAPCommunicator soapCommunicator) {
+        this.soapCommunicator = soapCommunicator;
+    }
 
     public void init() throws ServletException {
-        soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        logger.debug("AttributeServiceSOAP initialized");
     }
 
     public void doGet(HttpServletRequest req, HttpServletResponse resp)

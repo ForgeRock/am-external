@@ -185,6 +185,31 @@ public class PushMessageResourceTest {
     }
 
     @Test
+    void shouldFailWhenNumberChallengePredicateNotMet() throws Exception {
+        //given
+        Realm realm = realmTestHelper.mockRealm("realm");
+        RealmContext realmContext = mockRealmContext(realm);
+
+        JsonValue content = JsonValue.json(object(field("messageId", "asdf"), field("jwt", "")));
+
+        ActionRequest request = mock(ActionRequest.class);
+        given(request.getContent()).willReturn(content);
+        prepareMocks(realm);
+
+        doThrow(new PredicateNotMetException("Number challenge predicate was not matched. Message denied."))
+                .when(mockDispatcher)
+                .handle(mockMessageId, content, mockMessageHandler);
+
+        //when
+        Promise<ActionResponse, ResourceException> result = messageResource.handle(realmContext, request);
+
+        //then
+        assertThatThrownBy(result::getOrThrow)
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Number challenge predicate not met.");
+    }
+
+    @Test
     void shouldFailWhenLocalAndCTSReadsFail() throws Exception {
         //given
         Realm realm = realmTestHelper.mockRealm("realm");

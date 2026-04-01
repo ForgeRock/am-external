@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -22,7 +22,7 @@ import java.util.Locale;
 
 import org.forgerock.util.i18n.PreferredLocales;
 
-import com.amazonaws.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Used when overriding properties files using configuration.
@@ -42,14 +42,14 @@ public class LocaleSelector {
                 return locale;
             }
 
-            if (!StringUtils.isNullOrEmpty(locale.getVariant())) {
+            if (!StringUtils.isEmpty(locale.getVariant())) {
                 locale = new Locale(locale.getLanguage(), locale.getCountry(), "");
                 if (!preferred.contains(locale) && candidates.contains(locale)) {
                     return locale;
                 }
             }
 
-            if (!StringUtils.isNullOrEmpty(locale.getCountry())) {
+            if (!StringUtils.isEmpty(locale.getCountry())) {
                 locale = new Locale(locale.getLanguage(), "", "");
                 if (!preferred.contains(locale) && candidates.contains(locale)) {
                     return locale;

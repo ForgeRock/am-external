@@ -11,11 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024-2025 Ping Identity Corporation.
+ * Copyright 2024-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.treehook;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.TreeFailureResponse;
@@ -23,6 +23,7 @@ import org.forgerock.openam.auth.node.api.TreeHook;
 import org.forgerock.openam.auth.nodes.SetFailureDetailsNode;
 
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.am.util.SystemPropertiesWrapper;
 
 /**
  * A tree hook that sets failure details on the response.
@@ -36,7 +37,9 @@ public class FailureDetailsTreeHook extends DetailsTreeHook {
 
     @Inject
     FailureDetailsTreeHook(@Assisted SetFailureDetailsNode.Config config,
-            @Assisted TreeFailureResponse response, @Assisted JsonValue data) {
+            @Assisted TreeFailureResponse response, @Assisted JsonValue data,
+            SystemPropertiesWrapper systemProperties) {
+        super(systemProperties);
         this.config = config;
         this.response = response;
         this.data = data;
@@ -49,6 +52,11 @@ public class FailureDetailsTreeHook extends DetailsTreeHook {
 
     @Override
     public void acceptFailure() {
+        config.headerControl().keySet().stream()
+                .filter(key -> RESERVED_HEADERS.stream().noneMatch(key::equalsIgnoreCase))
+                .filter(key -> notReservedCookie(key, config.headerControl().get(key)))
+                .forEach(key -> response.addHeader(key, config.headerControl().get(key)));
+
         config.failureDetails()
                 .forEach((key, value) -> response.addFailureDetail(key, convertStringToJson(value)));
         if (data != null && data.isDefined("message")) {

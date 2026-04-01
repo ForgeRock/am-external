@@ -16,7 +16,6 @@
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
@@ -37,7 +36,6 @@ import java.util.stream.Stream;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.BadRequestException;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -75,7 +73,8 @@ public class AttributeValueDecisionNodeTest {
                 Arguments.of(EQUALS, "userName", "test", json(object(field("userName", "test"))), TRUE_OUTCOME_ID),
                 Arguments.of(EQUALS, "userName", "test", json(object(field("userName", "bad"))), FALSE_OUTCOME_ID),
                 Arguments.of(EQUALS, "userName", "test", json(object()), FALSE_OUTCOME_ID),
-                Arguments.of(EQUALS, "preferences/updates", "true", json(object(field("preferences", object(field("updates", true))))), TRUE_OUTCOME_ID),
+                Arguments.of(EQUALS, "preferences/updates", "true",
+                        json(object(field("preferences", object(field("updates", true))))), TRUE_OUTCOME_ID),
                 Arguments.of(EQUALS, "age", "1", json(object(field("age", 1))), TRUE_OUTCOME_ID)
         );
     }
@@ -90,8 +89,9 @@ public class AttributeValueDecisionNodeTest {
         when(idmIntegrationService.getObject(any(), any(), any(), any(), any(), any()))
                 .thenReturn(json(object(field("userName", "test"))));
 
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveSharedState(), json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(retrieveSharedState())
+                .build();
         node = new AttributeValueDecisionNode(config, realm, idmIntegrationService);
     }
 
@@ -111,8 +111,9 @@ public class AttributeValueDecisionNodeTest {
     @MethodSource("attributeValueData")
     public void shouldReturnExpectedOutcomeFromUsername(AttributeValueDecisionNode.ComparisonOperation operation,
             String attribute, String value, JsonValue user, String expectedOutcome) throws Exception {
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveUsernameSharedState(),
-                json(object()), new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder()
+                .sharedState(retrieveUsernameSharedState())
+                .build();
         node = new AttributeValueDecisionNode(config, realm, idmIntegrationService);
 
         when(config.comparisonOperation()).thenReturn(operation);
@@ -136,8 +137,7 @@ public class AttributeValueDecisionNodeTest {
 
     @Test
     void shouldThrowNodeProcessExceptionIfNoIdentityFound() throws Exception {
-        context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, json(object()), json(object()),
-                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        context = TreeContext.builder().build();
         node = new AttributeValueDecisionNode(config, realm, idmIntegrationService);
         when(config.comparisonOperation()).thenReturn(EQUALS);
         when(config.comparisonAttribute()).thenReturn("test");

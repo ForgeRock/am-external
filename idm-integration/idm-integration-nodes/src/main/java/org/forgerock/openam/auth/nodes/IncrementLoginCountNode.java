@@ -26,7 +26,7 @@ import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT
 
 import java.util.Optional;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;

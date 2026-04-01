@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2025 Ping Identity Corporation.
+ * Copyright 2011-2026 Ping Identity Corporation.
  */
 
 import _ from "lodash";
@@ -44,7 +44,12 @@ const PRELOADED_PARTIALS = [
     "login/_TextOutput",
     "login/_Checkbox",
     "login/_SelectIdp",
-    "login/_DeviceProfile"
+    "login/_SameDeviceVerification",
+    "login/_DeviceProfile",
+    "login/_WebAuthnAuth",
+    "login/_WebAuthnReg",
+    "login/_WebAuthnSpinner",
+    "login/_Divider"
 ];
 
 /**

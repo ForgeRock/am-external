@@ -105,9 +105,8 @@ public class OathTotpVerifier extends AbstractOathVerifier {
             otpGen = generateTOTP(getSharedSecret(), Long.toHexString(time2), passLenStr, algorithm);
 
             if (isEqual(otpGen, otp) && sameWindow) {
-                logger.error("Logging in in the same window with a OTP that is "
-                        + "older than the current times OTP");
-                throw new OathVerificationException();
+                throw new OathVerificationException("Logging in during the same window with another OTP that is older "
+                        + "than the current time's OTP");
             } else if (isEqual(otpGen, otp) && !sameWindow) {
                 checkDrift(time2);
                 updateDeviceSettings(time2, settings);
@@ -115,7 +114,7 @@ public class OathTotpVerifier extends AbstractOathVerifier {
             }
         }
 
-        throw new OathVerificationException();
+        throw new OathVerificationException("Invalid OTP code");
     }
 
     private void updateDeviceSettings(long localTime, OathDeviceSettings settings) {

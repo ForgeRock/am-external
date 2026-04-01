@@ -11,16 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2025 Ping Identity Corporation.
+ * Copyright 2023-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oidc;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
+import static org.forgerock.openam.social.idp.SocialIdPScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -38,19 +38,18 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jws.SignedJwt;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.AuthScriptUtilities;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.node.api.AuthScriptUtilities;
+import org.forgerock.openam.auth.nodes.script.OidcNodeBindings;
+import org.forgerock.openam.auth.nodes.script.OidcNodeScriptContext;
 import org.forgerock.openam.auth.nodes.testsupport.JwtClaimsSetFactory;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.oauth2.OAuth2Constants;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluator.ScriptResult;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
-import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
-import org.forgerock.openam.scripting.domain.LegacyScriptContext;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.secrets.cache.SecretCache;
 import org.forgerock.openam.secrets.cache.SecretReferenceCache;
 import org.forgerock.openam.test.extensions.LoggerExtension;
@@ -84,7 +83,7 @@ public class OidcNodeTest {
     @Mock
     private Script script;
     @Mock
-    private ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
+    private ScriptEvaluator<OidcNodeBindings> scriptEvaluator;
     @Mock
     private ScriptEvaluatorFactory scriptEvaluatorFactory;
     @Mock
@@ -93,6 +92,8 @@ public class OidcNodeTest {
     private HttpServletRequest request;
     @Mock
     private AuthScriptUtilities authScriptUtilities;
+    @Mock
+    private OidcNodeScriptContext scriptContext;
 
 
     private OidcNode oidcNode;
@@ -101,9 +102,10 @@ public class OidcNodeTest {
         config = new MockConfig(OidcNode.OpenIdValidationType.WELL_KNOWN_URL);
         given(oidcIdTokenJwtHandlerFactory.createOidcIdTokenJwtHandler(any(OidcNode.Config.class),
                 any(Optional.class))).willReturn(jwtHandler);
-        given(scriptEvaluatorFactory.create(any(LegacyScriptContext.class))).willReturn(scriptEvaluator);
+        given(scriptEvaluatorFactory.create(eq(SOCIAL_IDP_PROFILE_TRANSFORMATION),
+                eq(scriptContext))).willReturn(scriptEvaluator);
         oidcNode = new OidcNode(config, realm, oidcIdTokenJwtHandlerFactory, scriptEvaluatorFactory,
-                secretReferenceCache, authScriptUtilities);
+                secretReferenceCache, authScriptUtilities, scriptContext);
     }
 
     @Test
@@ -179,7 +181,6 @@ public class OidcNodeTest {
         JsonValue transientState = JsonValue.json(object());
         TreeContext context = getContext(sharedState, transientState, request);
         context.getStateFor(oidcNode).putShared(REALM, "/realm");
-        given(script.getLanguage()).willReturn(ScriptingLanguage.JAVASCRIPT);
         given(request.getHeader(config.headerName())).willReturn(JWT_TOKEN);
         given(jwtHandler.createJwtFromString(JWT_TOKEN)).willReturn(signedJwt);
         given(signedJwt.getClaimsSet()).willReturn(jwtClaimsSet);
@@ -187,7 +188,7 @@ public class OidcNodeTest {
         given(nativeJavaObject.unwrap()).willReturn(JsonValue.json("a"));
         ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(nativeJavaObject);
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(LegacyScriptBindings.class), eq(realm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(OidcNodeBindings.class), eq(realm)))
                 .willReturn(scriptResult);
 
         // When
@@ -209,14 +210,13 @@ public class OidcNodeTest {
         JsonValue transientState = JsonValue.json(object());
         TreeContext context = getContext(sharedState, transientState, request);
         context.getStateFor(oidcNode).putShared(REALM, "/realm");
-        given(script.getLanguage()).willReturn(ScriptingLanguage.GROOVY);
         given(request.getHeader(config.headerName())).willReturn(JWT_TOKEN);
         given(jwtHandler.createJwtFromString(JWT_TOKEN)).willReturn(signedJwt);
         given(signedJwt.getClaimsSet()).willReturn(jwtClaimsSet);
         given(jwtHandler.isJwtValid(signedJwt)).willReturn(true);
         ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(JsonValue.json("a"));
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(LegacyScriptBindings.class), eq(realm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(OidcNodeBindings.class), eq(realm)))
                 .willReturn(scriptResult);
 
         // When
@@ -239,7 +239,6 @@ public class OidcNodeTest {
         JsonValue transientState = JsonValue.json(object());
         TreeContext context = getContext(sharedState, transientState, request);
         context.getStateFor(oidcNode).putShared(REALM, "/realm");
-        given(script.getLanguage()).willReturn(ScriptingLanguage.JAVASCRIPT);
         given(request.getHeader(config.headerName())).willReturn(JWT_TOKEN);
         given(jwtHandler.createJwtFromString(JWT_TOKEN)).willReturn(signedJwt);
         given(signedJwt.getClaimsSet()).willReturn(jwtClaimsSet);
@@ -247,7 +246,7 @@ public class OidcNodeTest {
         given(nativeJavaObject.unwrap()).willReturn(JsonValue.json("a"));
         ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(nativeJavaObject);
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(LegacyScriptBindings.class), eq(realm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(OidcNodeBindings.class), eq(realm)))
                 .willReturn(scriptResult);
 
         // When
@@ -275,7 +274,6 @@ public class OidcNodeTest {
         JsonValue transientState = JsonValue.json(object());
         TreeContext context = getContext(sharedState, transientState, request);
         context.getStateFor(oidcNode).putShared(REALM, "/realm");
-        given(script.getLanguage()).willReturn(ScriptingLanguage.JAVASCRIPT);
         given(request.getHeader(config.headerName())).willReturn(JWT_TOKEN);
         given(jwtHandler.createJwtFromString(JWT_TOKEN)).willReturn(signedJwt);
         given(signedJwt.getClaimsSet()).willReturn(jwtClaimsSet);
@@ -283,7 +281,7 @@ public class OidcNodeTest {
         given(nativeJavaObject.unwrap()).willReturn(JsonValue.json("a"));
         ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(nativeJavaObject);
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(LegacyScriptBindings.class), eq(realm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(OidcNodeBindings.class), eq(realm)))
                 .willReturn(scriptResult);
 
         // When
@@ -309,16 +307,18 @@ public class OidcNodeTest {
 
         // When
         oidcNode = new OidcNode(config, realm, oidcIdTokenJwtHandlerFactory, scriptEvaluatorFactory,
-                secretReferenceCache, authScriptUtilities);
+                secretReferenceCache, authScriptUtilities, scriptContext);
 
         // Then
         verify(oidcIdTokenJwtHandlerFactory).createOidcIdTokenJwtHandler(config, Optional.of(mockSecretReference));
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, HttpServletRequest request) {
-        return new TreeContext(sharedState, transientState,
-                new ExternalRequestContext.Builder()
-                        .servletRequest(request).build(), emptyList(), Optional.empty());
+        return TreeContext.builder()
+                .sharedState(sharedState)
+                .transientState(transientState)
+                .requestContext(new ExternalRequestContext.Builder().servletRequest(request).build())
+                .build();
     }
 
     private class MockConfig implements OidcNode.Config {

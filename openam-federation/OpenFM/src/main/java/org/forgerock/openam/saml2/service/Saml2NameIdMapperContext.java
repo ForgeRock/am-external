@@ -32,21 +32,19 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import javax.security.auth.Subject;
+
+import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptContext;
 import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.domain.nextgen.NextGenScriptContext;
-import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScriptsProvider;
 import org.xml.sax.InputSource;
 
-import com.google.auto.service.AutoService;
-import com.google.inject.Singleton;
 import com.sun.identity.common.CaseInsensitiveHashMap;
 import com.sun.identity.saml2.plugins.scripted.bindings.SamlNameIdMapperBindings;
 
@@ -54,7 +52,6 @@ import com.sun.identity.saml2.plugins.scripted.bindings.SamlNameIdMapperBindings
  * The script context for SAML2 NameID Mapper.
  */
 @Singleton
-@AutoService({ScriptContext.class, GlobalScriptsProvider.class})
 public class Saml2NameIdMapperContext extends NextGenScriptContext<SamlNameIdMapperBindings> {
 
     /**

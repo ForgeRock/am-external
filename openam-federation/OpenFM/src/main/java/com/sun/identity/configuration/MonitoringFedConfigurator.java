@@ -29,6 +29,7 @@
 
 package com.sun.identity.configuration;
 
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -42,7 +43,7 @@ import com.sun.identity.setup.AMSetupServlet;
  * Configuration information can be gathered after Session services
  * have started up.
  */
-
+@Singleton
 public class MonitoringFedConfigurator extends HttpServlet
 {
 

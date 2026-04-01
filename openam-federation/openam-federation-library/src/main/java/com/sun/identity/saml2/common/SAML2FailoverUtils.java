@@ -16,13 +16,13 @@
 
 package com.sun.identity.saml2.common;
 
-import static org.forgerock.openam.utils.Time.currentTimeMillis;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepository;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
-
-import java.util.List;
+import org.forgerock.openam.utils.Time;
 
 import com.sun.identity.saml2.profile.SPCache;
 
@@ -67,7 +67,7 @@ public class SAML2FailoverUtils {
     public static void saveSAML2TokenWithoutSecondaryKey(String primaryKey, Object samlObj)
             throws SAML2TokenRepositoryException {
         // Cache survival time is 10 mins
-        final long sessionExpireTime = currentTimeMillis() / 1000 + SPCache.interval; //counted in seconds
+        final long sessionExpireTime = Time.instant().plus(SPCache.interval, ChronoUnit.SECONDS).toEpochMilli();
         saveSAML2TokenWithoutSecondaryKey(primaryKey, samlObj, sessionExpireTime);
     }
 

@@ -17,17 +17,12 @@ package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.json.JsonValue.json;
-import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.openam.auth.node.api.TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
 import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,9 +33,7 @@ class SetSessionPropertiesNodeTest {
 
     @BeforeEach
     void setUp() {
-        context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE, json(object()), json(object()),
-                json(object()), new ExternalRequestContext.Builder().build(), Collections.emptyList(), false,
-                Optional.empty(), Collections.emptySet());
+        context = TreeContext.builder().build();
     }
 
     @Test

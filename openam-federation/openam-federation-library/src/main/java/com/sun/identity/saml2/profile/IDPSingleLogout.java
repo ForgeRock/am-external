@@ -197,7 +197,7 @@ public class IDPSingleLogout {
                     debug.debug("No SP session participant(s)");
                 }
                 MultiProtocolUtils.invalidateSession(session, request,
-                    response, SingleLogoutManager.SAML2);
+                    response, SingleLogoutManager.SAML2, realm);
                 return;
             }
 
@@ -211,7 +211,7 @@ public class IDPSingleLogout {
                 }
                 IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
                 MultiProtocolUtils.invalidateSession(session, request,
-                    response, SingleLogoutManager.SAML2);
+                    response, SingleLogoutManager.SAML2, realm);
                 return;
             }
             if (debug.isDebugEnabled()) {
@@ -230,7 +230,7 @@ public class IDPSingleLogout {
                 }
                 IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
                 MultiProtocolUtils.invalidateSession(session, request,
-                    response, SingleLogoutManager.SAML2);
+                    response, SingleLogoutManager.SAML2, realm);
                 return;
             }
 
@@ -311,10 +311,10 @@ public class IDPSingleLogout {
             //requested binding, or SOAP was used for the logout (or the mixture of this two).
             if (logoutall == true) {
                 String userID = sessionProvider.getPrincipalName(idpSession.getSession());
-                destroyAllTokenForUser(userID, request, response);
+                destroyAllTokenForUser(userID, request, response, realm);
             } else {
                 MultiProtocolUtils.invalidateSession(idpSession.getSession(), request, response,
-                        SingleLogoutManager.SAML2);
+                        SingleLogoutManager.SAML2, realm);
                 IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
             }
             //handling the case when the auth was initiated with HTTP-Redirect, but only SOAP or no SLO endpoint was
@@ -798,7 +798,7 @@ public class IDPSingleLogout {
                 debug.debug("No SP session participant(s)");
             }
             MultiProtocolUtils.invalidateSession(session, request,
-                response, SingleLogoutManager.SAML2);
+                response, SingleLogoutManager.SAML2, realm);
             return false;
         }
 
@@ -812,7 +812,7 @@ public class IDPSingleLogout {
             }
             IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
             MultiProtocolUtils.invalidateSession(session, request,
-                response, SingleLogoutManager.SAML2);
+                response, SingleLogoutManager.SAML2, realm);
             return false;
         }
 
@@ -1070,7 +1070,7 @@ public class IDPSingleLogout {
                     // session participant
                     status = destroyTokenAndGenerateStatus(
                         sessionIndex, idpSession.getSession(),
-                        request, response, cleanUp);
+                        request, response, cleanUp, realm);
                     if (cleanUp) {
                         IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(sessionIndex);
                     }
@@ -1159,7 +1159,7 @@ public class IDPSingleLogout {
                     // and send to initiating SP
                     status = destroyTokenAndGenerateStatus(
                         sessionIndex, idpSession.getSession(),
-                        request, response, true);
+                        request, response, true, realm);
                     if (cleanUp) {
                         IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(sessionIndex);
                     }
@@ -1257,14 +1257,15 @@ public class IDPSingleLogout {
         Object session,
         HttpServletRequest request,
         HttpServletResponse response,
-        boolean cleanUp) throws SAML2Exception {
+        boolean cleanUp,
+        String realm) throws SAML2Exception {
 
         Status status = null;
         if (session != null) {
             try {
                 if (cleanUp) {
                     MultiProtocolUtils.invalidateSession(session, request,
-                        response, SingleLogoutManager.SAML2);
+                        response, SingleLogoutManager.SAML2, realm);
                 }
 
                 if (debug.isDebugEnabled()) {
@@ -1289,7 +1290,7 @@ public class IDPSingleLogout {
 
     private static void destroyAllTokenForUser(
         String  userToLogout, HttpServletRequest request,
-        HttpServletResponse response) {
+        HttpServletResponse response, String realm) {
 
         // TODO Update to retrieve sessions for this user from CTS, then process associated IdPSessions
         Enumeration keys = IDPCache.idpSessionsByIndices.keys();
@@ -1311,7 +1312,7 @@ public class IDPSingleLogout {
                         String userID = sessionProvider.getPrincipalName(idpToken);
                         if (userToLogout.equalsIgnoreCase(userID)) {
                             MultiProtocolUtils.invalidateSession(idpToken, request, response,
-                                SingleLogoutManager.SAML2);
+                                SingleLogoutManager.SAML2, realm);
                             IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
                         }
                     } catch (SessionException e) {
@@ -1414,11 +1415,11 @@ public class IDPSingleLogout {
             // this is IDP initiated SLO
             if (idpSession.getLogoutAll()) {
                 String userID = sessionProvider.getPrincipalName(idpSession.getSession());
-                destroyAllTokenForUser(userID, request, response);
+                destroyAllTokenForUser(userID, request, response, realm);
             } else {
                 IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
                 if (!MultiProtocolUtils.isMultipleProtocolSession(idpSession.getSession(), SingleLogoutManager.SAML2)) {
-                    sessionProvider.invalidateSession(idpSession.getSession(), request, response);
+                    sessionProvider.invalidateSession(idpSession.getSession(), request, response, realm);
                 } else {
                     MultiProtocolUtils.removeFederationProtocol(idpSession.getSession(), SingleLogoutManager.SAML2);
                     // call Multi-Federation protocol SingleLogoutManager
@@ -1465,7 +1466,7 @@ public class IDPSingleLogout {
             }
         }
         Status status = destroyTokenAndGenerateStatus(idpSessionIndex, idpSession.getSession(), request, response,
-                true);
+                true, realm);
         //here we are providing null for remote entity, because it's an unused variable in the method...
         logoutRes = LogoutUtil.generateResponse(status, originatingRequestID, SAML2Utils.createIssuer(idpEntityID),
                 realm, SAML2Constants.IDP_ROLE, null);

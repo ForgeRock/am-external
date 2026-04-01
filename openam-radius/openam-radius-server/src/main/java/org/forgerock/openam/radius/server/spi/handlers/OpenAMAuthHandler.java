@@ -12,18 +12,16 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2016-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2016-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server.spi.handlers;
 
-import static org.forgerock.openam.utils.Time.currentTimeMillis;
-
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import javax.inject.Named;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ChoiceCallback;
 import javax.security.auth.callback.ConfirmationCallback;
@@ -38,6 +36,8 @@ import org.forgerock.openam.radius.common.StateAttribute;
 import org.forgerock.openam.radius.common.UserNameAttribute;
 import org.forgerock.openam.radius.common.UserPasswordAttribute;
 import org.forgerock.openam.radius.common.packet.NASIPAddressAttribute;
+import org.forgerock.openam.radius.server.InvalidCallbackException;
+import org.forgerock.openam.radius.server.InvalidRadiusClientConfigurationException;
 import org.forgerock.openam.radius.server.RadiusProcessingException;
 import org.forgerock.openam.radius.server.RadiusRequest;
 import org.forgerock.openam.radius.server.RadiusRequestContext;
@@ -46,28 +46,30 @@ import org.forgerock.openam.radius.server.events.AuthRequestReceivedEvent;
 import org.forgerock.openam.radius.server.spi.AccessRequestHandler;
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolder;
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolderCache;
-import org.forgerock.openam.radius.server.spi.handlers.amhandler.OpenAMAuthFactory;
-import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.openam.radius.server.spi.handlers.authentication.AuthenticationStrategy;
+import org.forgerock.openam.radius.server.spi.handlers.authentication.AuthenticationStrategyFactory;
+import org.forgerock.util.Reject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 import com.google.common.eventbus.EventBus;
-import com.google.inject.Inject;
-import com.sun.identity.authentication.AuthContext;
-import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.HttpCallback;
+import com.sun.identity.authentication.spi.IdentifiableCallback;
 import com.sun.identity.authentication.spi.PagePropertiesCallback;
 import com.sun.identity.authentication.spi.RedirectCallback;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+
 /**
- * This RADIUS handler authenticates against an authentication realm and chain specified via configuration. It uses
- * OpenAM's {@link com.sun.identity.authentication.AuthContext} object. This flow proceeds as follows. It is also
- * important to note that challenge answers are passed in the RADIUS packet via the password field as per the RFC 2865
- * specification. In the diagram below are shown the RADIUS CLIENT and the OPENAM instance acting as a radius server.
- * Time generally increases as we move from the top of the diagram to the bottom. However, the while and for loops
- * violate that aspect. Vertical bars imply where processing or user input is currently proceeding. Periods imply an
- * idle or waiting system.
+ * This RADIUS handler authenticates against an authentication realm and either a chain (modules) or a tree (nodes)
+ * specified via configuration. It uses OpenAM's {@link com.sun.identity.authentication.AuthContext} object for chains
+ * and the tree executor for trees. This flow proceeds as follows. It is also important to note that challenge answers
+ * are passed in the RADIUS packet via the password field as per the RFC 2865 specification. In the diagram below are
+ * shown the RADIUS CLIENT and the OPENAM instance acting as a radius server. Time generally increases as we move from
+ * the top of the diagram to the bottom. However, the while and for loops violate that aspect. Vertical bars imply where
+ * processing or user input is currently proceeding. Periods imply an idle or waiting system.
  * <p/>
  *
  * <pre>
@@ -115,16 +117,15 @@ import com.sun.identity.authentication.spi.RedirectCallback;
  *      |                                      .
  * </pre>
  * <p/>
- * Of special note to authentication module implementors is what modules are allowed in the chain used by a radius
- * client. If an authentication module uses {@link jakarta.servlet.http.HttpServletRequest} or
- * {@link jakarta.servlet.http.HttpServletResponse} they generally won't work for radius clients without modification.
- * For non-http clients the {@link jakarta.servlet.http.HttpServletRequest} and
- * {@link jakarta.servlet.http.HttpServletResponse} objects will be null typically leading to a
- * {@link java.lang.NullPointerException}. Looking for a value of null is how such modules can tell if they are dealing
- * with a non-http client and adjust their behavior accordingly.
+ * Of special note to authentication module and node implementors is what can be used by a RADIUS client. If a module
+ * or node uses {@link jakarta.servlet.http.HttpServletRequest} or {@link jakarta.servlet.http.HttpServletResponse}
+ * they generally won't work for radius clients without modification. For non-http clients the
+ * {@link jakarta.servlet.http.HttpServletRequest} and {@link jakarta.servlet.http.HttpServletResponse} objects will be
+ * null typically leading to a {@link java.lang.NullPointerException}. Looking for a value of null is how such modules
+ * or nodes can tell if they are dealing with a non-http client and adjust their behavior accordingly.
  * <p/>
  * This may include having different sets of callbacks for http clients than for radius clients. For example, a module
- * may support a checkbox causing a cookie to be set in the user's browser to remember that module's use for a period of
+ * or node may support a checkbox causing a cookie to be set in the user's browser to remember its use for a period of
  * time and not require that the user leverage its unique authentication mechanism until that cookie has expired. Such a
  * feature won't work for radius clients since they have no such persistent client-side mechanism. Hence for non-http
  * clients a different callback set would most likely be needed that didn't include that checkbox and its label.
@@ -151,66 +152,65 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
      */
     private static final String AUTH_CHAIN_KEY = "chain";
 
+    private static final String TREE_KEY = "tree";
+
     /**
      * The realm containing the authentication chain through which we will be authenticating.
      */
     private String realm = null;
 
     /**
-     * The authentication chain through which we will be authenticating.
-     */
-    private String authChain = null;
-
-    /**
-     * A factory from which a context holder can be obtained.
-     */
-    private final OpenAMAuthFactory amAuthFactory;
-
-    /**
      * The radius event bus that will be used to notify interested parties of events as they occur.
      */
-    private EventBus eventBus;
+    private final EventBus eventBus;
+
+    private final AuthenticationStrategyFactory authenticationStrategyFactory;
+
+    private AuthenticationStrategy authentication;
 
     /**
      * Constructor.
      *
-     * @param amAuthFactory - a factory that provides OpenAM auth entities such as AuthContexts.
      * @param contextHolderCache - the cache to be used to hold ContextHolder objects that persist state in the server
-     *            (here) when control is with the client, e.g. when the client is providing user input to meet a
-     *            challenge request.
+     * (here) when control is with the client, e.g. when the client is providing user input to meet a
+     * challenge request.
      * @param eventBus - the Radius event bus that will be used to notify interested parties of
-     *            <code>org.forgerock.openam.radius.server.events</code> as they occur.
+     * <code>org.forgerock.openam.radius.server.events</code> as they occur.
+     * @param authenticationStrategyFactory the {@link AuthenticationStrategyFactory} to create the
+     * {@link AuthenticationStrategy}
      */
     @Inject
-    public OpenAMAuthHandler(OpenAMAuthFactory amAuthFactory, ContextHolderCache contextHolderCache,
-            @Named("RadiusEventBus") EventBus eventBus) {
-        this.amAuthFactory = amAuthFactory;
+    public OpenAMAuthHandler(ContextHolderCache contextHolderCache, @Named("RadiusEventBus") EventBus eventBus,
+            AuthenticationStrategyFactory authenticationStrategyFactory) {
         this.contextCache = contextHolderCache;
         this.eventBus = eventBus;
+        this.authenticationStrategyFactory = authenticationStrategyFactory;
     }
 
     @Override
-    public void init(Properties config) {
+    public void init(Properties config) throws InvalidRadiusClientConfigurationException {
         realm = getConfigProperty(REALM_KEY, config, true);
-        authChain = getConfigProperty(AUTH_CHAIN_KEY, config, true);
-
+        String tree = getConfigProperty(TREE_KEY, config, false);
+        String authChain = getConfigProperty(AUTH_CHAIN_KEY, config, false);
+        authentication = authenticationStrategyFactory.create(realm, tree, authChain);
     }
 
     /**
      * Handles the request in potentially two distinct ways depending on whether a state attribute is found in the
      * request or not. When no state field is found this is an initial request starting the authentication process and
-     * the request will have username and password embedded and ready for consumption by the first module in the chain.
-     * Any request with a state attribute is a user response to a previous challenge response that we sent back to them
-     * in a previously started authentication process. The number of challenge responses that are sent and their
-     * corresponding replies is dependent upon the number of modules in the chain and the number of callback fields in
-     * each set of callbacks. A set of callbacks represents one grouping of data needed by a module to complete its next
-     * step in the authentication process that it implements. This grouping in a web environment constitutes a single
-     * page into which a number of fields can receive data. However, to gather additional feedback from a user the
-     * radius protocol only supports a challenge response with a text message and state and radius clients typically
-     * present that message and a single text input field with a label like, "Answer", and submit and cancel buttons.
-     * This means that we only get a single answer per radius challenge response. Therefore, for some callback groupings
-     * we will need to return multiple challenge responses before we can submit the callback set's user response values
-     * back to the module to take the next step in authentication.
+     * the request will have username and password embedded and ready for consumption by the first module in the chain
+     * or the first node in the tree. Any request with a state attribute is a user response to a previous
+     * challenge response that we sent back to them in a previously started authentication process. The number of
+     * challenge responses that are sent and their corresponding replies is dependent upon the number of modules in the
+     * chain or the number of nodes in the tree, and the number of callback fields in each set of callbacks.
+     * A set of callbacks represents one grouping of data needed by a module or node to complete its next step in the
+     * authentication process. This grouping in a web environment constitutes a single page into which a number of
+     * fields can receive data. However, to gather additional feedback from a user the radius protocol only supports a
+     * challenge response with a text message and state and radius clients typically present that message and a single
+     * text input field with a label like, "Answer", and submit and cancel buttons. This means that we only get a single
+     * answer per radius challenge response. Therefore, for some callback groupings we will need to return multiple
+     * challenge responses before we can submit the callback set's user response values back to the module or node to
+     * take the next step in authentication.
      *
      * @param request
      *            the access request
@@ -226,6 +226,7 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
     @Override
     public void handle(RadiusRequest request, RadiusResponse response, RadiusRequestContext context)
             throws RadiusProcessingException {
+        Reject.ifNull(authentication, "Handler has not been initialized");
         LOG.debug("Entering OpenAMAuthHandler.handle");
 
         response.setRealm(realm);
@@ -242,6 +243,13 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
         // always sent via the password field.
         final UserPasswordAttribute credAtt = (UserPasswordAttribute) request.getAttribute(UserPasswordAttribute.class);
         String credential;
+
+        if (credAtt == null) {
+            LOG.error("Request is missing USER_PASSWORD attribute. Denying Access.");
+            rejectAccessAndTerminateProcess(response, holder);
+            LOG.debug("Leaving OpenAMAuthHandler.handle();");
+            return;
+        }
 
         try {
             credential = credAtt.extractPassword(context.getRequestAuthenticator(), context.getClientSecret());
@@ -270,8 +278,7 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
 
             holder = startAuthProcess(holder, response, usrAtt, credential,
                     nasIPAddress != null ? nasIPAddress.toStringImpl() : null);
-            if (holder == null || holder.getAuthPhase() == ContextHolder.AuthPhase.TERMINATED) {
-                // oops. something happened and reject message was already sent. so drop out here.
+            if (holder.getAuthPhase() == ContextHolder.AuthPhase.TERMINATED) {
                 LOG.debug("Leaving OpenAMAuthHandler.handle(); Auth phase is TERMINATED.");
                 return;
             }
@@ -314,20 +321,14 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
      */
     private void finalizeAuthProcess(RadiusResponse response, ContextHolder holder) {
         LOG.debug("Entering OpenAMAuthHandler.finalizeAuthProcess()");
-        final AuthContext.Status status = holder.getAuthContext().getStatus();
-
-        if (status.equals(AuthContext.Status.SUCCESS)) {
-            // they made it. Let them in.
+        if (authentication.isAuthenticationSuccessful(holder)) {
             allowAccessAndTerminateProcess(response, holder);
-            return;
+        } else {
+            rejectAccessAndTerminateProcess(response, holder);
         }
-
-        rejectAccessAndTerminateProcess(response, holder);
     }
 
-    private void gatherUserInput(RadiusResponse response, ContextHolder holder,
-            String answer,
-            StateAttribute state) {
+    private void gatherUserInput(RadiusResponse response, ContextHolder holder, String answer, StateAttribute state) {
         LOG.debug("Entering gatherUserInput();");
 
         // we have a while loop here because there are callback sets that are empty of input callbacks and contain
@@ -337,15 +338,21 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
         while (holder.getAuthPhase() == ContextHolder.AuthPhase.GATHERING_INPUT) {
             if (holder.getCallbacks() == null) {
                 LOG.debug("--- callbacks == null in gatherUserInput");
-                // either just starting process or just finished submitting a set of callback input values
-                if (!isNextCallbackSetAvailable(response, holder)) {
-                    // no further input from user needed or error occurred
-                    if (holder.getAuthPhase() == ContextHolder.AuthPhase.TERMINATED) {
+                try {
+                    Callback[] callbacks = authentication.getNextCallbacks(holder);
+                    // either just starting process or just finished submitting a set of callback input values
+                    if (callbacks.length == 0) {
+                        LOG.debug("--- NextCallbackSet not-available in gatherUserInput - move to finalization");
+                        holder.setAuthPhase(ContextHolder.AuthPhase.FINALIZING);
                         return;
                     }
-
-                    LOG.debug("--- NextCallbackSet not-available in gatherUserInput - move to finalization");
-                    holder.setAuthPhase(ContextHolder.AuthPhase.FINALIZING);
+                    holder.setCallbacks(callbacks);
+                    holder.setIdxOfCurrentCallback(0);
+                    processPagePropertiesCallback(holder);
+                    throwIfInvalidCallbacksPresent(holder);
+                } catch (InvalidCallbackException e) {
+                    LOG.error("Unable to continue login process. Invalid callback encountered. Denying Access.");
+                    rejectAccessAndTerminateProcess(response, holder);
                     return;
                 }
             } else {
@@ -370,7 +377,7 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
                         + " > holder.callbacks.length-1 " + (holder.getCallbacks().length - 1)
                         + " in gatherUserInput - submitting/set callbacks=null");
                 try {
-                    holder.getAuthContext().submitRequirements(callbacks);
+                    authentication.submitCallbacks(holder, callbacks);
                 } catch (final Throwable t) {
                     LOG.error("Exception thrown while submitting callbacks. Rejecting access.", t);
                     rejectAccessAndTerminateProcess(response, holder);
@@ -399,89 +406,6 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
     }
 
     /**
-     * Obtains the next set of OpenAM authorization callbacks, updating our info set or sets the callbacks to null if
-     * unable to acquire and update the info set and sends an accessReject response in that case. Returns true if
-     * callback set was loaded into holder. Returns false if they couldn't be loaded or were empty which may be a valid
-     * state depending on the caller. Sets holder.authPhase = TERMINATED if something happened causing the
-     * authentication process to fail.
-     *
-     * @param response The response that will be sent to the client.
-     * @param holder Holds the context for this request.
-     * @return <code>true</code> if callback set was loaded into holder.
-     */
-    private boolean isNextCallbackSetAvailable(RadiusResponse response,
-            ContextHolder holder) {
-        final boolean moreCallbacksAvailable = holder.getAuthContext().hasMoreRequirements();
-
-        if (!moreCallbacksAvailable) {
-            // cLog.warning("--- no callbacks available, set callbacks=null in isNextCallbackSetAvailable");
-            holder.setCallbacks(null);
-            return false;
-        }
-
-        // true means do NOT filter PagePropertiesCallbacks
-        final Callback[] callbacks = holder.getAuthContext().getRequirements(true);
-        holder.setCallbacks(callbacks);
-
-        if (holder.getCallbacks() == null) { // should never happen but example online included check
-            // cLog.warning("--- callbacks == null after ac.getReqs() called in isNextCallbackSetAvailable");
-            return false;
-        }
-
-        // process page properties piece
-        if (callbacks[0] instanceof PagePropertiesCallback) { // not a formal callback, openam specific
-            final PagePropertiesCallback pp = (PagePropertiesCallback) callbacks[0];
-            holder.setCallbackSetProps(pp);
-            holder.setIdxOfCurrentCallback(1); // since page properties cb is at zero index
-            final String moduleName = pp.getModuleName();
-
-            if (!moduleName.equals(holder.getModuleName())) {
-                // entering new module
-                holder.setModuleName(moduleName);
-                holder.incrementChainModuleIndex();
-                holder.setIdxOfCallbackSetInModule(0);
-                // cLog.warning("New Module Incurred: " + holder.moduleName + " with callbacks["
-                // + holder.callbacks.length + "]");
-            } else {
-                holder.incrementIdxOfCallbackSetInModule();
-                // cLog.warning("New Callback Set[" + holder.callbacks.length + "] Incurred in Module: "
-                // + holder.moduleName);
-            }
-            // update the
-            holder.setMillisExpiryForCurrentCallbacks(1000L * pp.getTimeOutValue());
-            holder.setMillisExpiryPoint(currentTimeMillis() + holder.getMillisExpiryForCurrentCallbacks());
-        } else {
-            LOG.error("Callback at index 0 is not of type PagePropertiesCallback!!!");
-            rejectAccessAndTerminateProcess(response, holder);
-            return false;
-        }
-
-        // now fail fast if we find unsupportable callback types
-        boolean httpCbIncurred = false;
-        boolean redirectCbIncurred = false;
-
-        for (int i = 1; i < callbacks.length; i++) {
-            final Callback cb = callbacks[i];
-            if (cb instanceof HttpCallback) {
-                httpCbIncurred = true;
-                break;
-            } else if (cb instanceof RedirectCallback) {
-                redirectCbIncurred = true;
-                break;
-            }
-        }
-        if (httpCbIncurred || redirectCbIncurred) {
-            LOG.error("Radius can not support "
-                    + (httpCbIncurred ? HttpCallback.class.getSimpleName() : RedirectCallback.class.getSimpleName())
-                    + " used by module " + holder.getChainModuleIndex() + " with name " + holder.getModuleName()
-                    + " in chain '" + this.authChain + "'. Denying Access.");
-            rejectAccessAndTerminateProcess(response, holder);
-            return false;
-        }
-        return true;
-    }
-
-    /**
      * Sends a RADIUS AccessReject response and cleans up the cache and authentication context if it not null by calling
      * its logout method.
      *
@@ -490,8 +414,10 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
      */
     private void rejectAccessAndTerminateProcess(RadiusResponse response, ContextHolder holder) {
         response.setResponsePacket(new AccessReject());
-        response.setUniversalId(holder.getUniversalId());
-        terminateAuthnProcess(holder);
+        if (holder != null) {
+            response.setUniversalId(authentication.getUniversalId(holder));
+            terminateAuthnProcess(holder);
+        }
     }
 
     /**
@@ -502,8 +428,10 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
      */
     private void allowAccessAndTerminateProcess(RadiusResponse response, ContextHolder holder) {
         response.setResponsePacket(new AccessAccept());
-        response.setUniversalId(holder.getUniversalId());
-        terminateAuthnProcess(holder);
+        if (holder != null) {
+            response.setUniversalId(authentication.getUniversalId(holder));
+            terminateAuthnProcess(holder);
+        }
     }
 
     /**
@@ -516,13 +444,8 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
     private void terminateAuthnProcess(ContextHolder holder) {
         contextCache.remove(holder.getCacheKey());
         holder.setAuthPhase(ContextHolder.AuthPhase.TERMINATED);
-
-        if (holder.getAuthContext() != null && holder.getAuthContext().getStatus() == AuthContext.Status.SUCCESS) {
-            try {
-                holder.getAuthContext().logout();
-            } catch (final AuthLoginException e) {
-                LOG.error("Unable to logout of AuthContext while terminating RADIUS auth sequence.", e);
-            }
+        if (authentication.isAuthenticationSuccessful(holder) && !authentication.terminateAuthentication(holder)) {
+            LOG.error("Unable to logout of AuthContext while terminating RADIUS auth sequence.");
         }
     }
 
@@ -540,17 +463,14 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
         if (callbacks == null) {
             return false;
         }
-        final Callback cb = callbacks[holder.getIdxOfCurrentCallback()];
+        Callback cb = unwrapCallback(callbacks[holder.getIdxOfCurrentCallback()]);
         holder.incrementIdxOfCurrentCallback(); // so that we are sitting on that callback in the next call
 
-        if (cb instanceof NameCallback) {
-            final NameCallback nc = (NameCallback) cb;
+        if (cb instanceof NameCallback nc) {
             nc.setName(answer);
-        } else if (cb instanceof PasswordCallback) {
-            final PasswordCallback pc = (PasswordCallback) cb;
+        } else if (cb instanceof PasswordCallback pc) {
             pc.setPassword(answer.toCharArray());
-        } else if (cb instanceof ChoiceCallback) {
-            final ChoiceCallback cc = (ChoiceCallback) cb;
+        } else if (cb instanceof ChoiceCallback cc) {
             final int maxIdx = cc.getChoices().length - 1;
 
             if ("".equals(answer)) {
@@ -586,8 +506,7 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
                 }
                 cc.setSelectedIndex(idx);
             }
-        } else if (cb instanceof ConfirmationCallback) {
-            final ConfirmationCallback cc = (ConfirmationCallback) cb;
+        } else if (cb instanceof ConfirmationCallback cc) {
             final int maxIdx = cc.getOptions().length - 1;
 
             if ("".equals(answer)) {
@@ -607,8 +526,6 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
             rejectAccessAndTerminateProcess(response, holder);
             return false;
         }
-        // reset the timeout since we just received confirmation that the user is still there.
-        holder.setMillisExpiryPoint(currentTimeMillis() + holder.getMillisExpiryForCurrentCallbacks());
         return true;
     }
 
@@ -633,21 +550,16 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
         } catch (final NumberFormatException e) {
             LOG.error("Invalid number '" + intVal + "' specified in answer '" + answer + "' for callback "
                     + holder.getIdxOfCurrentCallback() + " of type " + cb.getClass().getSimpleName()
-                    + " for callback set " + holder.getIdxOfCallbackSetInModule() + " in module "
-                    + holder.getChainModuleIndex()
-                    + (holder.getModuleName() != null ? " with name " + holder.getModuleName() : "")
-                    + " of authentication chain " + authChain + " in realm " + realm + ". Denying Access.");
+                    + " for callback set " + holder.getIdxOfCallbackSetInModule() + " in realm " + realm
+                    + ". Denying Access.");
             rejectAccessAndTerminateProcess(response, holder);
             return idx;
         }
         if (idx < 0 || idx > maxIdx) {
             LOG.error("Out of range index specified in answer '" + answer + "' for callback "
                     + holder.getIdxOfCurrentCallback() + " of type " + cb.getClass().getSimpleName()
-                    + " for callback set " + holder.getIdxOfCallbackSetInModule() + " in module "
-                    + holder.getChainModuleIndex()
-                    + (holder.getModuleName() != null ? " with name " + holder.getModuleName() : "")
-                    + " of authentication chain " + authChain + " in realm " + realm + ". Must be from 0 to " + maxIdx
-                    + ". Denying Access.");
+                    + " for callback set " + holder.getIdxOfCallbackSetInModule() + " in realm " + realm
+                    + ". Must be from 0 to " + maxIdx + ". Denying Access.");
             rejectAccessAndTerminateProcess(response, holder);
             return -1;
         }
@@ -671,81 +583,69 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
             String credential, String clientIPAddress) {
         LOG.debug("Entering OpenAMAuthHandler.startAuthProcess");
 
-        // now create an authContext and trigger loading of whatever authN modules will be used
-        try {
-            holder.setAuthContext(amAuthFactory.getAuthContext(realm));
-        } catch (final AuthLoginException e) {
-            LOG.error("Unable to start create " + AuthContext.class.getName() + ". Denying Access.", e);
+        if (!authentication.startAuthentication(holder, clientIPAddress)) {
+            LOG.error("Failed to start login process. Denying Access.");
             rejectAccessAndTerminateProcess(response, holder);
             LOG.debug("Leaving OpenAMAuthHandler.startAuthProcess");
             return holder;
         }
 
         try {
-            // Set the client IP address so that auditing reflects the client, not the Radius Server
-            if (StringUtils.isNotBlank(clientIPAddress)) {
-                holder.getAuthContext().setClientHostName(clientIPAddress);
-            }
-            holder.getAuthContext().login(AuthContext.IndexType.SERVICE, authChain);
-        } catch (final AuthLoginException e) {
-            LOG.error("Unable to start login process. Denying Access.", e);
-            rejectAccessAndTerminateProcess(response, holder);
-            LOG.debug("Leaving OpenAMAuthHandler.startAuthProcess");
-            return holder;
-        }
-
-        if (!isNextCallbackSetAvailable(response, holder)) {
-            // couldn't get the callbacks or failure occurred. If failure didn't occur then we need to fail out here
-            // since we must have callbacks when starting up the authn process to handle username and password.
-            if (holder.getAuthPhase() != ContextHolder.AuthPhase.TERMINATED) {
+            Callback[] callbacks = authentication.getNextCallbacks(holder);
+            if (callbacks.length == 0) {
+                // couldn't get the callbacks or failure occurred. If failure didn't occur then we need to fail out here
+                // since we must have callbacks when starting up the authn process to handle username and password.
                 LOG.error("Unable to start login process. No callbacks available. Denying Access.");
                 rejectAccessAndTerminateProcess(response, holder);
+
+                LOG.debug("Leaving OpenAMAuthHandler.startAuthProcess");
+                return holder;
             }
+            holder.setCallbacks(callbacks);
+            holder.setIdxOfCurrentCallback(0);
+            processPagePropertiesCallback(holder);
+            throwIfInvalidCallbacksPresent(holder);
+        } catch (InvalidCallbackException e) {
+            LOG.error("Unable to start login process. Invalid callback encountered. Denying Access.");
+            rejectAccessAndTerminateProcess(response, holder);
+
             LOG.debug("Leaving OpenAMAuthHandler.startAuthProcess");
             return holder;
         }
 
-        // for RADIUS we have username and password within the initial request. Therefore, the first module in the
-        // chain must support a name and password callback. so walk the set of callbacks representing the first
-        // module and inject and then test for further module requirements. if any exist then we must craft a
-        // suitable challenge response and await the next request that gets submitted after the radius client has
-        // gathered those values.
+        // for RADIUS we have username and password within the initial request. Therefore, the first step must support
+        // a name and password callback. so walk the set of callbacks and inject and then test for further callbacks.
+        // If any exist then we must craft a suitable challenge response and await the next request that gets submitted
+        // after the radius client has gathered those values.
         boolean injectedUsr = false;
         boolean injectedPwd = false;
 
         final Callback[] callbacks = holder.getCallbacks();
         for (int i = holder.getIdxOfCurrentCallback(); i < callbacks.length; i++) {
-            if (callbacks[i] instanceof NameCallback) {
-                holder.incrementIdxOfCurrentCallback();
-                final NameCallback nm = (NameCallback) callbacks[i];
+            holder.incrementIdxOfCurrentCallback();
+            Callback cb = unwrapCallback(callbacks[i]);
+            if (cb instanceof NameCallback nm) {
                 nm.setName(usrAtt.getName());
                 injectedUsr = true;
-            } else if (callbacks[i] instanceof PasswordCallback) {
-                holder.incrementIdxOfCurrentCallback();
-                final PasswordCallback pc = (PasswordCallback) callbacks[i];
+            } else if (cb instanceof PasswordCallback pc) {
                 pc.setPassword(credential.toCharArray());
                 injectedPwd = true;
-            } else {
-                holder.incrementIdxOfCurrentCallback();
             }
         }
         // did we have NameCallback and PasswordCallback to inject the username and password?
         if (injectedUsr && injectedPwd) {
-            holder.getAuthContext().submitRequirements(callbacks);
+            authentication.submitCallbacks(holder, callbacks);
             // cLog.warning("--- submitting usr/pwd in startAuthProcess, set callbacks=null");
             holder.setCallbacks(null); // triggers loading of next set, conveys to gatherer that we have just started
+            holder.setAuthPhase(ContextHolder.AuthPhase.GATHERING_INPUT);
         } else {
-            // if we get here and didn't submit, then the callbacks array representing the requirements of the first
-            // module in the chain didn't support username and password. So log the error and reject access.
-            final String msg = "First callback set for first module"
-                    + (holder.getModuleName() != null ? " '" + holder.getModuleName() + "'" : "")
-                    + " in authentication chain '" + this.authChain
-                    + "' does not support Username and Password callbacks. Denying Access.";
+            // if we get here and didn't submit, then the callbacks didn't support username and password.
+            // So log the error and reject access.
+            final String msg = "First callback set does not support Username and Password callbacks. Denying Access.";
             LOG.error(msg);
             rejectAccessAndTerminateProcess(response, holder);
         }
         // if we get here then we successfully started the authN process
-        holder.setAuthPhase(ContextHolder.AuthPhase.GATHERING_INPUT);
         LOG.debug("Leaving OpenAMAuthHandler.startAuthProcess");
         return holder;
     }
@@ -766,23 +666,17 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
         if (callbacks == null) {
             return null;
         }
-        final Callback cb = callbacks[holder.getIdxOfCurrentCallback()];
+        Callback cb = unwrapCallback(callbacks[holder.getIdxOfCurrentCallback()]);
+        String header = getHeaderFromPage(holder);
 
-        String header = "";
-        final PagePropertiesCallback pagePropCallback = holder.getCallbackSetProps();
-        if (pagePropCallback != null && !"".equals(pagePropCallback.getHeader())) {
-            header = pagePropCallback.getHeader() + " ";
-        }
-
-        if (cb instanceof NameCallback) {
+        if (cb instanceof NameCallback nc) {
             LOG.debug("getNextCallbackReplyMsg(); - processing NameCallback.");
-            msg = new ReplyMessageAttribute(header + ((NameCallback) cb).getPrompt());
-        } else if (cb instanceof PasswordCallback) {
+            msg = new ReplyMessageAttribute(header + nc.getPrompt());
+        } else if (cb instanceof PasswordCallback pc) {
             LOG.debug("getNextCallbackReplyMsg(); - processing PasswordCallback.");
-            msg = new ReplyMessageAttribute(header + ((PasswordCallback) cb).getPrompt());
-        } else if (cb instanceof ChoiceCallback) {
+            msg = new ReplyMessageAttribute(header + pc.getPrompt());
+        } else if (cb instanceof ChoiceCallback cc) {
             LOG.debug("getNextCallbackReplyMsg(); - processing ChoiceCallback.");
-            final ChoiceCallback cc = (ChoiceCallback) cb;
             final StringBuilder sb = new StringBuilder();
             sb.append(header);
             sb.append(cc.getPrompt());
@@ -808,9 +702,8 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
                 sb.append(choice);
             }
             msg = new ReplyMessageAttribute(sb.toString());
-        } else if (cb instanceof ConfirmationCallback) {
+        } else if (cb instanceof ConfirmationCallback cc) {
             LOG.debug("getNextCallbackReplyMsg(); - processing ConformationCallback.");
-            final ConfirmationCallback cc = (ConfirmationCallback) cb;
             final StringBuilder sb = new StringBuilder();
             sb.append(header);
             String prompt = cc.getPrompt();
@@ -837,13 +730,67 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
             }
             msg = new ReplyMessageAttribute(sb.toString());
         } else { // unknown and unexpected type
-            LOG.error("Radius can not support " + cb.getClass().getSimpleName() + " used by module "
-                    + holder.getChainModuleIndex() + " with name " + holder.getModuleName() + " in chain '"
-                    + this.authChain + "'. Denying Access.");
+            LOG.error("Radius can not support {}. Denying Access.", cb.getClass().getSimpleName());
             rejectAccessAndTerminateProcess(response, holder);
         }
-        LOG.debug("Entering getNextCallbackReplyMsg() returning '" + msg + "'");
+        LOG.debug("Entering getNextCallbackReplyMsg() returning '{}'", msg);
         return msg;
+    }
+
+    /**
+     * Retrieves the header text from the PagePropertiesCallback or PageNode if available.
+     *
+     * @param holder Holds the context for this request.
+     * @return The header text, or an empty string if not available.
+     */
+    private String getHeaderFromPage(ContextHolder holder) {
+        String header = "";
+        final PagePropertiesCallback pagePropCallback = holder.getCallbackSetProps();
+
+        if (pagePropCallback != null && !"".equals(pagePropCallback.getHeader())) {
+            header = pagePropCallback.getHeader() + " ";
+        } else if (holder.getTreeResult() != null && !Strings.isNullOrEmpty(holder.getTreeResult().getHeader())) {
+            header = holder.getTreeResult().getHeader() + " ";
+        }
+        return header;
+    }
+
+    private void processPagePropertiesCallback(ContextHolder holder) {
+        if (holder.getCallbacks()[0] instanceof PagePropertiesCallback pp) {
+            holder.setCallbackSetProps(pp);
+            holder.setModuleName(pp.getModuleName());
+            holder.setIdxOfCurrentCallback(1);
+        }
+    }
+
+    /**
+     * Unwraps an IdentifiableCallback to return the underlying callback.
+     *
+     * @param callback The callback to unwrap.
+     * @return The unwrapped callback.
+     */
+    private Callback unwrapCallback(Callback callback) {
+        if (callback instanceof IdentifiableCallback icb) {
+            return icb.callback;
+        }
+        return callback;
+    }
+
+    private void throwIfInvalidCallbacksPresent(ContextHolder holder) throws InvalidCallbackException {
+        Callback invalidCallback = Arrays.stream(holder.getCallbacks())
+                .filter(cb -> cb instanceof HttpCallback || cb instanceof RedirectCallback)
+                .findFirst()
+                .orElse(null);
+        if (invalidCallback != null) {
+            String message = String.format(
+                "Tree/Chain contains unsupported callback type '%s' for RADIUS. "
+                        + "RADIUS authentication only supports basic callbacks "
+                        + "(NameCallback, PasswordCallback, ChoiceCallback, TextInputCallback, ConfirmationCallback). "
+                        + "Please review the configuration and remove or replace this node/module.",
+                invalidCallback.getClass().getSimpleName()
+            );
+            throw new InvalidCallbackException(message);
+        }
     }
 
 }

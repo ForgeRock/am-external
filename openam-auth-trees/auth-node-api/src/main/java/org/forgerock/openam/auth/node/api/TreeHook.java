@@ -54,6 +54,8 @@ public interface TreeHook {
     String NODE_ID_KEY = "nodeId";
     /** Node type key. */
     String NODE_TYPE_KEY = "nodeType";
+    /** Node version key. */
+    String NODE_VERSION_KEY = "nodeVersion";
     /** Node config key. */
     String NODE_CONFIG_KEY = "nodeConfig";
     /** Arguments for the session hook. */
