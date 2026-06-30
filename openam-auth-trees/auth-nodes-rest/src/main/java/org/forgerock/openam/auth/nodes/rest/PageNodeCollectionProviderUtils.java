@@ -31,7 +31,6 @@ import org.forgerock.json.resource.ResourceException;
 import org.forgerock.json.resource.ResourcePath;
 import org.forgerock.json.resource.ResourceResponse;
 import org.forgerock.openam.auth.nodes.framework.PageNode;
-import org.forgerock.openam.feature.Features;
 import org.forgerock.services.context.Context;
 
 /**

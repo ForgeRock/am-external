@@ -18,6 +18,7 @@ package com.sun.identity.saml2.plugins.scripted.bindings;
 
 import static com.sun.identity.saml2.common.SAML2Constants.BINDING;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.AUTHN_REQUEST;
+import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.AUTHN_REQUEST_HELPER;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.FAILURE_CODE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.HOSTED_ENTITYID;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.IDP_ENTITY_ID;
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.iplanet.sso.SSOToken;
+import com.sun.identity.saml2.plugins.scripted.AuthnRequestHelper;
 import com.sun.identity.saml2.plugins.scripted.HttpServletRequestHelper;
 import com.sun.identity.saml2.plugins.scripted.HttpServletResponseHelper;
 import com.sun.identity.saml2.plugins.scripted.SpAdapterScriptHelper;
@@ -105,6 +107,7 @@ public class SamlSpAdapterScriptBindingsTest {
         assertThat(bindingsMap.get(PROFILE)).isEqualTo(TEST_PROFILE);
         assertThat(bindingsMap.get(REQUEST_HELPER)).isInstanceOf(HttpServletRequestHelper.class);
         assertThat(bindingsMap.get(RESPONSE_HELPER)).isInstanceOf(HttpServletResponseHelper.class);
+        assertThat(bindingsMap.get(AUTHN_REQUEST_HELPER)).isInstanceOf(AuthnRequestHelper.class);
         assertThat(bindingsMap.get(USER_ID)).isEqualTo(TEST_USER_ID);
         assertThat(bindingsMap.get(BINDING)).isEqualTo(TEST_BINDING);
         assertThat(bindingsMap.get(FAILURE_CODE)).isEqualTo(TEST_FAILURE_CODE);
@@ -138,6 +141,7 @@ public class SamlSpAdapterScriptBindingsTest {
         assertThat(bindingsMap.get(IS_FEDERATION)).isEqualTo(false);
         assertThat(bindingsMap.get(REQUEST_HELPER)).isInstanceOf(HttpServletRequestHelper.class);
         assertThat(bindingsMap.get(RESPONSE_HELPER)).isInstanceOf(HttpServletResponseHelper.class);
+        assertThat(bindingsMap.get(AUTHN_REQUEST_HELPER)).isInstanceOf(AuthnRequestHelper.class);
         assertThat(bindingsMap.get(SESSION)).isNull();
         assertThat(bindingsMap.get(AUTHN_REQUEST)).isNull();
         assertThat(bindingsMap.get(SSO_RESPONSE)).isNull();
@@ -282,6 +286,28 @@ public class SamlSpAdapterScriptBindingsTest {
         // Then
         BindingsMap bindingsMap = bindings.nextGenBindings();
         assertThat(bindingsMap.get(AUTHN_REQUEST)).isNull();
+        assertThat(bindingsMap.get(AUTHN_REQUEST_HELPER)).isInstanceOf(AuthnRequestHelper.class);
+        assertThat(((AuthnRequestHelper) bindingsMap.get(AUTHN_REQUEST_HELPER)).getDestination()).isNull();
+    }
+
+    @Test
+    void shouldSetDestinationViaAuthnRequestHelper() throws Exception {
+        String updatedDestination = "https://idp.example.com/updated";
+
+        // When
+        SamlSpAdapterScriptBindings bindings = SamlSpAdapterScriptBindings.builder()
+                .withRequest(request)
+                .withResponse(response)
+                .withAuthnRequest(authnRequest)
+                .build();
+
+        BindingsMap bindingsMap = bindings.nextGenBindings();
+        AuthnRequestHelper helper = (AuthnRequestHelper) bindingsMap.get(AUTHN_REQUEST_HELPER);
+        helper.setDestination(updatedDestination);
+
+        // Then
+        assertThat(helper).isNotNull();
+        verify(authnRequest).setDestination(updatedDestination);
     }
 
     @Test
@@ -349,9 +375,9 @@ public class SamlSpAdapterScriptBindingsTest {
         assertThat(bindingsMap).containsKeys(
                 IDP_ENTITY_ID, HOSTED_ENTITYID, PROFILE, USER_ID, BINDING,
                 FAILURE_CODE, IS_FEDERATION, REQUEST, RESPONSE, AUTHN_REQUEST, SSO_RESPONSE,
-                SESSION, SP_ADAPTER_SCRIPT_HELPER, REQUEST_HELPER, RESPONSE_HELPER
+                SESSION, SP_ADAPTER_SCRIPT_HELPER, AUTHN_REQUEST_HELPER, REQUEST_HELPER, RESPONSE_HELPER
         );
-        assertThat(bindingsMap).hasSize(15);
+        assertThat(bindingsMap).hasSize(16);
     }
 
     private void assertIsMap(BindingsMap bindingsMap, String key, String description) {

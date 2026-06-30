@@ -147,7 +147,8 @@ ServicesService.type = {
                 function getInstance () {
                     return ServicesService.serviceCall({
                         url: fetchUrl(
-                            `/realm-config/services/${serviceType}/${subSchemaType}/${subSchemaInstance}`, { realm }
+                            `/realm-config/services/${serviceType}/${subSchemaType}/${encodeURIComponent(subSchemaInstance)}`, // eslint-disable-line
+                            { realm }
                         ),
                         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" }
                     }).then((response) => new JSONValues(response));
@@ -182,7 +183,9 @@ ServicesService.type = {
             remove (realm, serviceType, subSchemaType, subSchemaInstance) {
                 return ServicesService.serviceCall({
                     url: fetchUrl(
-                        `/realm-config/services/${serviceType}/${subSchemaType}/${subSchemaInstance}`, { realm }),
+                        `/realm-config/services/${serviceType}/${subSchemaType}/${encodeURIComponent(subSchemaInstance)}`, // eslint-disable-line
+                        { realm }
+                    ),
                     headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
                     type: "DELETE",
                     suppressSpinner: true
@@ -192,7 +195,9 @@ ServicesService.type = {
             update (realm, serviceType, subSchemaType, subSchemaInstance, data) {
                 return ServicesService.serviceCall({
                     url: fetchUrl(
-                        `/realm-config/services/${serviceType}/${subSchemaType}/${subSchemaInstance}`, { realm }),
+                        `/realm-config/services/${serviceType}/${subSchemaType}/${encodeURIComponent(subSchemaInstance)}`, // eslint-disable-line
+                        { realm }
+                    ),
                     headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
                     type: "PUT",
                     data

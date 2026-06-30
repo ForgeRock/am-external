@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 import { Button, ButtonToolbar } from "react-bootstrap";
@@ -44,15 +44,19 @@ const ListToolbar = ({
         </Button>
     );
 
+    const addButtonComp = addButton && (
+        <AddButton
+            href={ addButton.href }
+            onClick={ addButton.handleOnClick }
+            title={ addButton.title }
+        >
+            { addButton.menuItems }
+        </AddButton>
+    );
+
     return (
         <ButtonToolbar className="page-toolbar">
-            <AddButton
-                href={ addButton.href }
-                onClick={ addButton.handleOnClick }
-                title={ addButton.title }
-            >
-                { addButton.menuItems }
-            </AddButton>
+            { addButtonComp }
             { importButton }
             { exportButton }
             <Button disabled={ isDeleteDisabled } onClick={ onDelete }>
@@ -72,7 +76,7 @@ ListToolbar.propTypes = {
             title: PropTypes.string.isRequired
         })),
         title: PropTypes.string.isRequired
-    }).isRequired,
+    }),
     additionalButtons: PropTypes.node,
     isDeleteDisabled: PropTypes.bool.isRequired,
     numberSelected: PropTypes.number.isRequired,

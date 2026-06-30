@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2025 Ping Identity Corporation.
+ * Copyright 2015-2026 Ping Identity Corporation.
  */
 
 import _ from "lodash";
@@ -44,12 +44,12 @@ const MyResourcesPage = BasePage.extend({
             this.renderGrid(this.createSetCollection(), this.createColumns("myresources/all"), callback);
         } else {
             // Resolve label ID to name
-            UMAService.labels.get(this.data.labelId).then((data) => {
+            return UMAService.labels.get(this.data.labelId).then((data) => {
                 const columns = this.createColumns(`myresources/${encodeURIComponent(data.id)}`);
                 // Splice out the "Hosts" column
                 columns.splice(1, 1);
 
-                this.data.labelName = data.name;
+                this.data.labelName = _.escape(data.name);
                 this.renderGrid(this.createLabelCollection(this.data.labelId), columns, callback);
             });
         }

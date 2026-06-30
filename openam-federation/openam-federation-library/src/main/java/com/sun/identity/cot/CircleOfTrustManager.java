@@ -24,7 +24,7 @@
  *
  * $Id: CircleOfTrustManager.java,v 1.13 2009/10/28 23:58:56 exu Exp $
  *
- * Portions Copyrighted 2016-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2016-2026 Ping Identity Corporation.
  */
 package com.sun.identity.cot;
 
@@ -890,6 +890,11 @@ public class CircleOfTrustManager {
         Set tProviders = new HashSet();
         try {
             CircleOfTrustDescriptor cotd = getCircleOfTrust(realm, name);
+            if (!isActiveCOT(cotd.getCircleOfTrustStatus())) {
+                debug.debug("COTManager.isInCircleOfTrust: Circle of trust " + name
+                        + " is not active, returning false for entity " + entityId);
+                return false;
+            }
             Set pSet = cotd.getTrustedProviders(protocolType);
             return ((pSet != null) && !pSet.isEmpty() 
                 && pSet.contains(entityId));

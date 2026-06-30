@@ -24,6 +24,7 @@ export const setOrUpdateFlag = createAction(SET_OR_UPDATE);
 // Reducer
 const initialState = {
     cloudOnlyFeaturesEnabled: false,
+    cdkDeployment: false,
     nodeDesignerXuiEnabled: false,
     oauth2AIAgentsEnabled: false
 };

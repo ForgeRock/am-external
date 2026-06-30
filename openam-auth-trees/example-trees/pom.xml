@@ -19,7 +19,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-auth-trees</artifactId>
-        <version>8.1.0</version>
+        <version>8.1.1</version>
     </parent>
 
     <artifactId>example-trees</artifactId>

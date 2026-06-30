@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.framework.typeadapters;
@@ -32,7 +32,7 @@ public final class InnerTreeTypeAdapter extends TreeTypeAdapter {
      * @param treeProvider Service for tree data management.
      */
     @Inject
-    public InnerTreeTypeAdapter(TreeProvider treeProvider) {
+    public InnerTreeTypeAdapter(@TreeProvider.Cached TreeProvider treeProvider) {
         super(treeProvider);
     }
 

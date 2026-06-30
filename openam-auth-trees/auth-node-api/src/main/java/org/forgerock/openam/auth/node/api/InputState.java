@@ -11,9 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2025 Ping Identity Corporation.
+ * Copyright 2019-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
+
+import java.util.Objects;
 
 import org.forgerock.openam.annotations.Supported;
 
@@ -68,6 +70,23 @@ public final class InputState {
     @Supported
     public boolean required() {
         return required;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        InputState that = (InputState) o;
+        return required == that.required && Objects.equals(name, that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, required);
     }
 
     @Override

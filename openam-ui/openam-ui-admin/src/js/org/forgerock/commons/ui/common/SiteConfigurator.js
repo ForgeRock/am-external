@@ -44,6 +44,10 @@ EventManager.registerListener(Constants.EVENT_READ_CONFIGURATION_REQUEST, () => 
               value: config.cloudOnlyFeaturesEnabled,
             }));
             store.dispatch(setOrUpdateFlag({
+                name: 'cdkDeployment',
+                value: config.cdkDeployment,
+            }));
+            store.dispatch(setOrUpdateFlag({
                 name: 'nodeDesignerXuiEnabled',
                 value: config.nodeDesignerXuiEnabled,
             }));

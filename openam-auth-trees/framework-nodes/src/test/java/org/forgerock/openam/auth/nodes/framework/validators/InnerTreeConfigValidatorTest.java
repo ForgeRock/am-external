@@ -30,10 +30,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.forgerock.am.trees.api.DownstreamInputsResolver;
 import org.forgerock.am.trees.api.Tree;
 import org.forgerock.am.trees.api.TreeProvider;
 import org.forgerock.openam.auth.nodes.framework.InnerTreeEvaluatorNode;
-import org.forgerock.openam.auth.nodes.framework.InputStatesCache;
 import org.forgerock.openam.auth.nodes.helpers.AuthSessionHelper;
 import org.forgerock.openam.core.realms.Realm;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +57,7 @@ public class InnerTreeConfigValidatorTest {
     private InnerTreeConfigValidator validator;
     private Set<String> stateContainers;
     @Mock
-    private InputStatesCache inputStatesCache;
+    private DownstreamInputsResolver downstreamInputsResolver;
 
     @BeforeEach
     void setup() {
@@ -100,7 +100,7 @@ public class InnerTreeConfigValidatorTest {
         given(tree.visitNodes(any())).willReturn(true);
 
         InnerTreeEvaluatorNode loopNode = new InnerTreeEvaluatorNode(authTreeService, null, realm,
-                nodeConfig("tree1"), stateContainers, authSessionHelper, inputStatesCache
+                nodeConfig("tree1"), stateContainers, authSessionHelper, downstreamInputsResolver
         );
         // When
        assertThatThrownBy(() -> validator.validate(realm, singletonList(nodeId.toString()),
@@ -119,7 +119,7 @@ public class InnerTreeConfigValidatorTest {
         makeTree("tree3", realm);
 
         InnerTreeEvaluatorNode node = new InnerTreeEvaluatorNode(authTreeService, null, realm, nodeConfig("tree3"),
-                stateContainers, authSessionHelper, inputStatesCache);
+                stateContainers, authSessionHelper, downstreamInputsResolver);
 
         // When
         validator.validate(realm, singletonList(nodeId.toString()), singletonMap("tree", singleton("tree2")));

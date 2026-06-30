@@ -197,8 +197,8 @@ public abstract class AbstractPageNode implements Node {
         NodeProcessState result = processNodes(initialState, nodeProcessingData, firstPageExecution);
 
         Action.ActionBuilder actionBuilder = result.hasUnresolvedCallbacks
-                ? mapCallbacks(result, callbackToNodes)
-                : mapOutcome(result);
+                ? mapCallbacks(context.sharedState, callbackToNodes, result.nodeCallbacks)
+                : mapOutcome(context, result.outcome);
         result.sessionProperties.forEach(actionBuilder::putSessionProperty);
 
         return actionBuilder
@@ -252,15 +252,16 @@ public abstract class AbstractPageNode implements Node {
         }
     }
 
-    private Action.ActionBuilder mapCallbacks(NodeProcessState result, Map<Integer, Integer> callbackToNodes) {
-        result.context.sharedState.put(PAGE_NODE_CALLBACKS, callbackToNodes.entrySet().stream()
+    private Action.ActionBuilder mapCallbacks(JsonValue sharedState, Map<Integer, Integer> callbackToNodes,
+                                              List<IdentifiableCallback> callbacks) {
+        sharedState.put(PAGE_NODE_CALLBACKS, callbackToNodes.entrySet().stream()
                 .collect(toMap(e -> e.getKey().toString(), Map.Entry::getValue)));
-        return Action.send(result.nodeCallbacks);
+        return Action.send(callbacks);
     }
 
-    private Action.ActionBuilder mapOutcome(NodeProcessState result) {
-        result.context.sharedState.remove(PAGE_NODE_CALLBACKS);
-        return Action.goTo(result.outcome);
+    private Action.ActionBuilder mapOutcome(TreeContext context, String outcome) {
+        context.sharedState.remove(PAGE_NODE_CALLBACKS);
+        return Action.goTo(outcome);
     }
 
     private Optional<Map<Integer, Integer>> getCallbacksToNodes(TreeContext context) {
@@ -290,6 +291,14 @@ public abstract class AbstractPageNode implements Node {
     protected abstract List<IdentifiableCallback> mergeCallbacks(List<IdentifiableCallback> existingCallbacks,
             List<IdentifiableCallback> newCallbacks);
 
+    /**
+     * Processes a sub-list of nodes.
+     * @param initialState the initial state
+     * @param nodeData the node data
+     * @param firstPageExecution whether it is the first page execution
+     * @return the node process state
+     * @throws NodeProcessException if an error occurs during processing
+     */
     protected final NodeProcessState processNodeSubList(NodeProcessState initialState,
             List<NodeProcessingData> nodeData, boolean firstPageExecution) throws NodeProcessException {
         if (nodeData.isEmpty()) {
@@ -322,6 +331,8 @@ public abstract class AbstractPageNode implements Node {
                     hasUnresolvedCallbacks = true;
                 }
                 addCallbacks(resultCallbacks, action.callbacks, callbackToNodes, nodeProcessingData.nodeIndex);
+                mapCallbacks(action.sharedState != null ? action.sharedState : currentContext.sharedState,
+                        callbackToNodes, resultCallbacks);
             } else {
                 resultCallbacks.addAll(nodeCallbacks);
             }
@@ -350,6 +361,12 @@ public abstract class AbstractPageNode implements Node {
                 sessionProperties);
     }
 
+    /**
+     * Data required for processing a node.
+     * @param nodeIndex the index of the node in the page node configuration
+     * @param nodeConfig the configuration of the child node
+     * @param callbacks the callbacks associated with the node
+     */
     protected record NodeProcessingData(int nodeIndex, ChildNodeConfig nodeConfig,
             List<IdentifiableCallback> callbacks) { }
 
@@ -373,6 +390,12 @@ public abstract class AbstractPageNode implements Node {
         return id;
     }
 
+    /**
+     * Gets the page node compatibility for a node config.
+     * @param nodeConfig the configuration of the child node
+     * @param authNodeRegistry the authentication node registry
+     * @return the page node compatibility
+     */
     protected static PageNodeCompatibility getPageNodeCompatibility(ChildNodeConfig nodeConfig,
             NodeRegistry authNodeRegistry) {
         Class<? extends Node> nodeType = authNodeRegistry.getNodeType(nodeConfig.type(), nodeConfig.version());
@@ -383,10 +406,24 @@ public abstract class AbstractPageNode implements Node {
         return metadata != null ? metadata.pageNodeCompatibility() : PageNodeCompatibility.UNKNOWN;
     }
 
+    /**
+     * The node process state.
+     * @param context the tree context
+     * @param hasUnresolvedCallbacks whether there are unresolved callbacks
+     * @param nodeCallbacks the callbacks associated with the node
+     * @param outcome the outcome of the node
+     * @param callbackToNodes a map of callback IDs to node indices
+     * @param sessionProperties a map of session properties
+     */
     protected record NodeProcessState(TreeContext context, boolean hasUnresolvedCallbacks,
             List<IdentifiableCallback> nodeCallbacks, String outcome, Map<Integer, Integer> callbackToNodes,
             Map<String, String> sessionProperties) {
 
+        /**
+         * Create an initial state for processing a node.
+         * @param context the tree context
+         * @param callbackToNodes a map of callback IDs to node indices
+         */
         NodeProcessState(TreeContext context, Map<Integer, Integer> callbackToNodes) {
             this(context, false, emptyList(), null, callbackToNodes, new HashMap<>());
         }
@@ -513,6 +550,9 @@ public abstract class AbstractPageNode implements Node {
         }
     }
 
+    /**
+     * Provider for the outcomes of a PageNode decision.
+     */
     abstract static class AbstractPageDecisionOutcomeProvider implements OutcomeProvider {
         public static final String PROPERTIES_FIELD = "_properties";
         private final Realm realm;

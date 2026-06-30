@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2025 Ping Identity Corporation.
+ * Copyright 2017-2026 Ping Identity Corporation.
  */
 
 import PropTypes from "prop-types";
@@ -32,18 +32,23 @@ const ListCallToAction = ({ addButton, description, title, showImport = false, o
             <i className="fa fa-upload" /> { t("common.form.import") }
         </Button>
     );
+
+    const addButtonComp = addButton && (
+        <AddButton
+            href={ addButton.href }
+            onClick={ addButton.handleOnClick }
+            title={ addButton.title }
+        >
+            { addButton.menuItems }
+        </AddButton>
+    );
+
     return (
         <CallToAction>
             <p className="text-primary"><i className="fa fa-list-alt fa-4x" /></p>
             <h2>{ title }</h2>
             <p className="panel-description text-muted">{ description }</p>
-            <AddButton
-                href={ addButton.href }
-                onClick={ addButton.handleOnClick }
-                title={ addButton.title }
-            >
-                { addButton.menuItems }
-            </AddButton>
+            { addButtonComp }
             { importButton }
         </CallToAction>
     );
@@ -58,7 +63,7 @@ ListCallToAction.propTypes = {
             title: PropTypes.string.isRequired
         })),
         title: PropTypes.string.isRequired
-    }).isRequired,
+    }),
     description: PropTypes.string.isRequired,
     onImport: PropTypes.func,
     showImport: PropTypes.bool,

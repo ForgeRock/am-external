@@ -17,6 +17,7 @@
 package com.sun.identity.saml2.plugins.scripted.bindings;
 
 import static com.sun.identity.saml2.common.SAML2Constants.BINDING;
+import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.AUTHN_REQUEST_HELPER;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.FAILURE_CODE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.HOSTED_ENTITYID;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.IDP_ENTITY_ID;
@@ -33,6 +34,7 @@ import org.jilt.Builder;
 import org.jilt.BuilderStyle;
 import org.jilt.Opt;
 
+import com.sun.identity.saml2.plugins.scripted.AuthnRequestHelper;
 import com.sun.identity.saml2.plugins.scripted.SpAdapterScriptHelper;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.Response;
@@ -44,6 +46,8 @@ public final class SamlSpAdapterScriptBindings extends BaseSamlAdapterScriptBind
     private final String profile;
     /** The SP adapter script helper. */
     private final SpAdapterScriptHelper spAdapterScriptHelper;
+    /** The AuthnRequest helper. */
+    private final AuthnRequestHelper authnRequestHelper;
     /** True if using federation. */
     private final boolean federation;
     /** The user ID. */
@@ -75,6 +79,7 @@ public final class SamlSpAdapterScriptBindings extends BaseSamlAdapterScriptBind
         this.idpEntityId = idpEntityId;
         this.profile = profile;
         this.spAdapterScriptHelper = new SpAdapterScriptHelper();
+        this.authnRequestHelper = new AuthnRequestHelper(authnRequest);
         this.federation = federation;
         this.userId = userId;
         this.failureCode = failureCode;
@@ -87,6 +92,7 @@ public final class SamlSpAdapterScriptBindings extends BaseSamlAdapterScriptBind
         bindings.put(IDP_ENTITY_ID, idpEntityId);
         bindings.put(PROFILE, profile);
         bindings.put(SP_ADAPTER_SCRIPT_HELPER, spAdapterScriptHelper);
+        bindings.put(AUTHN_REQUEST_HELPER, authnRequestHelper);
         bindings.put(IS_FEDERATION, federation);
         bindings.put(USER_ID, userId);
         bindings.put(FAILURE_CODE, failureCode);

@@ -41,6 +41,7 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ChoiceCallback;
 import javax.security.auth.callback.PasswordCallback;
 
+import org.forgerock.am.trees.api.DownstreamInputsResolver;
 import org.forgerock.am.trees.api.Outcome;
 import org.forgerock.am.trees.api.Tree;
 import org.forgerock.am.trees.api.TreeExecutor;
@@ -58,7 +59,6 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SuspensionHandler;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.framework.InnerTreeEvaluatorNode;
-import org.forgerock.openam.auth.nodes.framework.InputStatesCache;
 import org.forgerock.openam.auth.nodes.helpers.AuthSessionHelper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.session.Session;
@@ -90,7 +90,7 @@ public class InnerTreeEvaluatorNodeTest {
     @Mock
     private AuthSessionHelper authSessionHelper;
     @Mock
-    private InputStatesCache inputStatesCache;
+    private DownstreamInputsResolver downstreamInputsResolver;
 
     private InnerTreeEvaluatorNode node;
 
@@ -100,7 +100,7 @@ public class InnerTreeEvaluatorNodeTest {
         given(treeProvider.getTree(realm, "mock_tree")).willAnswer(inv -> Optional.of(tree));
         given(tree.isEnabled()).willReturn(true);
         node = new InnerTreeEvaluatorNode(treeProvider, executor, realm, serviceConfig, Set.of(TEST_STATE_CONTAINER),
-                authSessionHelper, inputStatesCache);
+                authSessionHelper, downstreamInputsResolver);
     }
 
     @Test
@@ -327,7 +327,8 @@ public class InnerTreeEvaluatorNodeTest {
 
     @Test
     void innerTreeReturnsInputs() throws Exception {
-        given(inputStatesCache.get(tree)).willReturn(List.of(new InputState("test")));
+        given(downstreamInputsResolver.getDownstreamInputs(eq(tree), any()))
+                .willReturn(Set.of(new InputState("test")));
 
         InputState[] inputs = node.getInputs();
 
@@ -337,7 +338,8 @@ public class InnerTreeEvaluatorNodeTest {
 
     @Test
     void innerTreeReturnsInputsWithNoDuplicates() throws Exception {
-        given(inputStatesCache.get(tree)).willReturn(List.of(new InputState("test")));
+        given(downstreamInputsResolver.getDownstreamInputs(eq(tree), any()))
+                .willReturn(Set.of(new InputState("test")));
 
         InputState[] inputs = node.getInputs();
 
@@ -346,7 +348,8 @@ public class InnerTreeEvaluatorNodeTest {
 
     @Test
     void innerTreeReturnsRequiredInputInsteadOfOptionalInput() throws Exception {
-        given(inputStatesCache.get(tree)).willReturn(List.of(new InputState("test", true)));
+        given(downstreamInputsResolver.getDownstreamInputs(eq(tree), any()))
+                .willReturn(Set.of(new InputState("test")));
 
         InputState[] inputs = node.getInputs();
 
@@ -360,7 +363,8 @@ public class InnerTreeEvaluatorNodeTest {
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
                 .willReturn(new TreeResult(TreeStateFactory.builder().withCurrentNodeId(nodeId).build(), Outcome.TRUE));
 
-        given(inputStatesCache.get(tree)).willReturn(List.of(new InputState("test"), new InputState("nodata")));
+        given(downstreamInputsResolver.getDownstreamInputs(eq(tree), any()))
+                .willReturn(Set.of(new InputState("test"), new InputState("nodata")));
 
         JsonValue outerTransientState = json(object(field("test", "value"), field("ignored", "value")));
 
@@ -386,7 +390,7 @@ public class InnerTreeEvaluatorNodeTest {
         given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
                 .willReturn(new TreeResult(TreeStateFactory.builder().withCurrentNodeId(nodeId).build(), Outcome.TRUE));
 
-        given(inputStatesCache.get(tree)).willReturn(List.of(new InputState("test")));
+        given(downstreamInputsResolver.getDownstreamInputs(eq(tree), any())).willReturn(Set.of(new InputState("test")));
 
         JsonValue outerTransientState = json(object(
                 field(TEST_STATE_CONTAINER, object(field("test", "value"))),

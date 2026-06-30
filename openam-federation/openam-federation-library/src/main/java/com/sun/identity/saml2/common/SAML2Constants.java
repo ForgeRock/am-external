@@ -1795,6 +1795,7 @@ public interface SAML2Constants {
         public static final String IDP_ADAPTER_SCRIPT_HELPER = "idpAdapterScriptHelper";
         public static final String SP_ACCOUNT_MAPPER_SCRIPT_HELPER = "accountMapperHelper";
         public static final String SP_ADAPTER_SCRIPT_HELPER = "spAdapterScriptHelper";
+        public static final String AUTHN_REQUEST_HELPER = "authnRequestHelper";
         public static final String REQUEST_HELPER = "requestHelper";
         public static final String RESPONSE_HELPER = "responseHelper";
         public static final String HTTP_CLIENT = "httpClient";

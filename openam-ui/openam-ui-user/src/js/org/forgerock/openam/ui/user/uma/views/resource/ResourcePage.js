@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2025 Ping Identity Corporation.
+ * Copyright 2015-2026 Ping Identity Corporation.
  */
 
 import "selectize";
@@ -68,6 +68,9 @@ function getAllLabels () {
         return labels.result;
     });
 }
+export function renderLabelItem (item) {
+    return `<div data-value="${_.escape(item.name)}" class="item">${_.escape(item.name)}</div>`;
+}
 const ResourcePage = AbstractView.extend({
     initialize () {
         // TODO: AbstarctView.prototype.initialize.call(this);
@@ -100,7 +103,7 @@ const ResourcePage = AbstractView.extend({
 
         BootstrapDialog.show({
             type: BootstrapDialog.TYPE_DANGER,
-            title: self.model.get("name"),
+            title: _.escape(self.model.get("name")),
             message: $.t("uma.resources.show.revokeAllMessage"),
             closable: false,
             buttons: [{
@@ -177,7 +180,7 @@ const ResourcePage = AbstractView.extend({
             },
             render: {
                 item (item) {
-                    return `<div data-value="${item.name}" class="item">${item.name}</div>"`;
+                    return renderLabelItem(item);
                 }
             },
             labelField: "name",

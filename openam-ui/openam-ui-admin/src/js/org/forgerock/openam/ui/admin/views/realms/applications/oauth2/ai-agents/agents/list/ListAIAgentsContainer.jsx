@@ -101,6 +101,8 @@ class ListAIAgentsContainer extends Component {
         ]);
         return (
             <ListAIAgents
+                cdkDeployment={ this.props.cdkDeployment }
+                cloudOnlyFeaturesEnabled={ this.props.cloudOnlyFeaturesEnabled }
                 isFetching={ this.state.isFetching }
                 items={ this.props.clients }
                 newHref={ `#${newHref}` }
@@ -115,7 +117,9 @@ class ListAIAgentsContainer extends Component {
 }
 
 ListAIAgentsContainer.propTypes = {
+    cdkDeployment: PropTypes.bool,
     clients: PropTypes.arrayOf(PropTypes.object),
+    cloudOnlyFeaturesEnabled: PropTypes.bool,
     pagination: withPaginationPropTypes,
     router: withRouterPropType,
     setInstances: PropTypes.func.isRequired
@@ -123,7 +127,9 @@ ListAIAgentsContainer.propTypes = {
 
 ListAIAgentsContainer = connectWithStore(ListAIAgentsContainer,
     (state) => ({
-        clients: values(state.remote.config.realm.applications.oauth2.clients.clients.instances)
+        clients: values(state.remote.config.realm.applications.oauth2.clients.clients.instances),
+        cloudOnlyFeaturesEnabled: state.featureFlags.flags.cloudOnlyFeaturesEnabled,
+        cdkDeployment: state.featureFlags.flags.cdkDeployment
     }),
     (dispatch) => ({
         setInstances: bindActionCreators(setInstances, dispatch)

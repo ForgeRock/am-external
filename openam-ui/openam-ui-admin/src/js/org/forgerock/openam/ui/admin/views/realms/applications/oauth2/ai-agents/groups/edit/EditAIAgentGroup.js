@@ -32,7 +32,7 @@ class EditAIAgentGroup extends AbstractView {
                 headerActions: [{
                     actionPartial: "form/_Button", data: "delete", title: "common.form.delete", icon: "fa-times"
                 }],
-                objectName: "AIAgent0Group"
+                objectName: "AIAgentGroup"
             },
             listRoute: Router.configuration.routes.realmsApplicationsOAuth2AIAgents,
             listRouteArgs: [encodeURIComponent(realm)],

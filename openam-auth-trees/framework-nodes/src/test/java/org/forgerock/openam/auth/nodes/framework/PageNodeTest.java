@@ -45,7 +45,6 @@ import javax.security.auth.callback.NameCallback;
 import org.forgerock.am.trees.api.NodeEventAuditor;
 import org.forgerock.am.trees.api.NodeFactory;
 import org.forgerock.am.trees.api.Tree;
-import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.InputState;
@@ -116,7 +115,6 @@ public class PageNodeTest {
         // Then
         assertThat(result.sendingCallbacks()).isFalse();
         assertThat(result.outcome).isEqualTo("result");
-        assertThat(result.sharedState.get(PAGE_NODE_CALLBACKS).isNull()).isTrue();
     }
 
     @Test
@@ -135,30 +133,6 @@ public class PageNodeTest {
         // Then
         assertThat(result.sendingCallbacks()).isFalse();
         assertThat(result.outcome).isEqualTo("result");
-        assertThat(result.sharedState.get(PAGE_NODE_CALLBACKS).isNull()).isTrue();
-    }
-
-    @Test
-    void shouldReturnActionFromLastNodeWithExistingSharedState() throws Exception {
-        // Given
-        given(config.nodes()).willReturn(singletonList(LAST_NODE_UUID + ":Type:1:Display Name"));
-        Node node2 = mock(Node.class);
-        given(nodeFactory.createNode(eq("Type"), eq(1), eq(LAST_NODE_UUID), eq(realm), eq(tree))).willReturn(node2);
-        given(node2.process(any())).willReturn(Action.goTo("result").build());
-
-        JsonValue sharedState = json(object(field(PAGE_NODE_CALLBACKS, object(field("0", 0), field("1", 1)))));
-
-        // When
-        Action result = node.process(TreeContext.builder()
-                .requestContext(REQUEST_CONTEXT)
-                .sharedState(sharedState)
-                .build());
-
-        // Then
-        assertThat(result.sendingCallbacks()).isFalse();
-        assertThat(result.outcome).isEqualTo("result");
-        assertThat(result.sharedState.get(PAGE_NODE_CALLBACKS).isNull()).isTrue();
-        assertThat(sharedState.get(PAGE_NODE_CALLBACKS).isNull()).isTrue();
     }
 
     @Test
@@ -187,7 +161,6 @@ public class PageNodeTest {
             assertThat(callback).isInstanceOf(NameCallback.class);
             return ((NameCallback) callback).getPrompt();
         }).containsExactly("Node1", "Node2");
-        assertThat(result.sharedState.get(PAGE_NODE_CALLBACKS).asMap()).isEqualTo(Map.of("0", 0, "1", 1));
     }
 
     @Test

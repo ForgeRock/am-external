@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2025 Ping Identity Corporation.
+ * Copyright 2016-2026 Ping Identity Corporation.
  */
 
 import _ from "lodash";
@@ -37,8 +37,8 @@ export default AbstractView.extend({
             listRouteArgs: _.map([realmPath, serviceInstance], encodeURIComponent),
 
             editRoute: Router.configuration.routes.realmsServiceSubSchemaEdit,
-            editRouteArgs: (newInstanceId) => _.map([realmPath, serviceInstance, subSchemaType, newInstanceId],
-                encodeURIComponent),
+            editRouteArgs: (newInstanceId) => [...(_.map([realmPath, serviceInstance, subSchemaType],
+                encodeURIComponent)), newInstanceId],
 
             template: NewServiceSubSchemaTemplate,
 

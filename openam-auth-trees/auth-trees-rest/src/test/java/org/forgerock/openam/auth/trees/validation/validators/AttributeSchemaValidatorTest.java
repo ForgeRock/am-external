@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 Ping Identity Corporation.
+ * Copyright 2025-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.trees.validation.validators;
 
@@ -220,6 +220,50 @@ class AttributeSchemaValidatorTest {
 
         // Then
         assertThat(failures).isEmpty();
+    }
+
+    @Test
+    void shouldUseResourceNameInFailedValidationMessage() {
+        // Given
+        String internalAttrName = "passwordPurpose";
+        String resourceName = "secretLabelIdentifier";
+        Set<String> attrValues = Set.of("invalidValue");
+        Map<String, Set<String>> attributes = Map.of(internalAttrName, attrValues);
+
+        ServiceAttributeValidator attrValidator = mock(ServiceAttributeValidator.class);
+        when(attrValidator.validate(anySet())).thenReturn(false);
+        Map<String, Set<ServiceAttributeValidator>> validators = Map.of(internalAttrName, Set.of(attrValidator));
+        Map<String, String> attributeNameToResourceName = Map.of(internalAttrName, resourceName);
+
+        // When
+        List<ValidationFailure> failures = validator.validateExistingAttributes(attributes, validators,
+                attributeNameToResourceName);
+
+        // Then
+        assertThat(failures).hasSize(1);
+        assertThat(failures.get(0).message()).contains("Attribute '" + resourceName + "' failed validation");
+        assertThat(failures.get(0).message()).doesNotContain(internalAttrName);
+    }
+
+    @Test
+    void shouldUseResourceNameInMissingAttributeMessage() {
+        // Given
+        String internalAttrName = "passwordPurpose";
+        String resourceName = "secretLabelIdentifier";
+        Map<String, Set<String>> attributes = Collections.emptyMap();
+        Map<String, String> attributeNameToResourceName = Map.of(internalAttrName, resourceName);
+
+        ServiceAttributeValidator requiredValidator = mock(RequiredValueValidator.class);
+        Map<String, Set<ServiceAttributeValidator>> validators = Map.of(internalAttrName, Set.of(requiredValidator));
+
+        // When
+        List<ValidationFailure> failures = validator.checkForMissingAttributes(attributes, validators, null,
+                attributeNameToResourceName);
+
+        // Then
+        assertThat(failures).hasSize(1);
+        assertThat(failures.get(0).message()).contains("Required attribute '" + resourceName + "' not found");
+        assertThat(failures.get(0).message()).doesNotContain(internalAttrName);
     }
 
     @Test

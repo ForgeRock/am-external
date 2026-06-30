@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 const webpackNodeExternals = require("webpack-node-externals");
@@ -30,7 +30,8 @@ const testBabelLoader = babelLoader();
 testBabelLoader.options.plugins.push("@babel/plugin-transform-modules-commonjs");
 
 module.exports = {
-    externals: [webpackNodeExternals()],
+    // spin.js is an ESM, allow it to be bundled and transformed to CJS for tests
+    externals: [webpackNodeExternals({ whitelist: ["spin.js"] })],
     mode: "development",
     module: {
         rules: [

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 Ping Identity Corporation.
+ * Copyright 2025-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.trees.validation.validators;
 
@@ -23,6 +23,7 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.trees.validation.ValidationFailure.Severity.ERROR;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iplanet.sso.SSOException;
+import com.sun.identity.sm.AttributeSchema;
 import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.ServiceAttributeValidator;
 import com.sun.identity.sm.ServiceSchema;
@@ -112,9 +114,10 @@ public class NodeConfigValidator extends AttributeSchemaValidator {
             ConfigurationAttributes config = jsonConverter.fromJson(nodeConfig);
             Map<String, Set<ServiceAttributeValidator>> validators = serviceSchema.getAttributesToValidatorsMap();
             ConfigurationAttributes defaults = serviceSchema.getAttributeDefaults();
+            Map<String, String> attributeNameToResourceName = buildAttributeNameToResourceNameMap(serviceSchema);
 
-            failures.addAll(validateExistingAttributes(config, validators));
-            failures.addAll(checkForMissingAttributes(config, validators, defaults));
+            failures.addAll(validateExistingAttributes(config, validators, attributeNameToResourceName));
+            failures.addAll(checkForMissingAttributes(config, validators, defaults, attributeNameToResourceName));
 
             var serviceConfigValidator = serviceSchema.getServiceConfigValidator();
             if (serviceConfigValidator != null) {
@@ -141,6 +144,14 @@ public class NodeConfigValidator extends AttributeSchemaValidator {
                                     new ValidationFailure("Node '%s' configuration is invalid. %s"
                                                                   .formatted(nodeId, error.message()),
                                             error.severity())).toList();
+    }
+
+    private Map<String, String> buildAttributeNameToResourceNameMap(ServiceSchema serviceSchema) {
+        Map<String, String> map = new HashMap<>();
+        for (AttributeSchema attributeSchema : serviceSchema.getAttributeSchemas()) {
+            map.put(attributeSchema.getName(), attributeSchema.getResourceName());
+        }
+        return map;
     }
 
     private String getNodeVersion(JsonValue node) {

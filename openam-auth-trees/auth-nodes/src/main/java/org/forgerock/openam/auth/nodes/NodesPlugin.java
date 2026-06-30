@@ -57,7 +57,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
      * N.B. If upgrading this version you must ensure that the amPluginService version in the latest.groovy
      * FBC upgrade rules file is kept in sync.
      */
-    public static final String NODES_PLUGIN_VERSION = "44.0.0";
+    public static final String NODES_PLUGIN_VERSION = "45.0.0";
 
     @Override
     public String getPluginVersion() {
@@ -141,6 +141,9 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
         }
         if (inRange("11.0.0", fromVersion, "42.0.0")) {
             pluginTools.upgradeAuthNode(OidcNode.class);
+        }
+        if (inRange("1.0.0", fromVersion, "45.0.0")) {
+            pluginTools.upgradeAuthNode(UsernameCollectorNode.class);
         }
         super.upgrade(fromVersion);
     }

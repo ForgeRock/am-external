@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -28,6 +28,7 @@ import static org.forgerock.openam.services.datastore.DataStoreServiceChangeNoti
 import static org.forgerock.openam.services.datastore.DataStoreServiceChangeNotifier.Type.DATA_STORE_REMOVED;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.isNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.notNull;
@@ -50,6 +51,7 @@ import org.forgerock.openam.sm.ConfigurationAttributes;
 import org.forgerock.openam.sm.ConfigurationAttributesFactory;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
 import org.forgerock.openam.sm.annotations.subconfigs.Multiple;
+import org.forgerock.openam.sm.config.ConsoleConfigHandler;
 import org.forgerock.openam.test.extensions.LoggerExtension;
 import org.forgerock.opendj.ldap.ConnectionFactory;
 import org.forgerock.opendj.ldap.LdapException;
@@ -63,6 +65,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -120,6 +123,8 @@ public final class LdapDataStoreServiceTest {
     @Mock(answer = Answers.CALLS_REAL_METHODS)
     private DataStoreConfigFactory dataStoreConfigFactory;
     @Mock
+    private ConsoleConfigHandler consoleConfigHandler;
+    @Mock
     private PurposeMapping mapping;
     @Mock
     private ConnectionConfig connectionConfig;
@@ -161,7 +166,8 @@ public final class LdapDataStoreServiceTest {
 
         dataStoreService = new LdapDataStoreService(configConnectionFactoryProvider, connectionFactoryProvider,
                 serviceManagerFactory, shutdownManager, Collections.singleton(changeNotifier),
-                realmLookup, consistencyController, refreshDataLayer, null, dataStoreConfigFactory);
+                realmLookup, consistencyController, refreshDataLayer, null, dataStoreConfigFactory,
+                consoleConfigHandler);
     }
 
     @Test
@@ -230,6 +236,23 @@ public final class LdapDataStoreServiceTest {
         // Then
         verify(changeNotifier).notifyGlobalChanges(DataStoreId.of(ENABLED_CONFIG_STORE_NAME), DATA_STORE_ADDED);
         verify(refreshDataLayer).run();
+    }
+
+    @Test
+    void whenOrgConfigChangedTheConsoleConfigIsInvalidatedBeforeChangeNotifiersAreCalled() {
+        // Given
+        String realm = "/test-realm";
+        given(realmLookup.convertRealmDnToRealmPath("o=test-realm,dc=example,dc=com")).willReturn(realm);
+        ServiceListener serviceAsListener = (ServiceListener) dataStoreService;
+        InOrder inOrder = inOrder(consoleConfigHandler, changeNotifier);
+
+        // When
+        serviceAsListener.organizationConfigChanged("amDataStoreService", "1.0",
+                "o=test-realm,dc=example,dc=com", null, null, 0);
+
+        // Then
+        inOrder.verify(consoleConfigHandler).invalidate("amDataStoreService", realm);
+        inOrder.verify(changeNotifier).notifyOrgChanges(realm);
     }
 
     @Test

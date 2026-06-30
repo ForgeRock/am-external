@@ -69,6 +69,9 @@ public class PageNodeV2 extends AbstractPageNode {
 
     private final NodeRegistry nodeRegistry;
 
+    /**
+     * Configuration for the node.
+     */
     public interface ConfigV2 extends AbstractPageNode.Config {
     }
 

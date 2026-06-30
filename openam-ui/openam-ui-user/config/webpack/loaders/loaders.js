@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 
 const { isArray } = require("lodash");
@@ -30,6 +30,7 @@ const loaders = (extensions, loaders, includeNodeModules = false) => {
                 not: [
                     /sanitize-html/,
                     /sanitize-html\/node_modules/,
+                    /htmlparser2/,
                     /nanoid/
                 ]
             };

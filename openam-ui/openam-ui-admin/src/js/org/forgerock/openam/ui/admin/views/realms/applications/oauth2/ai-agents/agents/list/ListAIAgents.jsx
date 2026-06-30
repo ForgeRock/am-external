@@ -50,8 +50,8 @@ const ListAIAgents = (props) => {
         <Panel className="fr-panel-tab">
             <Panel.Body>
                 <List
-                    { ...omit(props, "children") }
-                    addButton={ {
+                    { ...omit(props, "children", "cloudOnlyFeaturesEnabled", "cdkDeployment") }
+                    addButton={ (props.cloudOnlyFeaturesEnabled || props.cdkDeployment) ? null : {
                         title: t("console.applications.oauth2.ai-agents.agents.list.callToAction.button"),
                         href: props.newHref
                     } }
@@ -65,6 +65,8 @@ const ListAIAgents = (props) => {
 };
 
 ListAIAgents.propTypes = {
+    cdkDeployment: PropTypes.bool,
+    cloudOnlyFeaturesEnabled: PropTypes.bool,
     newHref: PropTypes.string.isRequired
 };
 

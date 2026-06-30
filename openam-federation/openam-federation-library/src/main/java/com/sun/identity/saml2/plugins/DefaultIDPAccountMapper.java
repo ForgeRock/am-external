@@ -24,7 +24,7 @@
  *
  * $Id: DefaultIDPAccountMapper.java,v 1.9 2008/11/10 22:57:02 veiming Exp $
  *
- * Portions Copyrighted 2015-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2015-2026 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -240,7 +240,7 @@ public class DefaultIDPAccountMapper extends DefaultAccountMapper implements IDP
             return formatAttributeMap;
 
         } else {
-            String key = remoteEntityID + "|" + realm;
+            String key = remoteEntityID + "|" + hostEntityID + "|" + realm;
             Map<String, String> formatAttributeMap = SPCache.formatAttributeHash.get(key);
 
             if (formatAttributeMap != null) {

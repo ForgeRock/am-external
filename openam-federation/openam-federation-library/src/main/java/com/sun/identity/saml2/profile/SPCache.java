@@ -24,7 +24,7 @@
  *
  * $Id: SPCache.java,v 1.17 2009/06/09 20:28:32 exu Exp $
  *
- * Portions Copyrighted 2015-2025 Ping Identity Corporation.
+ * Portions Copyrighted 2015-2026 Ping Identity Corporation.
  */
 
 
@@ -180,7 +180,7 @@ public class SPCache {
 
     /**
      * Hashtable saves NameID format to user profile attribute mapping
-     * key  : remoteEntityID + "|" + realm
+     * key  : remoteEntityID + "|" + hostEntityID + "|" + realm
      * value: Map containing NameID format as Key and user profile
      *     attribute name as Value.
      */

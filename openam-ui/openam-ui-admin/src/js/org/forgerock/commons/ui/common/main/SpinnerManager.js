@@ -11,11 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2025 Ping Identity Corporation.
+ * Copyright 2011-2026 Ping Identity Corporation.
  */
 
 import $ from "jquery";
-import Spinner from "spin.js";
+import { Spinner } from "spin.js";
 
 const SpinnerManager = {};
 

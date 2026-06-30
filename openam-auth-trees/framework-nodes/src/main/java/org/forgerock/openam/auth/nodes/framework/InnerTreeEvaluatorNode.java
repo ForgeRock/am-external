@@ -35,11 +35,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
+import org.forgerock.am.trees.api.DownstreamInputsResolver;
 import org.forgerock.am.trees.api.Tree;
 import org.forgerock.am.trees.api.TreeExecutor;
 import org.forgerock.am.trees.api.TreeProvider;
@@ -111,7 +111,7 @@ public class InnerTreeEvaluatorNode implements Node {
     private final Config config;
     private final Logger logger = LoggerFactory.getLogger(InnerTreeEvaluatorNode.class);
     private final AuthSessionHelper authSessionHelper;
-    private final InputStatesCache inputStatesCache;
+    private final DownstreamInputsResolver downstreamInputsResolver;
 
     /**
      * Guice constructor.
@@ -122,25 +122,25 @@ public class InnerTreeEvaluatorNode implements Node {
      * @param config           The configuration of this node.
      * @param treeStateContainers registered containers within node state.
      * @param authSessionHelper The auth session helper.
-     * @param inputStatesCache The tree input states cache.
+     * @param downstreamInputsResolver The downstream inputs resolver.
      *
      * @throws NodeProcessException If there is an error reading the configuration.
      */
     @Inject
-    public InnerTreeEvaluatorNode(TreeProvider treeProvider, TreeExecutor treeExecutor,
+    public InnerTreeEvaluatorNode(@TreeProvider.Cached TreeProvider treeProvider, TreeExecutor treeExecutor,
             @Assisted Realm realm, @Assisted Config config,
             @Named("treeStateContainers") Set<String> treeStateContainers,
             AuthSessionHelper authSessionHelper,
-            InputStatesCache inputStatesCache)
+            DownstreamInputsResolver downstreamInputsResolver)
             throws NodeProcessException {
         this.treeExecutor = treeExecutor;
         this.realm = realm;
+        this.downstreamInputsResolver = downstreamInputsResolver;
         tree = treeProvider.getTree(realm, config.tree())
                 .filter(Tree::isEnabled)
                 .orElseThrow(() -> new NodeProcessException("Configured tree does not exist: " + config.tree()));
         this.treeStateContainers = treeStateContainers;
         this.authSessionHelper = authSessionHelper;
-        this.inputStatesCache = inputStatesCache;
         this.config = config;
     }
 
@@ -266,17 +266,9 @@ public class InnerTreeEvaluatorNode implements Node {
     }
 
     private List<InputState> getCachedInputs() throws NodeProcessException {
-        try {
-            return inputStatesCache.get(tree);
-        } catch (ExecutionException e) {
-            String message = "Error loading tree inputs into cache";
-            if (e.getCause() instanceof NodeProcessException) {
-                logger.error(message, e.getCause());
-                throw (NodeProcessException) e.getCause();
-            }
-            logger.error(message, e);
-            throw new NodeProcessException(message, e);
-        }
+        return downstreamInputsResolver.getDownstreamInputs(tree, tree.getEntryNodeId())
+                       .stream()
+                       .toList();
     }
 
     private JsonValue getTransientState(final TreeContext context, final String name) {

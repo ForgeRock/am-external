@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2012-2025 Ping Identity Corporation. All Rights Reserved
+ * Copyright 2012-2026 Ping Identity Corporation. All Rights Reserved
  */
 
 package org.forgerock.openam.examples.quotaexhaustionaction;
@@ -21,6 +21,7 @@ import java.util.Map;
 import jakarta.inject.Inject;
 
 import org.forgerock.guice.core.InjectorHolder;
+import org.forgerock.openam.annotations.sm.I18nKey;
 import org.forgerock.openam.session.Session;
 import org.forgerock.openam.session.clientsdk.SessionCache;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import com.iplanet.dpro.session.service.SessionService;
  * This is a sample {@link QuotaExhaustionAction} implementation,
  * which randomly kills the first session it finds.
  */
+@I18nKey("customActionI18nKey")
 public class SampleQuotaExhaustionAction implements QuotaExhaustionAction {
 
     private static Logger debug = LoggerFactory.getLogger(SampleQuotaExhaustionAction.class);

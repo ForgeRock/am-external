@@ -44,6 +44,8 @@
  *      The HttpServletResponse object as a JSON map.
  * authnRequest - Map
  *      The SAML2 AuthnRequest object as a JSON map.
+ * authnRequestHelper - AuthnRequestHelper
+ *      Helper object for retrieving and updating properties of the AuthnRequest.
  * session - ScriptedSession
  *      The user's session object (when available).
  * realm - String
@@ -70,6 +72,8 @@
  *      The HttpServletResponse object as a JSON map.
  * authnRequest - Map
  *      The SAML2 AuthnRequest object as a JSON map.
+ * authnRequestHelper - AuthnRequestHelper
+ *      Helper object for retrieving and updating properties of the AuthnRequest.
  * spAdapterScriptHelper - SpAdapterScriptHelper
  *      Helper object providing utility methods for SP adapter operations.
  * requestHelper - HttpServletRequestHelper
@@ -97,6 +101,8 @@ function preSingleSignOnRequest() {
  *      The HttpServletResponse object as a JSON map.
  * authnRequest - Map
  *      The SAML2 AuthnRequest object as a JSON map.
+ * authnRequestHelper - AuthnRequestHelper
+ *      Helper object for retrieving and updating properties of the AuthnRequest.
  * ssoResponse - Map
  *      The SAML2 Response object from the IDP as a JSON map.
  * profile - String
@@ -129,6 +135,8 @@ function preSingleSignOnProcess() {
  *      The user's session object.
  * authnRequest - Map
  *      The SAML2 AuthnRequest object as a JSON map.
+ * authnRequestHelper - AuthnRequestHelper
+ *      Helper object for retrieving and updating properties of the AuthnRequest.
  * ssoResponse - Map
  *      The SAML2 Response object from the IDP as a JSON map.
  * profile - String
@@ -163,6 +171,8 @@ function postSingleSignOnSuccess() {
  *      The HttpServletResponse object as a JSON map.
  * authnRequest - Map
  *      The SAML2 AuthnRequest object as a JSON map.
+ * authnRequestHelper - AuthnRequestHelper
+ *      Helper object for retrieving and updating properties of the AuthnRequest.
  * ssoResponse - Map
  *      The SAML2 Response object from the IDP as a JSON map.
  * profile - String

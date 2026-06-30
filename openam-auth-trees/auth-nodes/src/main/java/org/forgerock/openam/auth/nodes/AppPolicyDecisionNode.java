@@ -81,6 +81,9 @@ public class AppPolicyDecisionNode extends PolicyDecisionNode {
         this.authScriptUtils = authScriptUtils;
     }
 
+    /**
+     * Configuration for the node.
+     */
     public interface Config {
 
         /**

@@ -1,0 +1,71 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2026 Ping Identity Corporation.
+ */
+
+package com.sun.identity.saml2.plugins.scripted;
+
+import org.forgerock.openam.annotations.Supported;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.protocol.AuthnRequest;
+
+/**
+ * Provides helper functions for supported AuthnRequest mutations in SP adapter scripts.
+ */
+public class AuthnRequestHelper {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthnRequestHelper.class);
+
+    private final AuthnRequest authnRequest;
+
+    /**
+     * Constructor that accepts the AuthnRequest.
+     *
+     * @param authnRequest the AuthnRequest
+     */
+    public AuthnRequestHelper(AuthnRequest authnRequest) {
+        this.authnRequest = authnRequest;
+    }
+
+    /**
+     * Gets the destination for the current authentication request.
+     *
+     * @return the destination, or null if no AuthnRequest is available
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public String getDestination() {
+        if (authnRequest != null) {
+            return authnRequest.getDestination();
+        }
+        return null;
+    }
+
+    /**
+     * Sets the destination for the current authentication request.
+     *
+     * @param destination the destination URL
+     * @throws SAML2Exception if the underlying request rejects the mutation
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public void setDestination(String destination) throws SAML2Exception {
+        if (authnRequest == null) {
+            logger.warn("Ignoring AuthnRequest destination update because no AuthnRequest is available");
+            return;
+        }
+        authnRequest.setDestination(destination);
+    }
+}

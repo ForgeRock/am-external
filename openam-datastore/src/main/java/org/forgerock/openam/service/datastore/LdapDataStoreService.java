@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2025 Ping Identity Corporation.
+ * Copyright 2018-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -45,6 +45,7 @@ import org.forgerock.openam.services.datastore.DataStoreId;
 import org.forgerock.openam.services.datastore.DataStoreService;
 import org.forgerock.openam.services.datastore.DataStoreServiceChangeNotifier;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
+import org.forgerock.openam.sm.config.ConsoleConfigHandler;
 import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.RealmUtils;
 import org.forgerock.opendj.ldap.Connection;
@@ -93,6 +94,7 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
     private final Runnable refreshDataLayer;
     private final PrivilegedAction<SSOToken> adminTokenAction;
     private final DataStoreConfigFactory dataStoreConfigFactory;
+    private final ConsoleConfigHandler consoleConfigHandler;
 
     private boolean shuttingDown;
 
@@ -103,7 +105,7 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
             Set<DataStoreServiceChangeNotifier> changeNotifiers,
             RealmLookup realmLookup, VolatileActionConsistencyController consistencyController,
             @Named("refresh-data-layer") Runnable refreshDataLayer, PrivilegedAction<SSOToken> adminTokenAction,
-            DataStoreConfigFactory dataStoreConfigFactory) {
+            DataStoreConfigFactory dataStoreConfigFactory, ConsoleConfigHandler consoleConfigHandler) {
         this.defaultConnectionFactoryProvider = defaultConnectionFactoryProvider;
         this.connectionFactoryProvider = connectionFactoryProvider;
         this.configManagerFactory = configManagerFactory;
@@ -114,6 +116,7 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
         this.refreshDataLayer = refreshDataLayer;
         this.adminTokenAction = adminTokenAction;
         this.dataStoreConfigFactory = dataStoreConfigFactory;
+        this.consoleConfigHandler = consoleConfigHandler;
 
         shutdownManager.addShutdownListener(this::shutDown);
     }
@@ -264,6 +267,7 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
             String orgName, String groupName, String serviceComponent, int type) {
         if (serviceName.equals(SERVICE_NAME)) {
             String realm = realmLookup.convertRealmDnToRealmPath(orgName);
+            consoleConfigHandler.invalidate(SERVICE_NAME, realm);
             changeNotifiers.forEach(n -> n.notifyOrgChanges(realm));
         }
     }

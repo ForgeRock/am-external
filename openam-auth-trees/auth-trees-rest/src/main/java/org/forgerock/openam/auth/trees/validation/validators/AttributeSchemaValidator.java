@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 Ping Identity Corporation.
+ * Copyright 2025-2026 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.trees.validation.validators;
 
 import static java.util.Locale.ENGLISH;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,11 +47,26 @@ public abstract class AttributeSchemaValidator implements Validator {
      */
     protected List<ValidationFailure> validateExistingAttributes(Map<String, Set<String>> attributes,
             Map<String, Set<ServiceAttributeValidator>> validators) {
+        return validateExistingAttributes(attributes, validators, Collections.emptyMap());
+    }
+
+    /**
+     * Validate existing attributes against their validators.
+     *
+     * @param attributes the attributes to validate
+     * @param validators the validators to validate against
+     * @param attributeNameToResourceName mapping from internal attribute names to API-facing resource names
+     * @return list of validation failures
+     */
+    protected List<ValidationFailure> validateExistingAttributes(Map<String, Set<String>> attributes,
+            Map<String, Set<ServiceAttributeValidator>> validators,
+            Map<String, String> attributeNameToResourceName) {
         List<ValidationFailure> failures = new ArrayList<>();
         for (Map.Entry<String, Set<String>> attribute : attributes.entrySet()) {
             if (!validators.containsKey(attribute.getKey())) {
                 continue;
             }
+            String displayName = attributeNameToResourceName.getOrDefault(attribute.getKey(), attribute.getKey());
             Set<ServiceAttributeValidator> attributeValidators = validators.get(attribute.getKey());
             attributeValidators.forEach(validator -> {
                 if (!validator.validate(attribute.getValue())) {
@@ -64,10 +80,10 @@ public abstract class AttributeSchemaValidator implements Validator {
                                               .orElseGet(() -> String.join("\n",
                                                       descriptiveValidator.validationMessages()));
                         failures.add(new ValidationFailure("Attribute '%s' failed validation.\n%s".formatted(
-                                attribute.getKey(), reasons), ValidationFailure.Severity.ERROR));
+                                displayName, reasons), ValidationFailure.Severity.ERROR));
                     } else {
                         failures.add(new ValidationFailure("Attribute '%s' failed validation".formatted(
-                                attribute.getKey()), ValidationFailure.Severity.ERROR));
+                                displayName), ValidationFailure.Severity.ERROR));
                     }
                 }
             });
@@ -84,9 +100,9 @@ public abstract class AttributeSchemaValidator implements Validator {
      */
     protected List<ValidationFailure> checkForMissingAttributes(Map<String, Set<String>> attributes,
             Map<String, Set<ServiceAttributeValidator>> validators) {
-        return checkForMissingAttributes(attributes, validators, null);
-
+        return checkForMissingAttributes(attributes, validators, null, Collections.emptyMap());
     }
+
     /**
      * Check for missing required attributes.
      *
@@ -97,6 +113,21 @@ public abstract class AttributeSchemaValidator implements Validator {
      */
     protected List<ValidationFailure> checkForMissingAttributes(Map<String, Set<String>> attributes,
             Map<String, Set<ServiceAttributeValidator>> validators, ConfigurationAttributes attributeDefaults) {
+        return checkForMissingAttributes(attributes, validators, attributeDefaults, Collections.emptyMap());
+    }
+
+    /**
+     * Check for missing required attributes.
+     *
+     * @param attributes the attributes to check
+     * @param validators the validators to check against
+     * @param attributeDefaults the attribute defaults
+     * @param attributeNameToResourceName mapping from internal attribute names to API-facing resource names
+     * @return list of validation failures
+     */
+    protected List<ValidationFailure> checkForMissingAttributes(Map<String, Set<String>> attributes,
+            Map<String, Set<ServiceAttributeValidator>> validators, ConfigurationAttributes attributeDefaults,
+            Map<String, String> attributeNameToResourceName) {
         List<ValidationFailure> failures = new ArrayList<>();
         Map<String, Set<ServiceAttributeValidator>> requiredValidators =
                 validators.entrySet().stream()
@@ -107,14 +138,15 @@ public abstract class AttributeSchemaValidator implements Validator {
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         for (String attributeName : requiredValidators.keySet()) {
             if (!attributes.containsKey(attributeName)) {
+                String displayName = attributeNameToResourceName.getOrDefault(attributeName, attributeName);
                 Set<String> defaultValues = attributeDefaults != null ? attributeDefaults.get(attributeName) : null;
                 if (defaultValues != null && !defaultValues.isEmpty()) {
-                    failures.add(new ValidationFailure("Required attribute '" + attributeName
+                    failures.add(new ValidationFailure("Required attribute '" + displayName
                             + "' not found, but has default value(s): " + attributeDefaults.get(attributeName)
                             + ". Please check suitability",
                             ValidationFailure.Severity.WARNING));
                 } else {
-                    failures.add(new ValidationFailure("Required attribute '" + attributeName + "' not found",
+                    failures.add(new ValidationFailure("Required attribute '" + displayName + "' not found",
                             ValidationFailure.Severity.ERROR));
                 }
             }
