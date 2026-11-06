@@ -30,7 +30,8 @@ const testBabelLoader = babelLoader();
 testBabelLoader.options.plugins.push("@babel/plugin-transform-modules-commonjs");
 
 module.exports = {
-    externals: [webpackNodeExternals()],
+    // spin.js is an ESM, allow it to be bundled and transformed to CJS for tests
+    externals: [webpackNodeExternals({ whitelist: ["spin.js"] })],
     mode: "development",
     module: {
         rules: [

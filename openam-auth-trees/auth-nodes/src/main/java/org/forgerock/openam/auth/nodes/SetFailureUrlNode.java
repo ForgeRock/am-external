@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2025 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -24,6 +24,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.sm.validation.OutcomeURLValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +51,7 @@ public class SetFailureUrlNode extends SingleOutcomeNode {
          *
          * @return THe failure URL.
          */
-        @Attribute(order = 100, validators = RequiredValueValidator.class)
+        @Attribute(order = 100, validators = {RequiredValueValidator.class, OutcomeURLValidator.class})
         String failureUrl();
     }
 

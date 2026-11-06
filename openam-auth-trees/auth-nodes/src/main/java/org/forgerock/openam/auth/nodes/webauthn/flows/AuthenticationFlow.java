@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2025 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
@@ -35,7 +35,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.forgerock.json.jose.jwk.KeyType;
 import org.forgerock.openam.auth.nodes.webauthn.UserVerificationRequirement;
 import org.forgerock.openam.auth.nodes.webauthn.data.AuthData;

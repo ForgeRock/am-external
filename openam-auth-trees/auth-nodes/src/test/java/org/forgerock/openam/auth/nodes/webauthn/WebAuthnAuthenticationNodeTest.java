@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2020-2026 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
@@ -248,7 +248,7 @@ public class WebAuthnAuthenticationNodeTest {
         assertThat(result.callbacks.get(0)).isInstanceOf(ScriptTextOutputCallback.class);
         ScriptTextOutputCallback callback = (ScriptTextOutputCallback) result.callbacks.get(0);
         assertThat(callback.getMessage()).contains("document.getElementById(\"loginButton_0\").click()",
-                "var allowRecoveryCode = 'true' === \"true\"");
+                "var allowRecoveryCode = 'true' === scriptContext.allowRecoveryCode");
 
         assertThat(result.callbacks.get(2)).isInstanceOf(HiddenValueCallback.class);
         assertThat(result.callbacks.get(3)).isInstanceOf(ConfirmationCallback.class);
@@ -273,7 +273,28 @@ public class WebAuthnAuthenticationNodeTest {
 
         //Then
         assertThat(result.outcome).isEqualTo("failure");
+    }
 
+    @Test
+    void testCallbackAsScriptNoMissingCommas() throws NodeProcessException {
+        // Given
+        given(config.asScript()).willReturn(true);
+        given(config.isRecoveryCodeAllowed()).willReturn(true);
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+        assertThat(result.outcome).isNull();
+        assertThat(result.callbacks).hasSize(4);
+        assertThat(result.callbacks.get(0)).isInstanceOf(ScriptTextOutputCallback.class);
+        String message = ((ScriptTextOutputCallback) result.callbacks.get(0)).getMessage();
+        String options = message.substring(message.indexOf("options = {"), message.indexOf("};") + 1)
+                .substring(10).replaceAll(" ", "").replaceAll("\n", "");
+
+        assertThat(options.contains("challenge")).isTrue();
+        assertThat(options.contains(",timeout")).isTrue();
+        assertThat(options.contains(",userVerification")).isTrue();
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,

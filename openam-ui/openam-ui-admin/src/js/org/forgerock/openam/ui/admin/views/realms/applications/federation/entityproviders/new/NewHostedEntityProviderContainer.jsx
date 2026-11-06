@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2026 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import { cloneDeep, endsWith, get, map } from "lodash";
@@ -175,7 +175,8 @@ class NewHostedEntityProviderContainer extends Component {
             errors.metaAliases.idp.addError(atLeastOne);
             errors.metaAliases.sp.addError(atLeastOne);
         } else if (metaAliases.idp === metaAliases.sp) {
-            errors.sp.addError(t("console.applications.federation.entityProviders.new.hosted.validation.duplicate"));
+            errors.metaAliases.sp.addError(t(
+                "console.applications.federation.entityProviders.new.hosted.validation.duplicate"));
         }
         const whitespace = /\s+/;
         if (whitespace.test(metaAliases.idp)) {

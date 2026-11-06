@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2026 ForgeRock AS.
  */
 
 if (!window.PublicKeyCredential) {
@@ -19,25 +19,33 @@ if (!window.PublicKeyCredential) {
     document.getElementById("loginButton_0").click();
 }
 
+var scriptContext = {scriptContext}
+
 var publicKey = {
-    challenge: new Int8Array({challenge}).buffer,
+    challenge: Uint8Array.from(atob(scriptContext.challenge), c => c.charCodeAt(0)),
     // Relying Party:
     rp: {
-        {relyingPartyId}
-        name: "{relyingPartyName}"
+        name: scriptContext.relyingPartyName
     },
     // User:
     user: {
-        id: Uint8Array.from("{userId}", function (c) { return c.charCodeAt(0) }),
-        name: "{userName}",
-        displayName: "{displayName}"
+        id: Uint8Array.from(scriptContext.userId, function (c) {
+            return c.charCodeAt(0)
+        }),
+        name: scriptContext.userName,
+        displayName: scriptContext.displayName
     },
-    pubKeyCredParams: {pubKeyCredParams},
-    attestation: "{attestationPreference}",
-    timeout: {timeout},
-    excludeCredentials: [{excludeCredentials}],
-    authenticatorSelection: {authenticatorSelection}
+    pubKeyCredParams: scriptContext._pubKeyCredParams,
+    attestation: scriptContext.attestationPreference,
+    timeout: Number(scriptContext.timeout),
+    excludeCredentials: scriptContext._excludeCredentials,
+    authenticatorSelection: scriptContext._authenticatorSelection,
 };
+
+var relyingPartyId = scriptContext._relyingPartyId
+if (relyingPartyId) {
+    publicKey.rp.id = relyingPartyId;
+}
 
 navigator.credentials.create({publicKey: publicKey})
     .then(function (newCredentialInfo) {

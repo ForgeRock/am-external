@@ -11,10 +11,23 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2024-2026 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.common;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Field;
+
+import javax.xml.soap.MessageFactory;
+import javax.xml.soap.MimeHeaders;
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPMessage;
 
 import org.forgerock.http.protocol.Entity;
 import org.forgerock.http.protocol.Headers;
@@ -26,20 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import javax.xml.soap.MessageFactory;
-import javax.xml.soap.MimeHeaders;
-import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPMessage;
-import java.io.IOException;
-import java.io.InputStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 
 @ExtendWith(MockitoExtension.class)
 class SOAPCommunicatorTest {
@@ -53,21 +53,27 @@ class SOAPCommunicatorTest {
     @Mock
     private MessageFactory messageFactory;
     @Mock
-    SOAPMessage soapMessage;
+    private SOAPMessage soapMessage;
     @Captor
     private ArgumentCaptor<MimeHeaders> captor;
 
     private SOAPCommunicator soapCommunicator;
+    private MessageFactory originalMessageFactory;
 
     @BeforeEach
-    void setUp() {
-        MockedStatic<MessageFactory> mockMessageFactory = mockStatic(MessageFactory.class);
-        mockMessageFactory.when(MessageFactory::newInstance).thenReturn(messageFactory);
+    void setUp() throws Exception {
         soapCommunicator = SOAPCommunicator.getInstance();
+        Field messageFactoryField = SOAPCommunicator.class.getDeclaredField("messageFactory");
+        messageFactoryField.setAccessible(true);
+        originalMessageFactory = (MessageFactory) messageFactoryField.get(soapCommunicator);
+        messageFactoryField.set(soapCommunicator, messageFactory);
     }
 
     @AfterEach
-    void tearDown() {
+    void tearDown() throws Exception {
+        Field messageFactoryField = SOAPCommunicator.class.getDeclaredField("messageFactory");
+        messageFactoryField.setAccessible(true);
+        messageFactoryField.set(soapCommunicator, originalMessageFactory);
     }
 
     @Test

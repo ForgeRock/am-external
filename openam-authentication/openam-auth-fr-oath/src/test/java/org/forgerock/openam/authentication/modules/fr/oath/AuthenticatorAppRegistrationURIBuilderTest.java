@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2025 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.fr.oath;
@@ -26,7 +26,7 @@ import javax.xml.bind.DatatypeConverter;
 import com.sun.identity.idm.AMIdentity;
 
 import org.apache.commons.codec.binary.Base32;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 

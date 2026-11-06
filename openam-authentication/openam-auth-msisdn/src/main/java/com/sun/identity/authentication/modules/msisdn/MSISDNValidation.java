@@ -24,7 +24,7 @@
  *
  * $Id: MSISDNValidation.java,v 1.3 2008/06/25 05:41:59 qcheng Exp $
  *
- * Portions Copyrighted 2011-2023 ForgeRock AS.
+ * Portions Copyrighted 2011-2026 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.msisdn;
@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 import org.forgerock.openam.ldap.LDAPAuthUtils;
+import org.forgerock.openam.ldap.LDAPUtilException;
+import org.forgerock.opendj.ldap.Filter;
 import org.forgerock.opendj.ldap.SearchScope;
 import org.slf4j.Logger;
 
@@ -197,13 +199,8 @@ public class MSISDNValidation {
     protected String getUserId(String msisdnNumber) throws AuthLoginException {
         String validatedUserID = null;
         try {
-            LDAPAuthUtils ldapUtil =
-                new LDAPAuthUtils(serverHost, serverPort, Collections.<String>emptySet(),
-                        useSSL, AMResourceBundleCache.getInstance().getResBundle(amAuthMSISDN, locale), startSearchLoc,
-                        debug);
-            String searchFilter = new StringBuffer(250).append("(")
-                .append(userSearchAttr).append("=")
-                .append(msisdnNumber).append(")").toString();
+            LDAPAuthUtils ldapUtil = createLdapAuthUtils();
+            String searchFilter = Filter.equality(userSearchAttr, msisdnNumber).toString();
 
             ldapUtil.setReturnUserDN(returnUserDN);
             ldapUtil.setUserNamingAttribute(userNamingAttr);
@@ -237,5 +234,18 @@ public class MSISDNValidation {
 
     public boolean isReturnUserDN() {
         return Boolean.parseBoolean(returnUserDN);
+    }
+
+    /**
+     * Creates the {@code LDAPAuthUtils} instance used to search the directory for the configured MSISDN
+     * attribute.
+     *
+     * @return an {@code LDAPAuthUtils} configured for this module's directory options
+     * @throws LDAPUtilException if the configured search base is invalid
+     */
+    LDAPAuthUtils createLdapAuthUtils() throws LDAPUtilException {
+        return new LDAPAuthUtils(serverHost, serverPort, Collections.<String>emptySet(),
+                useSSL, AMResourceBundleCache.getInstance().getResBundle(amAuthMSISDN, locale), startSearchLoc,
+                debug);
     }
 }

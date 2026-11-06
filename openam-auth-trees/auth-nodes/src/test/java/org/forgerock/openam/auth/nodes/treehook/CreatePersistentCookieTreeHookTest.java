@@ -11,11 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2023-2026 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.treehook;
-
 
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -38,6 +37,7 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.secrets.cache.SecretCache;
 import org.forgerock.openam.secrets.cache.SecretReferenceCache;
 import org.forgerock.openam.session.Session;
+import org.forgerock.openam.session.listeners.NonExistentSession;
 import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.SecretReference;
@@ -128,6 +128,32 @@ public class CreatePersistentCookieTreeHookTest {
             h.when(() -> PersistentCookieResponseHandler.getOrgName(response)).thenReturn("orgName");
             assertThatThrownBy(() -> treeHook.accept()).isInstanceOf(TreeHookException.class);
         }
+    }
+
+    @Test
+    public void shouldFailToInstantiateGivenNullSession() {
+        // Given
+        Session testToken = null;
+
+        // When - Then
+        assertThatThrownBy(() -> new CreatePersistentCookieTreeHook(testToken, response, config, request,
+                realm, persistentJwtStringSupplier, persistentCookieResponseHandler,
+                persistentJwtClaimsHandler, secretReferenceCache))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Unable to create persistent cookie: SSO token not available");
+    }
+
+    @Test
+    public void shouldFailToInstantiateGivenNonExistentSession() {
+        // Given
+        Session testToken = new NonExistentSession();
+
+        // When - Then
+        assertThatThrownBy(() -> new CreatePersistentCookieTreeHook(testToken, response, config, request,
+                realm, persistentJwtStringSupplier, persistentCookieResponseHandler,
+                persistentJwtClaimsHandler, secretReferenceCache))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Unable to create persistent cookie: SSO token not available");
     }
 
     private static class TestConfigWithSigningKey implements SetPersistentCookieNode.Config {

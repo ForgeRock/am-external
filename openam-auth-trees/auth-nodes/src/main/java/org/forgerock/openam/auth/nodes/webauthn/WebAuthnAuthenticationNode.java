@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2018-2026 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -27,7 +27,6 @@ import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.WEB_
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -67,6 +66,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.shared.encode.Base64;
 
 /**
  * A web authentication, authentication node. Uses client side javascript to interact with the browser and negotiate
@@ -359,7 +359,8 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             String configuredRpId) {
         JsonValue jsonValue = json(object());
         jsonValue.put("_action", "webauthn_authentication");
-        jsonValue.put("challenge", Arrays.toString(challengeBytes));
+        jsonValue.put("_type", "WebAuthn");
+        jsonValue.put("challenge", Base64.encode(challengeBytes));
         jsonValue.put("allowCredentials", getAllowCredentials(devices));
         jsonValue.put("_allowCredentials", getAllowCredentialsAsJson(devices));
         jsonValue.put("timeout", String.valueOf(config.timeout() * 1000));

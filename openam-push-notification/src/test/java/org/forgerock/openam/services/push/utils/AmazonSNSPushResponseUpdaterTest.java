@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2023 ForgeRock AS.
+ * Copyright 2016-2026 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.utils;
 
@@ -19,7 +19,7 @@ import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.test.assertj.AssertJJsonValueAssert.assertThat;
-import static org.mockito.BDDMockito.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -33,14 +33,14 @@ import org.forgerock.openam.services.push.sns.utils.SnsClientFactory;
 import org.forgerock.openam.services.push.sns.utils.SnsPushResponseUpdater;
 import org.testng.annotations.Test;
 
-import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sns.model.CreatePlatformEndpointRequest;
-import com.amazonaws.services.sns.model.CreatePlatformEndpointResult;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointRequest;
+import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointResponse;
 
 public class AmazonSNSPushResponseUpdaterTest {
 
     SnsClientFactory mockClientFactory = mock(SnsClientFactory.class);
-    AmazonSNSClient mockClient = mock(AmazonSNSClient.class);
+    SnsClient mockClient = mock(SnsClient.class);
     PushNotificationServiceConfig.Realm config = createConfig();
 
     SnsPushResponseUpdater responseUpdater = new SnsPushResponseUpdater(mockClientFactory);
@@ -51,10 +51,11 @@ public class AmazonSNSPushResponseUpdaterTest {
         //given
         given(mockClientFactory.produce(config, realm)).willReturn(mockClient);
 
-        CreatePlatformEndpointResult endpointResult = new CreatePlatformEndpointResult();
-        endpointResult.setEndpointArn("endpointArn");
+        CreatePlatformEndpointResponse endpointResult = CreatePlatformEndpointResponse.builder()
+                .endpointArn("endpointArn")
+                .build();
 
-        given(mockClient.createPlatformEndpoint((CreatePlatformEndpointRequest) anyObject()))
+        given(mockClient.createPlatformEndpoint(any(CreatePlatformEndpointRequest.class)))
                 .willReturn(endpointResult);
 
         JwtClaimsSetBuilder jwtClaimsSetBuilder = new JwtClaimsSetBuilder()
@@ -90,9 +91,9 @@ public class AmazonSNSPushResponseUpdaterTest {
         //given
         given(mockClientFactory.produce(config, realm)).willReturn(mockClient);
 
-        CreatePlatformEndpointResult endpointResult = new CreatePlatformEndpointResult();
+        CreatePlatformEndpointResponse endpointResult = CreatePlatformEndpointResponse.builder().build();
 
-        given(mockClient.createPlatformEndpoint((CreatePlatformEndpointRequest) anyObject()))
+        given(mockClient.createPlatformEndpoint(any(CreatePlatformEndpointRequest.class)))
                 .willReturn(endpointResult);
 
         JwtClaimsSetBuilder jwtClaimsSetBuilder = new JwtClaimsSetBuilder()

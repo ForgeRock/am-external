@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2023 ForgeRock AS.
+ * Copyright 2016-2026 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.sns;
 
@@ -32,8 +32,8 @@ import org.forgerock.openam.services.push.PushNotificationServiceConfig;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcher;
 import org.forgerock.openam.services.push.dispatch.predicates.Predicate;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 /**
  * Delegate for communicating with SNS over HTTP.
@@ -43,7 +43,7 @@ public class SnsHttpDelegate extends AbstractPushNotificationDelegate {
     private static final String AUTHENTICATE_ACTION = "authenticate";
     private static final String REGISTER_ACTION = "register";
 
-    private final AmazonSNS client;
+    private final SnsClient client;
     private final SnsPushMessageConverter pushMessageConverter;
     private final String realm;
     private final MessageDispatcher messageDispatcher;
@@ -60,7 +60,7 @@ public class SnsHttpDelegate extends AbstractPushNotificationDelegate {
      * @param realm the realm in which this delegate exists.
      * @param messageDispatcher the MessageDispatcher used to redirect incoming messages to their caller.
      */
-    public SnsHttpDelegate(AmazonSNS client, PushNotificationServiceConfig.Realm config,
+    public SnsHttpDelegate(SnsClient client, PushNotificationServiceConfig.Realm config,
                            SnsPushMessageConverter pushMessageConverter, String realm,
                            MessageDispatcher messageDispatcher) {
         super();
@@ -123,12 +123,12 @@ public class SnsHttpDelegate extends AbstractPushNotificationDelegate {
 
     private PublishRequest convertToSns(PushMessage message) {
 
-        PublishRequest request = new PublishRequest()
-                .withTargetArn(message.getRecipient())
-                .withSubject(message.getSubject());
-
-        request.setMessageStructure("json");
-        request.setMessage(pushMessageConverter.toTransferFormat(message));
+        PublishRequest request = PublishRequest.builder()
+                .targetArn(message.getRecipient())
+                .subject(message.getSubject())
+                .messageStructure("json")
+                .message(pushMessageConverter.toTransferFormat(message))
+                .build();
 
         return request;
     }

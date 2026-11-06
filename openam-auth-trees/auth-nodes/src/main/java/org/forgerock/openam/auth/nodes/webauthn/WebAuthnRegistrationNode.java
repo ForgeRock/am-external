@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2024 ForgeRock AS.
+ * Copyright 2018-2026 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -27,7 +27,6 @@ import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.WEB_
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -74,6 +73,7 @@ import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdConstants;
 import com.sun.identity.idm.IdRepoException;
+import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.validation.PositiveIntegerValidator;
 import com.sun.identity.sm.DNMapper;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -491,7 +491,8 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         JsonValue scriptContext = json(object());
         String username = getAccountNameFromIdentity(user);
         scriptContext.put("_action", "webauthn_registration");
-        scriptContext.put("challenge", Arrays.toString(challengeBytes));
+        scriptContext.put("_type", "WebAuthn");
+        scriptContext.put("challenge", Base64.encode(challengeBytes));
         scriptContext.put("attestationPreference", config.attestationPreference().getValue());
         scriptContext.put("userName", username);
         scriptContext.put("userId", EncodingUtilities.base64UrlEncode(user.getName()));

@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>7.5.2</version>
+        <version>7.5.3</version>
     </parent>
 
     <!-- Component Definition -->
@@ -301,13 +301,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-jwt-utils</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
@@ -336,6 +335,11 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-http-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

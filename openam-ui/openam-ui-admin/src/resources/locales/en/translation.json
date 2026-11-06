@@ -136,7 +136,7 @@
             "complete" : "Complete",
             "confirm": "Confirm",
             "continue" : "Continue",
-            "copyright" : "Copyright &copy; 2010-2025 ForgeRock AS. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2026 ForgeRock AS. All rights reserved.",
             "create" : "Create",
             "createdAt" : "Created at",
             "createNew": "Create New",
@@ -1593,6 +1593,9 @@
                     },
                     "noSuchUser": "No such user found",
                     "search": "Search Identities..."
+                },
+                "validation": {
+                    "invalidCharacters": "Must not contain the <code>*</code>, <code>(</code>, <code>)</code>, <code>&</code>, <code>!</code>, <code>{</code>, <code>}</code>, or <code>;</code> characters."
                 }
             },
             "groups": {

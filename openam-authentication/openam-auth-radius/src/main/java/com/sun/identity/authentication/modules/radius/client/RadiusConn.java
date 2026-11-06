@@ -24,7 +24,7 @@
  *
  * $Id: AccessAccept.java,v 1.2 2008/06/25 05:42:00 qcheng Exp $
  *
- * Portions Copyrighted 2011-2020 ForgeRock AS.
+ * Portions Copyrighted 2011-2026 ForgeRock AS.
  * Portions Copyrighted 2015 Intellectual Reserve, Inc (IRI)
  */
 package com.sun.identity.authentication.modules.radius.client;
@@ -53,6 +53,7 @@ import org.forgerock.openam.radius.common.AttributeType;
 import org.forgerock.openam.radius.common.Packet;
 import org.forgerock.openam.radius.common.PacketFactory;
 import org.forgerock.openam.radius.common.RequestAuthenticator;
+import org.forgerock.openam.radius.common.ResponseAuthenticatorValidator;
 import org.forgerock.openam.radius.common.StateAttribute;
 import org.forgerock.openam.radius.common.UserNameAttribute;
 import org.forgerock.openam.radius.common.UserPasswordAttribute;
@@ -117,6 +118,11 @@ public class RadiusConn {
      * An object used as an access lock.
      */
     private static final Object SERVER_MONITOR_LOCK = new Object();
+    /**
+     * The validator for the Response Authenticator of received responses.
+     */
+    private final ResponseAuthenticatorValidator responseAuthenticatorValidator =
+            new ResponseAuthenticatorValidator();
 
     /**
      * Construct a connection object with a set of primary and seconary servers.
@@ -225,7 +231,7 @@ public class RadiusConn {
             }
             try {
                 send(packet, server);
-                res = receive();
+                res = receive(packet);
                 if (res instanceof AccessReject) {
                     throw new RejectException((AccessReject) res);
                 } else if (res instanceof AccessChallenge) {
@@ -317,22 +323,112 @@ public class RadiusConn {
     }
 
     /**
-     * Blocking call that waits until a response packet is received.
+     * Blocking call that waits until a response packet for the given request is received. Responses that do not
+     * correspond to the request are discarded and the call continues to wait, until the socket timeout expires.
      *
+     * @param request the request the response is expected to correspond to.
      * @return the received packet.
+     * @throws SocketTimeoutException if the socket timeout expires before a corresponding response is received.
      * @throws IOException
      */
-    private Packet receive()
+    private Packet receive(Packet request)
             throws IOException {
-        byte[] buffer = new byte[4096];
-        DatagramPacket dp = new DatagramPacket(buffer, buffer.length);
-        socket.receive(dp);
-        byte[] data = dp.getData();
-        Packet p = PacketFactory.toPacket(data);
-        if (debug.isDebugEnabled()) {
-            debug.debug("Received " + p + " size=" + p.getAttributeSet().size());
+        int soTimeout = socket.getSoTimeout();
+        // A socket timeout of 0 means block indefinitely, so there is no deadline to bound the wait against; waiting
+        // indefinitely for a response that corresponds to the request is what that configuration asks for.
+        boolean bounded = soTimeout > 0;
+        long deadline = currentTimeMillis() + soTimeout;
+        int discarded = 0;
+        try {
+            while (true) {
+                if (bounded) {
+                    long remaining = deadline - currentTimeMillis();
+                    if (remaining <= 0) {
+                        throw abandonedAfterDiscarding(discarded);
+                    }
+                    // Re-arm the socket with only what remains of the original timeout. Bounding the loop by the
+                    // remaining time rather than by a count of discarded responses means an unsolicited-response
+                    // flood can neither extend the total wait beyond the configured timeout nor cause the request
+                    // to be abandoned while time still remains for the genuine reply to arrive.
+                    socket.setSoTimeout((int) remaining);
+                }
+                byte[] buffer = new byte[4096];
+                DatagramPacket dp = new DatagramPacket(buffer, buffer.length);
+                try {
+                    socket.receive(dp);
+                } catch (SocketTimeoutException e) {
+                    // Where responses were discarded, report why rather than letting the socket's own bare timeout
+                    // surface with no RADIUS-specific detail for the operator.
+                    throw (discarded == 0) ? e : abandonedAfterDiscarding(discarded);
+                }
+                byte[] data = dp.getData();
+                Packet p;
+                try {
+                    p = PacketFactory.toPacket(data);
+                } catch (RuntimeException e) {
+                    // A malformed datagram (e.g. a declared length inconsistent with the actual attribute data) can
+                    // make PacketFactory throw rather than return null; treat it the same as any other unparseable
+                    // response rather than letting it escape the discard loop uncaught. The cause is logged so that
+                    // a parsing defect on a well-formed packet remains distinguishable from a hostile datagram.
+                    debug.debug("Failed to parse RADIUS response from {}:{}", dp.getAddress(), dp.getPort(), e);
+                    p = null;
+                }
+                if (debug.isDebugEnabled() && p != null) {
+                    debug.debug("Received " + p + " size=" + p.getAttributeSet().size());
+                }
+                String mismatch = (p == null) ? "unparseable or unsupported packet type"
+                        : describeMismatch(p, request);
+                if (mismatch == null) {
+                    return p;
+                }
+                discarded++;
+                debug.debug("Discarding RADIUS response from {}:{} ({}); {} discarded so far", dp.getAddress(),
+                        dp.getPort(), mismatch, discarded);
+            }
+        } finally {
+            if (bounded) {
+                socket.setSoTimeout(soTimeout);
+            }
         }
-        return p;
+    }
+
+    /**
+     * Reports the abandonment of a request for which every response received was discarded, and provides the
+     * exception with which to abandon it.
+     *
+     * @param discarded the number of responses that were discarded.
+     * @return the exception to throw.
+     */
+    private SocketTimeoutException abandonedAfterDiscarding(int discarded) {
+        String reason = "Discarded " + discarded + " RADIUS response(s) that did not correspond to the request; "
+                + "none carried the expected identifier and Response Authenticator. Either the shared secret does "
+                + "not match the RADIUS server's, or the responses were not produced by it.";
+        debug.warn(reason);
+        // SocketTimeoutException (an IOException) is returned deliberately, rather than a plain IOException, so that
+        // sendPacket(...)'s existing catch (IOException ioe) block recognises it as a retryable failure, marks the
+        // server offline, and fails over to the next configured server exactly as it does for a genuine timeout.
+        return new SocketTimeoutException(reason);
+    }
+
+    /**
+     * Indicates why a received response does not correspond to the given request, discarding responses bearing an
+     * identifier other than the request's or a Response Authenticator that the shared secret could not have produced.
+     *
+     * @param response the received response.
+     * @param request the request the response is expected to correspond to.
+     * @return the reason the response does not correspond to the request, or {@code null} if it does correspond.
+     */
+    private String describeMismatch(Packet response, Packet request) {
+        // Only the low octet of the identifier travels on the wire, so compare the identifiers as the single unsigned
+        // octet that RFC 2865 defines.
+        if ((response.getIdentifier() & 0xFF) != (request.getIdentifier() & 0xFF)) {
+            return "unexpected identifier " + (response.getIdentifier() & 0xFF) + ", expected "
+                    + (request.getIdentifier() & 0xFF);
+        }
+        if (!responseAuthenticatorValidator.isValid(response, request.getAuthenticator(), secret)) {
+            return "invalid Response Authenticator, likely due to a mismatched shared secret";
+        }
+        return null;
     }
 
     /**

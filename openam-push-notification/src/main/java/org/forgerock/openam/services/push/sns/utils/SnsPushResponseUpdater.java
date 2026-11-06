@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2023 ForgeRock AS.
+ * Copyright 2016-2026 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.sns.utils;
 
@@ -33,11 +33,11 @@ import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.services.push.PushNotificationServiceConfig;
 import org.forgerock.openam.utils.StringUtils;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.CreatePlatformEndpointRequest;
-import com.amazonaws.services.sns.model.CreatePlatformEndpointResult;
-import com.amazonaws.services.sns.model.InvalidParameterException;
-import com.amazonaws.services.sns.model.SetEndpointAttributesRequest;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointRequest;
+import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointResponse;
+import software.amazon.awssdk.services.sns.model.InvalidParameterException;
+import software.amazon.awssdk.services.sns.model.SetEndpointAttributesRequest;
 
 /**
  * A utility class for {@see SnsRegistrationPredicate} to aid testing.
@@ -84,7 +84,7 @@ public class SnsPushResponseUpdater {
     private boolean updateCommunicationId(JsonValue content, JwtClaimsSet claimsSet,
                                        PushNotificationServiceConfig.Realm config,
             String realm) {
-        AmazonSNS client = clientFactory.produce(config, realm);
+        SnsClient client = clientFactory.produce(config, realm);
 
         String communicationType = (String) claimsSet.getClaim(COMMUNICATION_TYPE);
         String deviceId = (String) claimsSet.getClaim(DEVICE_ID);
@@ -115,36 +115,39 @@ public class SnsPushResponseUpdater {
         content.put(COMMUNICATION_TYPE, communicationType);
     }
 
-    private void setCommunicationId(AmazonSNS client, String arn, String deviceId, JsonValue content) {
+    private void setCommunicationId(SnsClient client, String arn, String deviceId, JsonValue content) {
         Map<String, String> attributes = standardAttributes(deviceId);
         String answer;
 
         try {
-            CreatePlatformEndpointRequest createReq = new CreatePlatformEndpointRequest()
-                    .withPlatformApplicationArn(arn)
-                    .withAttributes(attributes)
-                    .withToken(deviceId);
+            CreatePlatformEndpointRequest createReq = CreatePlatformEndpointRequest.builder()
+                    .platformApplicationArn(arn)
+                    .attributes(attributes)
+                    .token(deviceId)
+                    .build();
 
-            CreatePlatformEndpointResult result = client.createPlatformEndpoint(createReq);
-            answer = result.getEndpointArn();
+            CreatePlatformEndpointResponse result = client.createPlatformEndpoint(createReq);
+            answer = result.endpointArn();
         } catch (InvalidParameterException e) {
             //endpoint already exists, let's try to re-enable it, first we ensure we get the appropriate endpointArn
             attributes.put(ENABLED, "false");
 
-            CreatePlatformEndpointRequest createReq = new CreatePlatformEndpointRequest()
-                    .withPlatformApplicationArn(arn)
-                    .withToken(deviceId)
-                    .withAttributes(attributes);
-            CreatePlatformEndpointResult result = client.createPlatformEndpoint(createReq);
+            CreatePlatformEndpointRequest createReq = CreatePlatformEndpointRequest.builder()
+                    .platformApplicationArn(arn)
+                    .token(deviceId)
+                    .attributes(attributes)
+                    .build();
+            CreatePlatformEndpointResponse result = client.createPlatformEndpoint(createReq);
 
-            String endpointArn = result.getEndpointArn();
+            String endpointArn = result.endpointArn();
 
             attributes.put(ENABLED, "true");
 
             //then we re-enable it, note the attribute-set
-            SetEndpointAttributesRequest attrReq = new SetEndpointAttributesRequest()
-                    .withAttributes(attributes)
-                    .withEndpointArn(endpointArn);
+            SetEndpointAttributesRequest attrReq = SetEndpointAttributesRequest.builder()
+                    .attributes(attributes)
+                    .endpointArn(endpointArn)
+                    .build();
 
             client.setEndpointAttributes(attrReq);
             answer = endpointArn;

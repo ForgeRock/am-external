@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2025 ForgeRock AS.
+ * Copyright 2019-2026 ForgeRock AS.
  */
 
 package org.forgerock.openam.services.push;
@@ -20,7 +20,9 @@ package org.forgerock.openam.services.push;
 import static org.forgerock.openam.annotations.sm.Config.Scope.REALM;
 import static org.forgerock.openam.annotations.sm.Config.Scope.SERVICE;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import org.forgerock.am.config.ChoiceValues;
 import org.forgerock.am.config.RealmConfiguration;
@@ -133,6 +135,21 @@ public interface PushNotificationServiceConfig extends ServiceComponentConfig,
         @NumberRange
         default Integer mdCacheSize() {
             return 10000;
+        }
+
+        /**
+         * Returns the additional allowed predicate class names supplementing the built-in predicate implementations.
+         * <p>
+         * When the push predicate allowlist is enabled ({@code am.push.predicate.allowlist.enabled}), only
+         * built-in and configured class names are permitted in the CTS push token blob. Use this attribute
+         * to register custom {@code Predicate} implementations provided by a custom
+         * {@code PushNotificationDelegateFactory}.
+         *
+         * @return the set of additional allowed predicate class names
+         */
+        @Attribute(order = 1000, i18nKey = "a090")
+        default Set<String> additionalAllowedPredicateClasses() {
+            return Collections.emptySet();
         }
 
     }

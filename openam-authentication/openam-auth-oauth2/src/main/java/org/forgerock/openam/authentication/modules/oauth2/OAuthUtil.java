@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2022 ForgeRock AS. All rights reserved.
+ * Copyright 2011-2025 ForgeRock AS. All rights reserved.
  * Copyright 2011 Cybernetica AS.
  *
  * The contents of this file are subject to the terms
@@ -44,7 +44,7 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.common.mapping.AttributeMapper;

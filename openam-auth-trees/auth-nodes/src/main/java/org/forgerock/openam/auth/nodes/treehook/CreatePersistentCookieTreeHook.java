@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2024 ForgeRock AS.
+ * Copyright 2017-2026 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.treehook;
 
@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import org.forgerock.http.protocol.Request;
@@ -35,6 +36,7 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.secrets.cache.SecretCache;
 import org.forgerock.openam.secrets.cache.SecretReferenceCache;
 import org.forgerock.openam.session.Session;
+import org.forgerock.openam.session.listeners.NonExistentSession;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.secrets.SecretReference;
@@ -70,7 +72,7 @@ public class CreatePersistentCookieTreeHook implements TreeHook {
      * @param session                         the session.
      * @param response                        the response.
      * @param config                          the config for creating a jwt.
-     * @param request                         the request.
+     * @param request                         the request, can be {@code null}.
      * @param realm                           the realm.
      * @param persistentJwtStringSupplier     reference to a class which creates and updates jwts.
      * @param persistentCookieResponseHandler reference to a class which sets a persistent cookie on a Response.
@@ -78,14 +80,15 @@ public class CreatePersistentCookieTreeHook implements TreeHook {
      * @param secretReferenceCache            the secret reference cache.
      */
     @Inject
-    CreatePersistentCookieTreeHook(@Assisted Session session, @Assisted Response response,
-            @Assisted SetPersistentCookieNode.Config config, @Assisted Request request,
+    CreatePersistentCookieTreeHook(@Assisted @Nullable Session session, @Assisted Response response,
+            @Assisted SetPersistentCookieNode.Config config, @Assisted @Nullable Request request,
             @Assisted Realm realm,
             PersistentJwtStringSupplier persistentJwtStringSupplier,
             PersistentCookieResponseHandler persistentCookieResponseHandler,
             PersistentJwtClaimsHandler persistentJwtClaimsHandler,
             SecretReferenceCache secretReferenceCache) {
-        Reject.ifNull(session);
+        Reject.rejectStateIfTrue(session == null || session instanceof NonExistentSession,
+                "Unable to create persistent cookie: SSO token not available");
         this.session = session;
         this.response = response;
         this.config = config;

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2026 ForgeRock AS.
  */
 package org.forgerock.openam.services.push;
 
@@ -25,6 +25,7 @@ import javax.inject.Inject;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.ActionRequest;
 import org.forgerock.json.resource.ActionResponse;
+import org.forgerock.json.resource.BadRequestException;
 import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.json.resource.ResourceException;
 import org.forgerock.openam.rest.RealmContext;
@@ -108,6 +109,10 @@ public class PushMessageResource {
             } catch (NotFoundException e) {
                 debug.warn("Unable to deliver message with messageId {} in realm {}.", messageId, realm, e);
                 return RestUtils.generateBadRequestException();
+            } catch (BadRequestException e) {
+                debug.warn("Rejected message with messageId {} in realm {} — allowlist violation: {}",
+                        messageId, realm, e.getMessage());
+                return e.asPromise();
             } catch (PredicateNotMetException e) {
                 debug.warn("Unable to deliver message with messageId {} in realm {} as predicate not met.",
                         messageId, realm, e);

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2024 ForgeRock AS.
+ * Copyright 2018-2026 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -42,18 +42,20 @@ import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.authentication.spi.MetadataCallback;
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.tools.objects.MapFormat;
 
 /**
  * Abstract class for webauthn nodes, shares common features and components across the multiple webauthn-related nodes.
  */
 abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     final Logger logger = LoggerFactory.getLogger(AbstractWebAuthnNode.class);
 
     /**
@@ -160,13 +162,17 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
             TreeContext context, Callback... additionalCallbacks) throws NodeProcessException {
         ImmutableList.Builder<Callback> callbacks = ImmutableList.builder();
         if (asScript) {
-            script = MapFormat.format(script, scriptContext.asMap());
+            String scriptContextString;
+            try {
+                scriptContextString = OBJECT_MAPPER.writeValueAsString(scriptContext.asMap());
+            } catch (JsonProcessingException e) {
+                throw new NodeProcessException("Failed to serialize script context values to strings.", e);
+            }
+            script = script.replace("{scriptContext}", scriptContextString);
             callbacks.add(new ScriptTextOutputCallback(script));
             String spinnerScript = clientScriptUtilities.getSpinnerScript(context.request.locales);
             callbacks.add(new ScriptTextOutputCallback(spinnerScript));
         } else {
-            scriptContext.put("_type", "WebAuthn");
-            scriptContext.put("challenge", context.sharedState.get(CHALLENGE).asString());
             callbacks.add(new MetadataCallback(scriptContext));
         }
         return send(callbacks.add(new HiddenValueCallback(OUTCOME, "false")).add(additionalCallbacks).build())

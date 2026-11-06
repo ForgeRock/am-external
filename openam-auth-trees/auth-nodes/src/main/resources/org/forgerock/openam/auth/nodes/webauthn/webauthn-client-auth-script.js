@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2026 ForgeRock AS.
  */
 
 if (!window.PublicKeyCredential) {
@@ -19,13 +19,26 @@ if (!window.PublicKeyCredential) {
     document.getElementById("loginButton_0").click();
 }
 
+var scriptContext = {scriptContext}
+
 var options = {
-    {relyingPartyId}
-    challenge: new Int8Array({challenge}).buffer,
-    timeout: {timeout},
-    userVerification: "{userVerification}",
-    {allowCredentials}
+    challenge: Uint8Array.from(atob(scriptContext.challenge), c => c.charCodeAt(0)),
+    timeout: Number(scriptContext.timeout),
+    userVerification: scriptContext.userVerification,
 };
+
+var relyingPartyId = scriptContext._relyingPartyId
+if (relyingPartyId) {
+    options.rpId = relyingPartyId;
+}
+
+var allowCredentials = scriptContext._allowCredentials;
+if (allowCredentials.length > 0) {
+    options.allowCredentials = allowCredentials.map(cred => ({
+        ...cred,
+        id: new Int8Array(cred.id).buffer
+    }));
+}
 
 navigator.credentials.get({ "publicKey" : options })
     .then(function (assertion) {
@@ -38,7 +51,7 @@ navigator.credentials.get({ "publicKey" : options })
         document.getElementById("loginButton_0").click();
     }).catch(function (err) {
         document.getElementById('webAuthnOutcome').value = "ERROR" + "::" + err;
-        var allowRecoveryCode = 'true' === "{allowRecoveryCode}";
+        var allowRecoveryCode = 'true' === scriptContext.allowRecoveryCode;
         if (allowRecoveryCode) {
             var loginButton = document.getElementById("loginButton_0");
             if (loginButton) {

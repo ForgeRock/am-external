@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2026 ForgeRock AS.
  */
 
 const { isArray } = require("lodash");
@@ -25,7 +25,23 @@ const loaders = (extensions, loaders, includeNodeModules = false) => {
     options[loaderKey] = loaders;
 
     if (!includeNodeModules) {
-        options.exclude = /node_modules/;
+        options.exclude = {
+            and: [/node_modules/],
+            not: [
+                /deepmerge/,
+                /domelementtype/,
+                /dom-serializer/,
+                /domhandler/,
+                /domutils/,
+                /entities/,
+                /htmlparser2/,
+                /launder/,
+                /nanoid/,
+                /parse-srcset/,
+                /sanitize-html/,
+                /sanitize-html\/node_modules/
+            ]
+        };
     }
 
     return {

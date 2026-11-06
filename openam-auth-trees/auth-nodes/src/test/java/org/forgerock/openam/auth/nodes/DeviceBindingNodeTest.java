@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2023-2026 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -20,6 +20,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -135,15 +136,18 @@ public class DeviceBindingNodeTest {
         assertThat(((DeviceBindingCallback) result.callbacks.get(0)).getUserId()).isEqualTo("bob");
     }
 
-    @Test(expected = NodeProcessException.class)
+    @Test
     public void testUserNotActive() throws NodeProcessException, IdRepoException, SSOException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
         given(amIdentity.isActive()).willReturn(false);
 
-        // When
-        node.process(getContext(sharedState, transientState, emptyList()));
-
+        // When - Then
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Failed to lookup user");
+        assertThat(node.getAuditEntryDetail().get("failureReason").asString())
+                .isEqualTo("User does not exist or inactive");
     }
 
     @Test
@@ -183,6 +187,20 @@ public class DeviceBindingNodeTest {
         //Then
         assertThat(result.outcome).isEqualTo("my_custom_outcome");
         assertThat(result.callbacks).isEmpty();
+    }
+
+    @Test
+    public void testErrorOutcome() throws NodeProcessException, DevicePersistenceException {
+        //Given
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
+        JsonValue transientState = json(object());
+        given(deviceBindingManager.getDeviceProfiles(any(), any())).willThrow(new DevicePersistenceException("f"));
+
+        //When
+        node.process(getContext(sharedState, transientState, List.of()));
+
+        //Then
+        assertThat(node.getAuditEntryDetail().get("failureReason").asString()).isEqualTo("f");
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,

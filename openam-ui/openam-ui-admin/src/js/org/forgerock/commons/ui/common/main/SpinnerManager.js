@@ -15,7 +15,7 @@
  */
 
 import $ from "jquery";
-import Spinner from "spin.js";
+import { Spinner } from "spin.js";
 
 const SpinnerManager = {};
 

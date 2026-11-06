@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2025 ForgeRock AS.
  */
 package com.sun.identity.workflow;
 
@@ -42,7 +42,7 @@ import java.util.jar.Manifest;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.forgerock.openam.password.RandomPasswordGenerator;
 import org.forgerock.openam.shared.security.crypto.KeyStoreBuilder;
 import org.forgerock.openam.shared.security.crypto.KeyStoreType;

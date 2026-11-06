@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2026 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -32,7 +32,7 @@ import java.util.Set;
 import javax.inject.Singleton;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
@@ -171,9 +171,8 @@ public final class ClientScriptUtilities {
         for (WebAuthnDeviceSettings device : devices) {
             result.add(getDeviceAsJson(device));
         }
-        return json(result);
+        return json(array(result.toArray()));
     }
-
 
     String getDevicesAsJavaScript(List<WebAuthnDeviceSettings> devices) {
         StringBuilder sb = new StringBuilder();

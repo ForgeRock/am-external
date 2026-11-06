@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2023 ForgeRock AS.
+ * Copyright 2016-2026 ForgeRock AS.
  */
 package org.forgerock.openam.services.push;
 
@@ -294,7 +294,7 @@ public class PushNotificationService implements ReloadableSecret {
         validateFactoryExists(factoryClass);
         PushNotificationServiceConfig.Realm config = configHelper.getConfig();
         PushNotificationDelegate pushNotificationDelegate = pushFactoryMap.get(factoryClass)
-                .produceDelegateFor(config, realm, createDispatcher(configHelper));
+                .produceDelegateFor(config, realm, createDispatcher(realm, configHelper));
 
         if (pushNotificationDelegate == null) {
             debug.error("PushNotificationFactory produced a null delegate. Aborting update.");
@@ -304,12 +304,13 @@ public class PushNotificationService implements ReloadableSecret {
         init(realm);
     }
 
-    private MessageDispatcher createDispatcher(PushNotificationServiceConfigHelper configHelper) {
+    private MessageDispatcher createDispatcher(String realm, PushNotificationServiceConfigHelper configHelper) {
         long maxSize = configHelper.getConfig().mdCacheSize();
         int concurrency = configHelper.getConfig().mdConcurrency();
         int duration = configHelper.getConfig().mdDuration();
 
-        return messageDispatcherFactory.create(maxSize, concurrency, duration);
+        return messageDispatcherFactory.create(maxSize, concurrency, duration, realm,
+                configHelper.getConfig().additionalAllowedPredicateClasses());
     }
 
     private void deleteService(String realm) throws PushNotificationException {

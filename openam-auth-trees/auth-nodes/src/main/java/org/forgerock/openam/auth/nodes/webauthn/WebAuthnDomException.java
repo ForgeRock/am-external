@@ -11,14 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2025 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
 
 import static org.forgerock.openam.auth.nodes.webauthn.ClientScriptUtilities.RESPONSE_DELIMITER;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Represents an error returned from the DOM.

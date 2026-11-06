@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2024 ForgeRock AS.
+ * Copyright 2019-2025 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
@@ -41,7 +41,7 @@ import java.util.ResourceBundle;
 import javax.inject.Inject;
 import javax.security.auth.x500.X500Principal;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;

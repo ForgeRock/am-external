@@ -11,10 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2026 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.dispatch;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
@@ -60,9 +61,12 @@ public class MessageDispatcherFactory {
      * @param maxSize Maximum size of the cache.
      * @param concurrency Level of concurrency the cache supports.
      * @param expireAfter Entries should expire after this time from the cache (in seconds).
+     * @param realm The realm for which this dispatcher is created.
+     * @param additionalAllowedPredicateClasses Additional predicate class names permitted beyond the built-in set.
      * @return A newly constructed MessageDispatcher.
      */
-    public MessageDispatcher create(long maxSize, int concurrency, int expireAfter) {
+    public MessageDispatcher create(long maxSize, int concurrency, int expireAfter, String realm,
+            Set<String> additionalAllowedPredicateClasses) {
 
         Cache<MessageId, MessagePromise> cache = CacheBuilder.newBuilder()
                 .concurrencyLevel(concurrency)
@@ -70,7 +74,8 @@ public class MessageDispatcherFactory {
                 .expireAfterWrite(expireAfter, TimeUnit.SECONDS)
                 .build();
 
-        return new MessageDispatcher(cache, ctsPersistentStore, jsonSerialisation, expireAfter, tokenFactory);
+        return new MessageDispatcher(cache, ctsPersistentStore, jsonSerialisation, expireAfter, tokenFactory,
+                additionalAllowedPredicateClasses, realm);
     }
 
 }

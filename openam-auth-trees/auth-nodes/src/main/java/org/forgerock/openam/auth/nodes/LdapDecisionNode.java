@@ -23,7 +23,7 @@ import static javax.security.auth.callback.ConfirmationCallback.OK_CANCEL_OPTION
 import static javax.security.auth.callback.TextOutputCallback.ERROR;
 import static javax.security.auth.callback.TextOutputCallback.INFORMATION;
 import static javax.security.auth.callback.TextOutputCallback.WARNING;
-import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
@@ -50,7 +50,7 @@ import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.TextOutputCallback;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2026 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.dispatch;
 
@@ -20,22 +20,30 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.audit.context.AuditRequestContext.getAuditRequestContext;
 
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.forgerock.am.cts.api.tokens.TokenFactory;
-import org.forgerock.json.JsonValue;
-import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.am.cts.CTSPersistentStore;
+import org.forgerock.am.cts.api.tokens.CoreTokenField;
 import org.forgerock.am.cts.api.tokens.Token;
+import org.forgerock.am.cts.api.tokens.TokenFactory;
+import org.forgerock.am.cts.api.tokens.TokenType;
 import org.forgerock.am.cts.exceptions.CoreTokenException;
 import org.forgerock.am.cts.utils.JSONSerialisation;
+import org.forgerock.json.JsonValue;
+import org.forgerock.json.resource.BadRequestException;
+import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
 import org.forgerock.openam.services.push.dispatch.predicates.Predicate;
 import org.forgerock.openam.services.push.dispatch.predicates.PredicateNotMetException;
-import org.forgerock.am.cts.api.tokens.CoreTokenField;
-import org.forgerock.am.cts.api.tokens.TokenType;
+import org.forgerock.openam.services.push.dispatch.predicates.PushMessageChallengeResponsePredicate;
+import org.forgerock.openam.services.push.dispatch.predicates.PushNumberChallengeResponsePredicate;
+import org.forgerock.openam.services.push.dispatch.predicates.SignedJwtVerificationPredicate;
+import org.forgerock.openam.services.push.sns.SnsRegistrationPredicate;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.utils.Time;
@@ -45,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.Cache;
+import com.iplanet.am.util.SystemProperties;
 
 /**
  * <p>The MessageDispatcher acts to forward messages between disparate locations in OpenAM via
@@ -57,7 +66,7 @@ import com.google.common.cache.Cache;
  * response comes from the same machine as the initiating message (i.e. used when the <code>#handle()</code> is be sent
  * to the same machine that issued the <code>#expect()</code>); and the CTS, used for communicating between machines
  * within a cluster (i.e. used when the <code>#handle()</code> will be called from a different machine to the one which
- * called <code>#expect()</code>.</p>
+ * called <code>#expect()</code>).</p>
  *
  * <p>Later, the MessageDispatcher may be asked to handle a message with a messageId and its JsonValue contents.</p>
  *
@@ -86,12 +95,24 @@ public class MessageDispatcher {
     private static final boolean CACHE_LOCALLY = true;
     private static final boolean DONT_CACHE_LOCALLY = false;
 
+    private static final String PUSH_PREDICATE_ALLOWLIST_PROPERTY = "am.push.predicate.allowlist.enabled";
+
+    static final Set<String> BUILT_IN_PREDICATE_CLASSES = Set.of(
+            PushMessageChallengeResponsePredicate.class.getCanonicalName(),
+            SignedJwtVerificationPredicate.class.getCanonicalName(),
+            PushNumberChallengeResponsePredicate.class.getCanonicalName(),
+            SnsRegistrationPredicate.class.getCanonicalName()
+    );
+    private final Set<String> loggedUnknownPredicateWarnings = ConcurrentHashMap.newKeySet();
+
     private final Cache<MessageId, MessagePromise> cache;
     private final Logger debug = LoggerFactory.getLogger(MessageDispatcher.class);
     private final CTSPersistentStore ctsPersistentStore;
     private final JSONSerialisation jsonSerialisation;
     private final int timeout;
     private final TokenFactory tokenFactory;
+    private final Set<String> effectiveAllowlist;
+    private final String realm;
 
     /**
      * A message dispatcher which holds a Cache (a timeout-based Map) which contains the
@@ -102,15 +123,23 @@ public class MessageDispatcher {
      * @param jsonSerialisation for understanding JSON objects.
      * @param timeout the length of time a message will be valid in the cache/stored in the CTS.
      * @param tokenFactory A TokenFactory instance.
+     * @param additionalAllowedPredicateClasses Customer-configured predicate class names to permit beyond the
+     *                                          built-in set.
+     * @param realm The realm for which this dispatcher was created; used in log messages.
      */
     public MessageDispatcher(Cache<MessageId, MessagePromise> dispatch,
             CTSPersistentStore ctsPersistentStore, JSONSerialisation jsonSerialisation, int timeout,
-            TokenFactory tokenFactory) {
+            TokenFactory tokenFactory, Set<String> additionalAllowedPredicateClasses, String realm) {
         this.cache = dispatch;
         this.ctsPersistentStore = ctsPersistentStore;
         this.jsonSerialisation = jsonSerialisation;
         this.timeout = timeout;
         this.tokenFactory = tokenFactory;
+        this.realm = realm;
+
+        Set<String> combined = new HashSet<>(BUILT_IN_PREDICATE_CLASSES);
+        combined.addAll(additionalAllowedPredicateClasses);
+        this.effectiveAllowlist = Collections.unmodifiableSet(combined);
     }
 
     /**
@@ -121,9 +150,10 @@ public class MessageDispatcher {
      * @param messageHandler The handler that will manipulate the clustered version of this message.
      * @throws NotFoundException If the provided messageId was not found.
      * @throws PredicateNotMetException If any expected-successful predicate fails.
+     * @throws BadRequestException If the allowlist is enabled and an unknown predicate class name is detected.
      */
     public void handle(MessageId messageId, JsonValue content, ClusterMessageHandler messageHandler)
-            throws NotFoundException, PredicateNotMetException {
+            throws NotFoundException, PredicateNotMetException, BadRequestException {
         Reject.ifNull(content);
         Reject.ifNull(messageId);
         MessagePromise messagePromise = cache.getIfPresent(messageId);
@@ -224,10 +254,10 @@ public class MessageDispatcher {
 
     private void handlePushResponseUsingCts(JsonValue content, MessageId messageId,
             ClusterMessageHandler messageHandler) throws CoreTokenException, NotFoundException, ClassNotFoundException,
-            PredicateNotMetException {
+            PredicateNotMetException, BadRequestException {
         Token coreToken = ctsPersistentStore.read(messageId.toString());
 
-        if (coreToken == null) {
+        if (coreToken == null || !TokenType.PUSH.equals(coreToken.getType())) {
             debug.warn("Cache was asked to handle {} but never expected it.", messageId);
             throw new NotFoundException("Unable to find token with id " + messageId + " in CTS.");
         }
@@ -245,9 +275,26 @@ public class MessageDispatcher {
 
         for (Map.Entry<String, Object> entry : predicates.entrySet()) {
             String className = entry.getKey();
+
+            if (!effectiveAllowlist.contains(className)) {
+                if (SystemProperties.getAsBoolean(PUSH_PREDICATE_ALLOWLIST_PROPERTY, true)) {
+                    debug.error("Allowlist violation in realm {}: rejected predicate class {} for message {}.",
+                            realm, className, messageId);
+                    throw new BadRequestException("Push request rejected.");
+                } else if (loggedUnknownPredicateWarnings.add(className)) {
+                    debug.warn("am.push.predicate.allowlist: Predicate class {} in realm {} is not on the push"
+                                    + " predicate allowlist.",
+                            className, realm);
+                }
+            }
+
             Predicate pred = jsonSerialisation.deserialise((String) entry.getValue(),
-                            Class.forName(className).asSubclass(Predicate.class));
+                            Class.forName(className, false, MessageDispatcher.class.getClassLoader())
+                                    .asSubclass(Predicate.class));
             if (!pred.perform(content)) {
+                if (pred instanceof PushNumberChallengeResponsePredicate) {
+                    messageHandler.update(coreToken, content);
+                }
                 throw new PredicateNotMetException("Predicate was not matched. Message invalid.");
             }
         }

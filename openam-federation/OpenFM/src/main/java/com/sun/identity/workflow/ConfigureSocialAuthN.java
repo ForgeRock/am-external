@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2022 ForgeRock AS.
+ * Copyright 2014-2025 ForgeRock AS.
  * Portions Copyrighted 2015 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.workflow;
@@ -39,7 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.jose.utils.Utils;
 import org.forgerock.openam.sm.ConfigurationAttributes;
